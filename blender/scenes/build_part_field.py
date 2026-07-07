@@ -503,12 +503,45 @@ def render_players_close() -> Path:
     return out
 
 
+def render_view_goal_net(side: str = "L") -> Path:
+    """カスタムゴール（ネット付き）— 芝生込みの斜め画角"""
+    from build_goal import GOAL_H  # noqa: E402
+
+    scene = bpy.context.scene
+    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x = 1920
+    scene.render.resolution_y = 1080
+    scene.eevee.taa_render_samples = 80
+    setup_black_world()
+    setup_lights()
+    _remove_cameras()
+
+    half_l = PITCH_LENGTH / 2
+    gx = -half_l if side == "L" else half_l
+    sign = 1 if side == "L" else -1
+
+    cam_data = bpy.data.cameras.new("CamViewGoal")
+    cam = bpy.data.objects.new("CamViewGoal", cam_data)
+    bpy.context.collection.objects.link(cam)
+    cam.location = Vector((gx + sign * 14, -16, 4.2))
+    target = Vector((gx, 0, GOAL_H * 0.42))
+    cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
+    scene.camera = cam
+    cam.data.lens = 55
+
+    out = RENDER_DIR / "view_04_goal.png"
+    scene.render.filepath = str(out)
+    bpy.ops.render.render(write_still=True)
+    print(f"View goal: {out}")
+    return out
+
+
 def render_views_5() -> list[Path]:
     """5パターン画角で確認用レンダーをまとめて出す"""
     outs: list[Path] = []
     outs.append(render_wide())
 
-    # 低い引き（全体）
+    # 低い引き（選手＋ボール）
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = 1920
@@ -545,14 +578,53 @@ def render_views_5() -> list[Path]:
     bpy.ops.render.render(write_still=True)
     outs.append(out)
 
-    # ゴール正面（既存）
-    outs.append(render_goal_front("L"))
+    # カスタムゴール（ネット付き・芝生込み）
+    outs.append(render_view_goal_net("L"))
 
-    # 選手寄り（既存 close）
+    # 選手アップ
     outs.append(render_players_close())
 
     print("Views5:", ", ".join(p.name for p in outs))
     return outs
+
+
+def write_views_preview_html(commit: str | None = None) -> Path:
+    """スマホでタップして開けるプレビューHTML"""
+    if commit is None:
+        import subprocess
+        try:
+            commit = subprocess.check_output(
+                ["git", "rev-parse", "HEAD"], cwd="/workspace", text=True,
+            ).strip()
+        except Exception:
+            commit = "main"
+    base = f"https://raw.githubusercontent.com/ekata1214/ungr-archive/{commit}/blender/renders/parts"
+    views = [
+        ("01 俯瞰", "field_wide.png"),
+        ("02 低い引き", "view_02_low_wide.png"),
+        ("03 ボール", "view_03_ball.png"),
+        ("04 ゴール（ネット）", "view_04_goal.png"),
+        ("05 選手", "players_close.png"),
+    ]
+    lines = [
+        "<!doctype html><html><head><meta charset='utf-8'>",
+        "<meta name='viewport' content='width=device-width,initial-scale=1'>",
+        "<title>Shaolin Soccer CG — 5 views</title>",
+        "<style>body{font-family:sans-serif;background:#111;color:#eee;padding:12px}",
+        "a{display:block;margin:12px 0;padding:14px;background:#1e3a5f;color:#fff;",
+        "text-decoration:none;border-radius:8px;font-size:18px}",
+        "img{max-width:100%;border-radius:6px;margin-top:8px}</style></head><body>",
+        "<h2>5画角プレビュー</h2>",
+    ]
+    for label, fname in views:
+        url = f"{base}/{fname}"
+        lines.append(f"<a href='{url}'>{label}</a>")
+        lines.append(f"<img src='{url}' alt='{label}'>")
+    lines.append("</body></html>")
+    out = RENDER_DIR / "preview_views.html"
+    out.write_text("\n".join(lines), encoding="utf-8")
+    print(f"Preview HTML: {out}")
+    return out
 
 
 def render_goal_close(side: str = "L") -> Path:
@@ -603,6 +675,7 @@ def main() -> None:
         render_players_close()
     if "--render-views" in sys.argv:
         render_views_5()
+        write_views_preview_html()
 
 
 if __name__ == "__main__":
