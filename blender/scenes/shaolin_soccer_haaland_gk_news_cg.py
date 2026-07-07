@@ -632,7 +632,7 @@ def maybe_render() -> None:
 def maybe_save_desktop() -> None:
     if "--save-desktop" not in sys.argv:
         return
-    out = Path.home() / "Desktop" / "shaolin_soccer_haaland_gk_news_cg.blend"
+    out = Path.home() / "Desktop" / "sho-lin-soccer.blend"
     out.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(out))
     print(f"Saved: {out}")

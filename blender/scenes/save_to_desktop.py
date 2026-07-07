@@ -1,4 +1,4 @@
-"""Build the news-CG scene and save as .blend on Desktop."""
+"""Build scene and save as ~/Desktop/sho-lin-soccer.blend (initial base file)."""
 import bpy
 from pathlib import Path
 
@@ -7,6 +7,7 @@ ns = {"__name__": "shaolin_soccer_haaland_gk_news_cg"}
 exec(script.read_text(encoding="utf-8"), ns)
 ns["build_scene"]()
 
-out = Path.home() / "Desktop" / "shaolin_soccer_haaland_gk_news_cg.blend"
+out = Path.home() / "Desktop" / "sho-lin-soccer.blend"
+out.parent.mkdir(parents=True, exist_ok=True)
 bpy.ops.wm.save_as_mainfile(filepath=str(out))
 print(f"Saved: {out}")
