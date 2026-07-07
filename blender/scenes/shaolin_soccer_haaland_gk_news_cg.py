@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import math
 import sys
-from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import bpy
@@ -179,10 +179,10 @@ def set_linear_interpolation() -> None:
 # 棒人間（青/赤）— よくあるニュース再現CGスタイル
 # ---------------------------------------------------------------------------
 
-@dataclass
 class StickFigure:
-    root: bpy.types.Object
-    parts: Dict[str, bpy.types.Object]
+    def __init__(self, root: bpy.types.Object, parts: Dict[str, bpy.types.Object]):
+        self.root = root
+        self.parts = parts
 
     def pose(self, frame: int, root_pos: Vector, root_rot: Euler, limb_angles: Dict[str, Euler]) -> None:
         self.root.location = root_pos
@@ -244,11 +244,6 @@ def build_stick_figure(name: str, color: Tuple[float, float, float, float], loca
     limb("leg_r", 1.0, False)
 
     return StickFigure(root=root, parts=parts)
-
-
-# ---------------------------------------------------------------------------
-# フィールド・ゴール・壁・ボール
-# ---------------------------------------------------------------------------
 
 def build_pitch() -> None:
     field_mat = make_flat_material("field", FIELD_GREEN)
@@ -634,8 +629,18 @@ def maybe_render() -> None:
     print(f"Rendered to: {out}")
 
 
+def maybe_save_desktop() -> None:
+    if "--save-desktop" not in sys.argv:
+        return
+    out = Path.home() / "Desktop" / "shaolin_soccer_haaland_gk_news_cg.blend"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.wm.save_as_mainfile(filepath=str(out))
+    print(f"Saved: {out}")
+
+
 def main() -> None:
     build_scene()
+    maybe_save_desktop()
     maybe_render()
     print("少林サッカー ニュースCGシーン構築完了")
     print("  青 = 少林GK / 赤 = ハーランド（ノルウェー）")
