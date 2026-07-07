@@ -260,10 +260,12 @@ def build_field_only() -> None:
         add_circle_ring(f"Corner_{label}", ox, oy, CORNER_R, white, lz, 20, a0, a1)
 
     from build_goal import build_both_goals  # noqa: E402
+    from build_player import build_demo_players  # noqa: E402
 
     build_both_goals(half_l)
+    build_demo_players()
 
-    print(f"Field: {PITCH_LENGTH:.1f}x{PITCH_WIDTH:.1f}m FIFA markings + grass stripes + 2 goals")
+    print(f"Field: {PITCH_LENGTH:.1f}x{PITCH_WIDTH:.1f}m FIFA markings + grass stripes + 2 goals + 2 players")
 
 
 def _remove_cameras() -> None:
@@ -406,6 +408,37 @@ def render_goal_front(side: str = "L") -> Path:
     return out
 
 
+def render_players() -> Path:
+    """青・赤棒人間のミドルショット"""
+    from build_player import S  # noqa: E402
+
+    scene = bpy.context.scene
+    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x = 1920
+    scene.render.resolution_y = 1080
+    scene.eevee.taa_render_samples = 80
+    setup_black_world()
+    setup_lights()
+    _remove_cameras()
+
+    cam_data = bpy.data.cameras.new("CamPlayers")
+    cam = bpy.data.objects.new("CamPlayers", cam_data)
+    bpy.context.collection.objects.link(cam)
+    target = Vector((0, 0, 0.85 * S))
+    cam.location = Vector((0, -32, 6.5))
+    cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
+    scene.camera = cam
+    cam.data.lens = 52
+
+    out = RENDER_DIR / "players_mid.png"
+    RENDER_DIR.mkdir(parents=True, exist_ok=True)
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.filepath = str(out)
+    bpy.ops.render.render(write_still=True)
+    print(f"Players: {out}")
+    return out
+
+
 def render_goal_close(side: str = "L") -> Path:
     """ゴールの斜めアップ"""
     scene = bpy.context.scene
@@ -449,6 +482,8 @@ def main() -> None:
         render_goal_front("L")
         render_goal_front("R")
         render_goal_three_quarter("L")
+    if "--render-players" in sys.argv:
+        render_players()
 
 
 if __name__ == "__main__":
