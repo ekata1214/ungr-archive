@@ -259,7 +259,11 @@ def build_field_only() -> None:
     for label, _cx, _cy, ox, oy, a0, a1 in corners:
         add_circle_ring(f"Corner_{label}", ox, oy, CORNER_R, white, lz, 20, a0, a1)
 
-    print(f"Field: {PITCH_LENGTH:.1f}x{PITCH_WIDTH:.1f}m FIFA markings + grass stripes")
+    from build_goal import build_both_goals  # noqa: E402
+
+    build_both_goals(half_l)
+
+    print(f"Field: {PITCH_LENGTH:.1f}x{PITCH_WIDTH:.1f}m FIFA markings + grass stripes + 2 goals")
 
 
 def _remove_cameras() -> None:
@@ -328,6 +332,35 @@ def save_blend(path: Path) -> None:
     print(f"Saved: {path}")
 
 
+def render_goal_close(side: str = "L") -> Path:
+    """ゴールの斜めアップ"""
+    scene = bpy.context.scene
+    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x = 1920
+    scene.render.resolution_y = 1080
+    scene.eevee.taa_render_samples = 64
+    setup_black_world()
+    _remove_cameras()
+
+    half_l = PITCH_LENGTH / 2
+    gx = -half_l if side == "L" else half_l
+
+    cam_data = bpy.data.cameras.new("CamGoal")
+    cam = bpy.data.objects.new("CamGoal", cam_data)
+    bpy.context.collection.objects.link(cam)
+    offset = 22 if side == "L" else -22
+    cam.location = Vector((gx + offset, -18, 5.5))
+    cam.rotation_euler = Euler((math.radians(78), 0, math.radians(32 if side == "L" else -32)))
+    scene.camera = cam
+    cam.data.lens = 50
+
+    out = RENDER_DIR / f"goal_{side.lower()}_close.png"
+    scene.render.filepath = str(out)
+    bpy.ops.render.render(write_still=True)
+    print(f"Goal close: {out}")
+    return out
+
+
 def main() -> None:
     blend = resolve_blend_path()
     open_blend(blend)
@@ -336,6 +369,8 @@ def main() -> None:
     if "--render" in sys.argv:
         render_wide()
         render_grass_close()
+        render_goal_close("L")
+        render_goal_close("R")
 
 
 if __name__ == "__main__":
