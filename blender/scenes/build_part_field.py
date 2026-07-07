@@ -319,8 +319,13 @@ def _remove_cameras() -> None:
             bpy.data.objects.remove(obj, do_unlink=True)
 
 
+def _setup_still_png(scene: bpy.types.Scene) -> None:
+    scene.render.image_settings.file_format = "PNG"
+
+
 def render_wide() -> Path:
     scene = bpy.context.scene
+    _setup_still_png(scene)
     scene.render.engine = "BLENDER_EEVEE"
     field_aspect = PITCH_LENGTH / PITCH_WIDTH
     scene.render.resolution_y = 1080
@@ -350,6 +355,7 @@ def render_wide() -> Path:
 
 def render_grass_close() -> Path:
     scene = bpy.context.scene
+    _setup_still_png(scene)
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = 1920
     scene.render.resolution_y = 1080
@@ -384,6 +390,7 @@ def render_goal_three_quarter(side: str = "L") -> Path:
     from build_goal import GOAL_H  # noqa: E402
 
     scene = bpy.context.scene
+    _setup_still_png(scene)
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = 1920
     scene.render.resolution_y = 1080
@@ -417,6 +424,7 @@ def render_goal_front(side: str = "L") -> Path:
     from build_goal import GOAL_H  # noqa: E402
 
     scene = bpy.context.scene
+    _setup_still_png(scene)
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = 1920
     scene.render.resolution_y = 1080
@@ -458,6 +466,7 @@ def render_players() -> Path:
     from build_player import S  # noqa: E402
 
     scene = bpy.context.scene
+    _setup_still_png(scene)
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = 1920
     scene.render.resolution_y = 1080
@@ -488,6 +497,7 @@ def render_players() -> Path:
 def render_players_close() -> Path:
     """選手アップ — リグ素材の動き確認用"""
     scene = bpy.context.scene
+    _setup_still_png(scene)
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = 1920
     scene.render.resolution_y = 1080
@@ -518,6 +528,7 @@ def render_view_goal_net(side: str = "L") -> Path:
     from build_goal import GOAL_H  # noqa: E402
 
     scene = bpy.context.scene
+    _setup_still_png(scene)
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = 1920
     scene.render.resolution_y = 1080
@@ -548,6 +559,7 @@ def render_view_goal_net(side: str = "L") -> Path:
 
 def render_views_5() -> list[Path]:
     """5パターン画角で確認用レンダーをまとめて出す"""
+    _setup_still_png(bpy.context.scene)
     outs: list[Path] = []
     outs.append(render_wide())
 
@@ -640,6 +652,7 @@ def write_views_preview_html(commit: str | None = None) -> Path:
 def render_goal_close(side: str = "L") -> Path:
     """ゴールの斜めアップ"""
     scene = bpy.context.scene
+    _setup_still_png(scene)
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = 1920
     scene.render.resolution_y = 1080
