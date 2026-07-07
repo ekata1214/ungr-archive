@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: MIT
-"""500f サッカー試合風シーケンス — パス・守備・シュート・ゴール"""
+"""500f サッカー試合 — パス・守備・シュート・ゴール（同期・イージング改善版）"""
 
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 import bpy
 from mathutils import Euler, Vector
@@ -12,11 +12,22 @@ from mathutils import Euler, Vector
 MATCH_FRAMES = 500
 FPS = 24
 
-# build_part_field と同スケール
 _SCALE = 2.5
-PITCH_HALF = 105.0 * _SCALE / 2  # 131.25
+PITCH_HALF = 105.0 * _SCALE / 2
 BALL_R = 0.22 * _SCALE
 BALL_GROUND_Z = BALL_R
+
+# fight_kick 内で足がボールに当たるおおよそのフレーム（アクション先頭=0）
+KICK_CONTACT_FRAME = 20
+PASS1_START = 88
+PASS1_RELEASE = 94
+PASS1_RECEIVE = 128
+PASS2_START = 248
+PASS2_RELEASE = 254
+PASS2_RECEIVE = 270
+KICK_STRIP_START = 288
+KICK_BALL_RELEASE = KICK_STRIP_START + KICK_CONTACT_FRAME
+SHOT_LAND = 395
 
 
 def _root_of(arm: bpy.types.Object) -> bpy.types.Object:
@@ -31,11 +42,47 @@ def _clear_anim(obj: bpy.types.Object) -> None:
     obj.animation_data_create()
 
 
-def _set_linear() -> None:
-    for action in bpy.data.actions:
-        for fc in action.fcurves:
+def _apply_bezier_ease(obj: bpy.types.Object, path: str = "location") -> None:
+    if not obj.animation_data or not obj.animation_data.action:
+        ad = obj.animation_data
+        if not ad:
+            return
+    action = obj.animation_data.action
+    if not action:
+        # NLA only objects: fcurves on action from keyframes might be on object
+        if not obj.animation_data:
+            return
+    for fc in obj.animation_data.action.fcurves if obj.animation_data.action else []:
+        if fc.data_path != path:
+            continue
+        for kp in fc.keyframe_points:
+            kp.interpolation = "BEZIER"
+            kp.handle_left_type = "AUTO_CLAMPED"
+            kp.handle_right_type = "AUTO_CLAMPED"
+
+    # Object-level FCurves (keyframes without action)
+    if obj.animation_data and obj.animation_data.action is None:
+        pass
+    # Blender stores keyframes on action created implicitly
+    if obj.animation_data:
+        action = obj.animation_data.action
+        if action:
+            for fc in action.fcurves:
+                if not fc.data_path.startswith(path.split("[")[0]):
+                    continue
+                for kp in fc.keyframe_points:
+                    kp.interpolation = "BEZIER"
+                    kp.handle_left_type = "AUTO_CLAMPED"
+                    kp.handle_right_type = "AUTO_CLAMPED"
+
+
+def _ease_all_ball_keyframes(ball: bpy.types.Object) -> None:
+    if ball.animation_data and ball.animation_data.action:
+        for fc in ball.animation_data.action.fcurves:
             for kp in fc.keyframe_points:
-                kp.interpolation = "LINEAR"
+                kp.interpolation = "BEZIER"
+                kp.handle_left_type = "AUTO_CLAMPED"
+                kp.handle_right_type = "AUTO_CLAMPED"
 
 
 def _kf_loc(obj: bpy.types.Object, frame: int, loc: Vector) -> None:
@@ -52,11 +99,41 @@ def _lerp(a: Vector, b: Vector, t: float) -> Vector:
     return a + (b - a) * t
 
 
+def _forward_from_yaw(yaw: float) -> Vector:
+    return Vector((-math.sin(yaw), math.cos(yaw), 0.0))
+
+
+def _ball_at_player(root_pos: Vector, yaw: float, ahead: float = 0.55, side: float = 0.0) -> Vector:
+    fwd = _forward_from_yaw(yaw)
+    right = Vector((fwd.y, -fwd.x, 0.0))
+    p = root_pos + fwd * ahead + right * side
+    p.z = BALL_GROUND_Z
+    return p
+
+
+def _root_world_at(root: bpy.types.Object, frame: int) -> Vector:
+    scene = bpy.context.scene
+    scene.frame_set(frame)
+    bpy.context.view_layer.update()
+    return root.matrix_world.translation.copy()
+
+
+def _ball_at_root_frame(
+    root: bpy.types.Object,
+    yaw: float,
+    frame: int,
+    ahead: float = 0.55,
+    side: float = 0.0,
+) -> Vector:
+    return _ball_at_player(_root_world_at(root, frame), yaw, ahead, side)
+
+
 def _add_nla_strip(
     arm: bpy.types.Object,
     action_name: str,
     frame_start: int,
     frame_end: int,
+    action_offset: int = 0,
     repeat: bool = True,
 ) -> None:
     action = bpy.data.actions.get(action_name)
@@ -74,7 +151,7 @@ def _add_nla_strip(
     act_end = int(action.frame_range[1])
     act_len = max(1, act_end - act_start)
     duration = max(1, frame_end - frame_start)
-    strip.action_frame_start = act_start
+    strip.action_frame_start = act_start + action_offset
     strip.action_frame_end = act_end
     strip.frame_start = frame_start
     strip.frame_end = frame_start + duration
@@ -92,37 +169,68 @@ def _clear_all_nla(arm: bpy.types.Object) -> None:
         ad.nla_tracks.remove(ad.nla_tracks[0])
 
 
-def _ball_keyframes_pass(
+def _ball_hold(ball: bpy.types.Object, root: bpy.types.Object, yaw: float, f0: int, f1: int) -> None:
+    """ドリブル/保持 — 選手の足元にフレームごと追従"""
+    if f1 < f0:
+        return
+    step = max(3, (f1 - f0) // 16) if f1 > f0 else 1
+    for f in range(f0, f1 + 1, step):
+        _kf_loc(ball, f, _ball_at_root_frame(root, yaw, f))
+    if (f1 - f0) % step != 0:
+        _kf_loc(ball, f1, _ball_at_root_frame(root, yaw, f1))
+
+
+def _ball_pass_roll(
     ball: bpy.types.Object,
-    f0: int,
-    p0: Vector,
-    f1: int,
-    p1: Vector,
-    arc: float = 1.8,
+    f_windup: int,
+    f_release: int,
+    f_arrive: int,
+    p_from: Vector,
+    p_to: Vector,
+    yaw: float,
+    arc: float = 0.35,
 ) -> None:
-    mid_f = (f0 + f1) // 2
-    mid = _lerp(p0, p1, 0.5)
-    mid.z = max(p0.z, p1.z) + arc
-    _kf_loc(ball, f0, p0)
+    """パス — 溜め→転がり→低い弧で受け取り"""
+    fwd = _forward_from_yaw(yaw)
+    _kf_loc(ball, f_windup, p_from)
+    _kf_loc(ball, f_windup + 4, p_from)  # 蹴る前の静止
+    mid_f = (f_release + f_arrive) // 2
+    mid = _lerp(p_from, p_to, 0.5)
+    mid.z = BALL_GROUND_Z + arc
+    _kf_loc(ball, f_release - 1, p_from)
+    _kf_loc(ball, f_release, p_from + fwd * 0.18)
     _kf_loc(ball, mid_f, mid)
-    _kf_loc(ball, f1, p1)
+    _kf_loc(ball, f_arrive - 3, p_to + fwd * 0.05)
+    _kf_loc(ball, f_arrive, p_to)
 
 
-def _ball_keyframes_shot(
+def _ball_shot(
     ball: bpy.types.Object,
-    f0: int,
-    p0: Vector,
-    f1: int,
-    p1: Vector,
-    peak: float = 4.5,
+    f_windup: int,
+    f_release: int,
+    f_goal: int,
+    p_start: Vector,
+    p_goal: Vector,
+    yaw: float,
 ) -> None:
-    """シュート弾道 — 高めの放物線"""
-    steps = [0.0, 0.25, 0.5, 0.75, 1.0]
-    for i, t in enumerate(steps):
-        f = int(f0 + (f1 - f0) * t)
-        p = _lerp(p0, p1, t)
-        p.z = BALL_GROUND_Z + math.sin(t * math.pi) * peak
-        _kf_loc(ball, f, p)
+    """シュート — 蹴る前の微引き→低弾道→ゴール"""
+    fwd = _forward_from_yaw(yaw)
+    pull = p_start - fwd * 0.22
+    pull.z = BALL_GROUND_Z
+    _kf_loc(ball, f_windup, p_start)
+    _kf_loc(ball, f_windup + 5, pull)
+    _kf_loc(ball, f_release - 1, pull)
+    _kf_loc(ball, f_release, p_start + fwd * 0.22)
+    t1 = f_release + int((f_goal - f_release) * 0.35)
+    t2 = f_release + int((f_goal - f_release) * 0.7)
+    p1 = _lerp(p_start, p_goal, 0.35)
+    p1.z = BALL_GROUND_Z + 1.2
+    p2 = _lerp(p_start, p_goal, 0.7)
+    p2.z = BALL_GROUND_Z + 0.6
+    _kf_loc(ball, t1, p1)
+    _kf_loc(ball, t2, p2)
+    _kf_loc(ball, f_goal, p_goal)
+    _kf_loc(ball, f_goal + 20, p_goal)
 
 
 def _move_root(
@@ -133,6 +241,12 @@ def _move_root(
     for frame, loc in frames:
         _kf_loc(root, frame, loc)
         _kf_rot_z(root, frame, yaw)
+    if root.animation_data and root.animation_data.action:
+        for fc in root.animation_data.action.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation = "BEZIER"
+                kp.handle_left_type = "AUTO_CLAMPED"
+                kp.handle_right_type = "AUTO_CLAMPED"
 
 
 def _find_arms(prefix: str) -> List[bpy.types.Object]:
@@ -151,7 +265,6 @@ def setup_match_timeline() -> None:
 
 
 def animate_soccer_match_500f() -> None:
-    """パス → 守備 → ラストパス → シュート → ゴール（500f）"""
     setup_match_timeline()
 
     blues = _find_arms("Blue_")
@@ -164,158 +277,118 @@ def animate_soccer_match_500f() -> None:
         raise RuntimeError("Ball object not found")
 
     goal_x = -PITCH_HALF
-    goal_y = 0.0
+    yaw_a = math.pi / 2
+    yaw_d = -math.pi / 2
 
-    # 役割
-    b_passer = blues[0]   # Blue_01
-    b_runner = blues[1]   # Blue_02
-    b_wing = blues[2]     # Blue_03
-    b_support = blues[3]  # Blue_04
-    b_striker = blues[4]  # Blue_05
+    b_passer, b_runner, b_wing, b_support, b_striker = blues[:5]
+    r_gk, r_def_l, r_def_c, r_def_r, r_fb = reds[:5]
+    roots = {a.name: _root_of(a) for a in blues + reds}
 
-    r_gk = reds[0]        # Red_01 ゴール前
-    r_def_l = reds[1]
-    r_def_c = reds[2]
-    r_def_r = reds[3]
-    r_fb = reds[4]
-
-    roots = {arm.name: _root_of(arm) for arm in blues + reds}
-    yaw_attack = math.pi / 2          # 左ゴール（-X）へ
-    yaw_defend = -math.pi / 2         # 攻撃を受ける
-
-    # --- 全員 NLA リセット ---
     for arm in blues + reds:
         _clear_all_nla(arm)
-
     if ball.animation_data:
         ball.animation_data_clear()
 
-    # ===== 青チーム動き =====
-    _move_root(roots[b_passer.name], [
-        (1, Vector((25, -8, 0))),
-        (80, Vector((25, -8, 0))),
-        (130, Vector((22, -5, 0))),
-        (500, Vector((22, -5, 0))),
-    ], yaw_attack)
-    _add_nla_strip(b_passer, "idle", 1, 75)
-    _add_nla_strip(b_passer, "walk", 75, 130)
-    _add_nla_strip(b_passer, "idle", 130, 500)
+    # --- 青：位置 ---
+    rp = roots[b_passer.name]
+    rr = roots[b_runner.name]
+    rw = roots[b_wing.name]
+    rs = roots[b_support.name]
+    rst = roots[b_striker.name]
 
-    _move_root(roots[b_runner.name], [
-        (1, Vector((18, 4, 0))),
-        (130, Vector((18, 4, 0))),
-        (220, Vector((-5, 2, 0))),
-        (280, Vector((-15, 1, 0))),
-        (500, Vector((-15, 1, 0))),
-    ], yaw_attack)
-    _add_nla_strip(b_runner, "idle", 1, 130)
-    _add_nla_strip(b_runner, "run", 130, 280)
-    _add_nla_strip(b_runner, "idle", 280, 500)
+    _move_root(rp, [(1, Vector((22, -7, 0))), (500, Vector((22, -7, 0)))], yaw_a)
+    _move_root(rr, [
+        (1, Vector((16, 5, 0))), (PASS1_RECEIVE, Vector((16, 5, 0))),
+        (200, Vector((-2, 3, 0))), (PASS2_START, Vector((-8, 2, 0))),
+        (500, Vector((-12, 2, 0))),
+    ], yaw_a)
+    _move_root(rw, [
+        (1, Vector((18, 11, 0))), (150, Vector((18, 11, 0))),
+        (280, Vector((-6, 12, 0))), (500, Vector((-6, 12, 0))),
+    ], yaw_a)
+    _move_root(rs, [
+        (1, Vector((10, -10, 0))), (220, Vector((10, -10, 0))),
+        (340, Vector((-28, -8, 0))), (500, Vector((-28, -8, 0))),
+    ], yaw_a)
+    _move_root(rst, [
+        (1, Vector((6, 0, 0))),
+        (PASS2_RECEIVE, Vector((6, 0, 0))),
+        (KICK_STRIP_START - 10, Vector((-10, 0, 0))),
+        (KICK_STRIP_START - 2, Vector((-18, 0, 0))),
+        (500, Vector((-16, 1, 0))),
+    ], yaw_a)
 
-    _move_root(roots[b_wing.name], [
-        (1, Vector((20, 12, 0))),
-        (130, Vector((20, 12, 0))),
-        (250, Vector((-8, 14, 0))),
-        (500, Vector((-8, 14, 0))),
-    ], yaw_attack)
-    _add_nla_strip(b_wing, "walk", 1, 130)
-    _add_nla_strip(b_wing, "run", 130, 280)
-    _add_nla_strip(b_wing, "idle", 280, 500)
+    # --- 青：アクション（ボールと同期） ---
+    _add_nla_strip(b_passer, "idle", 1, PASS1_START - 1)
+    _add_nla_strip(b_passer, "fight_punch", PASS1_START, PASS1_START + 18)  # パス動作
+    _add_nla_strip(b_passer, "idle", PASS1_START + 18, 500)
 
-    _move_root(roots[b_support.name], [
-        (1, Vector((12, -12, 0))),
-        (200, Vector((12, -12, 0))),
-        (300, Vector((-25, -10, 0))),
-        (500, Vector((-25, -10, 0))),
-    ], yaw_attack)
-    _add_nla_strip(b_support, "idle", 1, 200)
-    _add_nla_strip(b_support, "run", 200, 320)
-    _add_nla_strip(b_support, "idle", 320, 500)
+    _add_nla_strip(b_runner, "idle", 1, PASS1_RECEIVE - 1)
+    _add_nla_strip(b_runner, "run", PASS1_RECEIVE, PASS2_START + 10)
+    _add_nla_strip(b_runner, "idle", PASS2_START + 10, 500)
 
-    _move_root(roots[b_striker.name], [
-        (1, Vector((8, 0, 0))),
-        (240, Vector((8, 0, 0))),
-        (270, Vector((-22, 0, 0))),
-        (320, Vector((-22, 0, 0))),
-        (500, Vector((-18, 2, 0))),
-    ], yaw_attack)
-    _add_nla_strip(b_striker, "idle", 1, 240)
-    _add_nla_strip(b_striker, "run", 240, 268)
-    _add_nla_strip(b_striker, "fight_kick", 268, 310)
-    _add_nla_strip(b_striker, "idle", 310, 500)
+    _add_nla_strip(b_wing, "idle", 1, 140)
+    _add_nla_strip(b_wing, "run", 140, 300)
+    _add_nla_strip(b_wing, "idle", 300, 500)
 
-    # ===== 赤チーム守備 =====
-    _move_root(roots[r_gk.name], [
-        (1, Vector((goal_x + 8, 0, 0))),
-        (500, Vector((goal_x + 8, 0, 0))),
-    ], yaw_defend)
-    _add_nla_strip(r_gk, "idle", 1, 150)
-    _add_nla_strip(r_gk, "fight_idle", 150, 320)
-    _add_nla_strip(r_gk, "idle", 320, 500)
+    _add_nla_strip(b_support, "idle", 1, 210)
+    _add_nla_strip(b_support, "run", 210, 350)
+    _add_nla_strip(b_support, "idle", 350, 500)
 
-    _move_root(roots[r_def_l.name], [
-        (1, Vector((-55, -14, 0))),
-        (150, Vector((-55, -14, 0))),
-        (280, Vector((-70, -10, 0))),
-        (500, Vector((-70, -10, 0))),
-    ], yaw_defend)
-    _add_nla_strip(r_def_l, "idle", 1, 150)
-    _add_nla_strip(r_def_l, "run", 150, 300)
-    _add_nla_strip(r_def_l, "fight_idle", 300, 360)
-    _add_nla_strip(r_def_l, "idle", 360, 500)
+    _add_nla_strip(b_striker, "idle", 1, PASS2_RECEIVE - 1)
+    _add_nla_strip(b_striker, "run", PASS2_RECEIVE, KICK_STRIP_START - 1)
+    _add_nla_strip(b_striker, "fight_kick", KICK_STRIP_START, KICK_STRIP_START + 37)
+    _add_nla_strip(b_striker, "idle", KICK_STRIP_START + 37, 500)
 
-    _move_root(roots[r_def_c.name], [
-        (1, Vector((-45, 0, 0))),
-        (130, Vector((-45, 0, 0))),
-        (290, Vector((-60, 2, 0))),
-        (500, Vector((-60, 2, 0))),
-    ], yaw_defend)
-    _add_nla_strip(r_def_c, "idle", 1, 130)
-    _add_nla_strip(r_def_c, "dash", 130, 220)
-    _add_nla_strip(r_def_c, "run", 220, 310)
-    _add_nla_strip(r_def_c, "fight_idle", 310, 370)
-    _add_nla_strip(r_def_c, "idle", 370, 500)
+    # --- 赤：守備 ---
+    rg = roots[r_gk.name]
+    _move_root(rg, [(1, Vector((goal_x + 6, 0, 0))), (500, Vector((goal_x + 6, 0, 0)))], yaw_d)
+    _add_nla_strip(r_gk, "idle", 1, 140)
+    _add_nla_strip(r_gk, "fight_idle", 140, KICK_BALL_RELEASE + 40)
+    _add_nla_strip(r_gk, "idle", KICK_BALL_RELEASE + 40, 500)
 
-    _move_root(roots[r_def_r.name], [
-        (1, Vector((-50, 14, 0))),
-        (160, Vector((-50, 14, 0))),
-        (300, Vector((-68, 12, 0))),
-        (500, Vector((-68, 12, 0))),
-    ], yaw_defend)
-    _add_nla_strip(r_def_r, "idle", 1, 160)
-    _add_nla_strip(r_def_r, "run", 160, 310)
-    _add_nla_strip(r_def_r, "fight_idle", 310, 380)
-    _add_nla_strip(r_def_r, "idle", 380, 500)
+    for arm, start_pos, rush_at, rname in [
+        (r_def_l, Vector((-48, -12, 0)), 120, "r_def_l"),
+        (r_def_c, Vector((-40, 0, 0)), 100, "r_def_c"),
+        (r_def_r, Vector((-45, 12, 0)), 125, "r_def_r"),
+        (r_fb, Vector((-28, 16, 0)), 150, "r_fb"),
+    ]:
+        root = roots[arm.name]
+        _move_root(root, [
+            (1, start_pos), (rush_at, start_pos),
+            (KICK_BALL_RELEASE, Vector((start_pos.x - 18, start_pos.y * 0.9, 0))),
+            (500, Vector((start_pos.x - 18, start_pos.y * 0.9, 0))),
+        ], yaw_d)
+        _add_nla_strip(arm, "idle", 1, rush_at - 1)
+        _add_nla_strip(arm, "run", rush_at, KICK_BALL_RELEASE + 20)
+        _add_nla_strip(arm, "fight_idle", KICK_BALL_RELEASE + 20, KICK_BALL_RELEASE + 55)
+        _add_nla_strip(arm, "idle", KICK_BALL_RELEASE + 55, 500)
 
-    _move_root(roots[r_fb.name], [
-        (1, Vector((-30, 20, 0))),
-        (180, Vector((-30, 20, 0))),
-        (320, Vector((-55, 18, 0))),
-        (500, Vector((-55, 18, 0))),
-    ], yaw_defend)
-    _add_nla_strip(r_fb, "walk", 1, 180)
-    _add_nla_strip(r_fb, "run", 180, 330)
-    _add_nla_strip(r_fb, "idle", 330, 500)
+    # --- ボール（選手足元追従 + パス/シュート同期） ---
+    p_passer = _ball_at_root_frame(rp, yaw_a, PASS1_START - 1)
+    p_recv = _ball_at_root_frame(rr, yaw_a, PASS1_RECEIVE)
+    p_pass2_from = _ball_at_root_frame(rr, yaw_a, PASS2_START - 1)
+    p_pass2_to = _ball_at_root_frame(rst, yaw_a, PASS2_RECEIVE)
+    p_shot_start = _ball_at_root_frame(rst, yaw_a, KICK_STRIP_START + 3)
+    p_goal = Vector((goal_x + 2.0, 0.0, BALL_GROUND_Z * 0.85))
 
-    # ===== ボール =====
-    p_passer = Vector((25, -6, BALL_GROUND_Z))
-    p_receiver = Vector((18, 3, BALL_GROUND_Z))
-    p_striker = Vector((-22, 0, BALL_GROUND_Z))
-    p_goal = Vector((goal_x + 1.5, goal_y, BALL_GROUND_Z * 0.8))
+    _ball_hold(ball, rp, yaw_a, 1, PASS1_START - 1)
+    _ball_pass_roll(
+        ball, PASS1_START, PASS1_RELEASE, PASS1_RECEIVE, p_passer, p_recv, yaw_a, arc=0.4,
+    )
+    _ball_hold(ball, rr, yaw_a, PASS1_RECEIVE, PASS2_START - 1)
+    _ball_pass_roll(
+        ball, PASS2_START, PASS2_RELEASE, PASS2_RECEIVE, p_pass2_from, p_pass2_to, yaw_a, arc=0.35,
+    )
+    _ball_hold(ball, rst, yaw_a, PASS2_RECEIVE, KICK_STRIP_START + 3)
+    _ball_shot(ball, KICK_STRIP_START + 3, KICK_BALL_RELEASE, SHOT_LAND, p_shot_start, p_goal, yaw_a)
 
-    _kf_loc(ball, 1, p_passer)
-    _ball_keyframes_pass(ball, 80, p_passer, 130, p_receiver, arc=1.2)
-    _kf_loc(ball, 220, Vector((-5, 2, BALL_GROUND_Z)))
-    _ball_keyframes_pass(ball, 240, Vector((-5, 2, BALL_GROUND_Z)), 270, p_striker, arc=0.6)
-    _kf_loc(ball, 290, p_striker)
-    _ball_keyframes_shot(ball, 295, p_striker, 400, p_goal, peak=5.0)
-    _kf_loc(ball, 500, p_goal)
-
-    _set_linear()
+    _ease_all_ball_keyframes(ball)
+    bpy.context.scene.frame_set(1)
 
     print(
-        f"Match animation: {MATCH_FRAMES}f @ {FPS}fps — "
-        "pass(80-130) → run(130-280) → pass(240-270) → kick(268-310) → goal(295-400)"
+        f"Match v2: pass1 f{PASS1_RELEASE} pass2 f{PASS2_RELEASE} "
+        f"kick f{KICK_BALL_RELEASE} goal f{SHOT_LAND}"
     )
 
 
@@ -333,27 +406,30 @@ def _kf_cam(cam: bpy.types.Object, frame: int, pos: Vector, target: Vector) -> N
 
 
 def setup_match_camera() -> bpy.types.Object:
-    """試合の流れに合わせてカメラをパン"""
     _remove_cameras()
     cam_data = bpy.data.cameras.new("CamMatch")
     cam = bpy.data.objects.new("CamMatch", cam_data)
     bpy.context.collection.objects.link(cam)
     bpy.context.scene.camera = cam
-    cam.data.lens = 42
-
-    goal_x = -PITCH_HALF
-    _kf_cam(cam, 1, Vector((35, -38, 9)), Vector((20, -5, 1.5)))
-    _kf_cam(cam, 100, Vector((28, -32, 8)), Vector((22, -2, 1.2)))
-    _kf_cam(cam, 180, Vector((8, -28, 7)), Vector((5, 2, 1.2)))
-    _kf_cam(cam, 270, Vector((-18, -24, 6.5)), Vector((-20, 0, 1.5)))
-    _kf_cam(cam, 340, Vector((-55, -20, 6)), Vector((-45, 0, 2.0)))
-    _kf_cam(cam, 420, Vector((goal_x + 28, -16, 5.5)), Vector((goal_x + 2, 0, 2.5)))
-    _kf_cam(cam, 500, Vector((goal_x + 32, -14, 5)), Vector((goal_x, 0, 2.0)))
+    cam.data.lens = 40
+    gx = -PITCH_HALF
+    _kf_cam(cam, 1, Vector((30, -32, 7)), Vector((20, -5, 1.2)))
+    _kf_cam(cam, PASS1_RELEASE, Vector((26, -28, 6.5)), Vector((18, 0, 1.0)))
+    _kf_cam(cam, 180, Vector((8, -24, 6)), Vector((0, 2, 1.0)))
+    _kf_cam(cam, PASS2_RELEASE, Vector((-5, -22, 5.5)), Vector((-10, 1, 1.0)))
+    _kf_cam(cam, KICK_BALL_RELEASE, Vector((-35, -18, 5)), Vector((-22, 0, 1.5)))
+    _kf_cam(cam, SHOT_LAND, Vector((gx + 22, -14, 4.5)), Vector((gx + 1, 0, 1.8)))
+    _kf_cam(cam, 500, Vector((gx + 26, -12, 4.2)), Vector((gx, 0, 1.5)))
+    if cam.animation_data and cam.animation_data.action:
+        for fc in cam.animation_data.action.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation = "BEZIER"
+                kp.handle_left_type = "AUTO_CLAMPED"
+                kp.handle_right_type = "AUTO_CLAMPED"
     return cam
 
 
 def render_match_preview() -> "Path":
-    """500f アニメを MP4 で書き出し"""
     from pathlib import Path
 
     from build_part_field import RENDER_DIR, setup_black_world, setup_lights  # noqa: E402
@@ -365,24 +441,24 @@ def render_match_preview() -> "Path":
 
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE"
-    scene.render.resolution_x = 960
-    scene.render.resolution_y = 540
+    scene.render.resolution_x = 640
+    scene.render.resolution_y = 360
     scene.render.fps = FPS
     scene.frame_start = 1
     scene.frame_end = MATCH_FRAMES
-    scene.eevee.taa_render_samples = 24
+    scene.eevee.taa_render_samples = 8
 
     scene.render.image_settings.file_format = "FFMPEG"
     scene.render.ffmpeg.format = "MPEG4"
     scene.render.ffmpeg.codec = "H264"
-    scene.render.ffmpeg.constant_rate_factor = "MEDIUM"
-    scene.render.ffmpeg.ffmpeg_preset = "GOOD"
+    scene.render.ffmpeg.constant_rate_factor = "HIGH"
+    scene.render.ffmpeg.ffmpeg_preset = "REALTIME"
 
     out = RENDER_DIR / "match_preview.mp4"
     RENDER_DIR.mkdir(parents=True, exist_ok=True)
     scene.render.filepath = str(out)
 
-    print(f"Rendering video: {out} ({MATCH_FRAMES} frames)...")
+    print(f"Rendering video (fast): {out} ({MATCH_FRAMES}f)...")
     bpy.ops.render.render(animation=True)
     print(f"Video saved: {out}")
     return out
@@ -405,3 +481,11 @@ if __name__ == "__main__":
     elif "--animate" in sys.argv:
         animate_soccer_match_500f()
         bpy.ops.wm.save_mainfile(filepath=str(blend))
+    elif "--full" in sys.argv:
+        from build_part_field import build_field_only  # noqa: E402
+
+        build_field_only()
+        animate_soccer_match_500f()
+        bpy.ops.wm.save_mainfile(filepath=str(blend))
+        if "--render" in sys.argv:
+            render_match_preview()

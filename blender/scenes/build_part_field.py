@@ -36,6 +36,8 @@ GOAL_WIDTH = 18.32 * _SCALE
 PEN_SPOT_DIST = 11.0 * _SCALE
 CORNER_R = 1.0 * _SCALE
 SPOT_R = 0.12 * _SCALE
+# ゴール裏・ライン外にも芝を少し延長（カメラで黒く見えないように）
+GRASS_MARGIN = 18.0 * _SCALE
 
 RENDER_DIR = Path("/workspace/blender/renders/parts")
 
@@ -221,8 +223,10 @@ def build_field_only() -> None:
     half_w = PITCH_WIDTH / 2
     lz = 0.025
 
-    # 芝生 — 完全な長方形（Subsurfなし＝角が丸くならない）
-    add_plane("Field_Grass", PITCH_LENGTH, PITCH_WIDTH, Vector((0, 0, 0)), grass)
+    # 芝生 — ピッチ＋ゴール裏マージン（完全な長方形）
+    grass_len = PITCH_LENGTH + GRASS_MARGIN * 2
+    grass_wid = PITCH_WIDTH + GRASS_MARGIN * 0.5
+    add_plane("Field_Grass", grass_len, grass_wid, Vector((0, 0, 0)), grass)
 
     # --- 外枠 ---
     add_line_segment("Line_Top", -half_l, half_w, half_l, half_w, white, lz)
@@ -664,6 +668,10 @@ def main() -> None:
         from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
 
         animate_soccer_match_500f()
+    if "--render-match-video" in sys.argv:
+        from animate_soccer_match import render_match_preview  # noqa: E402
+
+        render_match_preview()
     save_blend(blend)
     if "--render" in sys.argv:
         render_wide()
