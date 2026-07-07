@@ -36,10 +36,9 @@ GOAL_WIDTH = 18.32 * _SCALE
 PEN_SPOT_DIST = 11.0 * _SCALE
 CORNER_R = 1.0 * _SCALE
 SPOT_R = 0.12 * _SCALE
-# ゴール裏・サイドライン外まで芝を広げる（低いカメラでも黒背景が見えない余裕）
-GRASS_MARGIN_LENGTH = 50.0 * _SCALE   # ゴールライン外（奥行き）
-GRASS_MARGIN_WIDTH = 32.0 * _SCALE    # タッチライン外（幅）
-GRASS_Z = -0.015                      # 白線より少し下に置いて全面に芝を見せる
+# 床全体を芝で敷き詰める（どの画角でも黒背景が地面に見えないサイズ）
+GROUND_HALF_SIZE = 2000.0          # 中心から ±2000m = 4km 四方
+GRASS_Z = -0.02                      # 白線より下 — 全面に芝が見える
 
 RENDER_DIR = Path("/workspace/blender/renders/parts")
 
@@ -62,9 +61,10 @@ def make_ball_material(name: str) -> bpy.types.Material:
 
 
 def make_grass_material(name: str) -> bpy.types.Material:
-    """芝生 — 刈り跡ストライプ + ノイズ"""
+    """芝生 — ワールド座標で刈り跡ストライプを均一に敷き詰め"""
     mat = bpy.data.materials.new(name=name)
     mat.use_nodes = True
+    mat.use_backface_culling = False
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
     nodes.clear()
@@ -76,44 +76,48 @@ def make_grass_material(name: str) -> bpy.types.Material:
     if spec:
         spec.default_value = 0.08
 
-    texcoord = nodes.new("ShaderNodeTexCoord")
+    # オブジェクトスケールに依存せず、ワールド上で均一な芝模様
+    geom = nodes.new("ShaderNodeNewGeometry")
     mapping = nodes.new("ShaderNodeMapping")
-    mapping.inputs["Scale"].default_value = (1.0, 1.0, 1.0)
+    mapping.vector_type = "POINT"
+    mapping.inputs["Scale"].default_value = (1.0 / _SCALE, 1.0 / _SCALE, 1.0 / _SCALE)
 
     wave = nodes.new("ShaderNodeTexWave")
     wave.wave_type = "BANDS"
     wave.bands_direction = "X"
     wave.inputs["Scale"].default_value = 18.0 / _SCALE
-    wave.inputs["Distortion"].default_value = 1.5
+    wave.inputs["Distortion"].default_value = 1.2
     wave.inputs["Detail"].default_value = 3.0
 
     ramp = nodes.new("ShaderNodeValToRGB")
-    ramp.color_ramp.elements[0].position = 0.42
-    ramp.color_ramp.elements[0].color = (0.015, 0.10, 0.028, 1.0)
-    ramp.color_ramp.elements[1].position = 0.58
-    ramp.color_ramp.elements[1].color = (0.028, 0.16, 0.042, 1.0)
+    ramp.color_ramp.elements[0].position = 0.40
+    ramp.color_ramp.elements[0].color = (0.018, 0.11, 0.030, 1.0)
+    ramp.color_ramp.elements[1].position = 0.60
+    ramp.color_ramp.elements[1].color = (0.032, 0.17, 0.045, 1.0)
 
     noise = nodes.new("ShaderNodeTexNoise")
-    noise.inputs["Scale"].default_value = 55.0
-    noise.inputs["Detail"].default_value = 10.0
+    noise.inputs["Scale"].default_value = 48.0 / _SCALE
+    noise.inputs["Detail"].default_value = 8.0
     noise.inputs["Roughness"].default_value = 0.55
 
     mix_noise = nodes.new("ShaderNodeMixRGB")
     mix_noise.blend_type = "OVERLAY"
-    mix_noise.inputs["Fac"].default_value = 0.35
+    mix_noise.inputs["Fac"].default_value = 0.28
 
     bump_noise = nodes.new("ShaderNodeTexNoise")
-    bump_noise.inputs["Scale"].default_value = 120.0
-    bump_noise.inputs["Detail"].default_value = 6.0
+    bump_noise.inputs["Scale"].default_value = 95.0 / _SCALE
+    bump_noise.inputs["Detail"].default_value = 5.0
     bump = nodes.new("ShaderNodeBump")
-    bump.inputs["Strength"].default_value = 0.15
+    bump.inputs["Strength"].default_value = 0.12
 
-    links.new(texcoord.outputs["Object"], mapping.inputs["Vector"])
+    links.new(geom.outputs["Position"], mapping.inputs["Vector"])
     links.new(mapping.outputs["Vector"], wave.inputs["Vector"])
     links.new(wave.outputs["Color"], ramp.inputs["Fac"])
     links.new(ramp.outputs["Color"], mix_noise.inputs[1])
+    links.new(mapping.outputs["Vector"], noise.inputs["Vector"])
     links.new(noise.outputs["Color"], mix_noise.inputs[2])
     links.new(mix_noise.outputs["Color"], bsdf.inputs["Base Color"])
+    links.new(mapping.outputs["Vector"], bump_noise.inputs["Vector"])
     links.new(bump_noise.outputs["Fac"], bump.inputs["Height"])
     links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
     links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
@@ -184,6 +188,17 @@ def add_plane(name: str, sx: float, sy: float, loc: Vector, mat, z_rot: float = 
     return obj
 
 
+def add_ground_plane(name: str, half_size: float, mat) -> bpy.types.Object:
+    """巨大な床芝 — スケール適用済みでどの画角でも端が見えない"""
+    size = half_size * 2
+    obj = add_plane(name, size, size, Vector((0, 0, GRASS_Z)), mat)
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    obj.select_set(False)
+    return obj
+
+
 def add_line_segment(name: str, x1: float, y1: float, x2: float, y2: float, mat, z: float) -> None:
     mx, my = (x1 + x2) / 2, (y1 + y2) / 2
     length = math.hypot(x2 - x1, y2 - y1)
@@ -225,11 +240,8 @@ def build_field_only() -> None:
     half_w = PITCH_WIDTH / 2
     lz = 0.025
 
-    # 芝生 — ピッチ全体＋ゴール裏・外側まで十分な長方形
-    grass_len = PITCH_LENGTH + GRASS_MARGIN_LENGTH * 2
-    grass_wid = PITCH_WIDTH + GRASS_MARGIN_WIDTH * 2
-    grass_plane = add_plane("Field_Grass", grass_len, grass_wid, Vector((0, 0, GRASS_Z)), grass)
-    grass_plane.display_type = "SOLID"
+    # 芝生 — 4km 四方の床を一面に敷き詰め（ピッチ＋ゴール裏＋カメラ画角外まで）
+    grass_plane = add_ground_plane("Field_Grass", GROUND_HALF_SIZE, grass)
 
     # --- 外枠 ---
     add_line_segment("Line_Top", -half_l, half_w, half_l, half_w, white, lz)
@@ -309,7 +321,7 @@ def build_field_only() -> None:
 
     print(
         f"Field: {PITCH_LENGTH:.1f}x{PITCH_WIDTH:.1f}m FIFA markings + "
-        f"grass {grass_len:.1f}x{grass_wid:.1f}m + 2 goals + players"
+        f"grass floor {GROUND_HALF_SIZE * 2:.0f}m square + 2 goals + players"
     )
 
 
