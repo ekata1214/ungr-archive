@@ -17,18 +17,20 @@ if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
 from news_cg_common import (  # noqa: E402
-    FIELD_GREEN,
     LINE_WHITE,
     make_flat_material,
     open_blend,
     resolve_blend_path,
-    setup_render,
 )
 
-# フィールド寸法（メートル相当）
-PITCH_LENGTH = 105.0
-PITCH_WIDTH = 68.0
-LINE_W = 0.12
+# フィールド寸法（メートル相当）— ニュースCG用に大きめ
+PITCH_LENGTH = 200.0
+PITCH_WIDTH = 130.0
+LINE_W = 0.18
+GRASS_DARK = (0.05, 0.28, 0.07, 1.0)  # 濃い緑
+
+# 標準ピッチ(105x68)からのスケール
+_SCALE = PITCH_LENGTH / 105.0
 
 
 def clear_all() -> None:
@@ -45,12 +47,27 @@ def add_plane(name: str, size_x: float, size_y: float, loc: Vector, mat) -> bpy.
     return obj
 
 
+def setup_black_world() -> None:
+    scene = bpy.context.scene
+    world = bpy.data.worlds.get("World") or bpy.data.worlds.new("World")
+    scene.world = world
+    world.use_nodes = True
+    bg = world.node_tree.nodes["Background"]
+    bg.inputs[0].default_value = (0.0, 0.0, 0.0, 1.0)
+    bg.inputs[1].default_value = 1.0
+    scene.render.film_transparent = False
+
+
 def build_field_only() -> None:
     """緑の芝＋白線だけ。キャラ・ゴール・カメラ等は置かない。"""
     clear_all()
-    setup_render()
+    setup_black_world()
 
-    grass = make_flat_material("Grass", FIELD_GREEN)
+    scene = bpy.context.scene
+    scene.frame_start = 1
+    scene.frame_end = 1
+
+    grass = make_flat_material("Grass", GRASS_DARK)
     white = make_flat_material("LineWhite", LINE_WHITE)
 
     half_l = PITCH_LENGTH / 2
@@ -71,7 +88,7 @@ def build_field_only() -> None:
     add_plane("Line_Halfway", LINE_W, PITCH_WIDTH, Vector((0, 0, lz)), white)
 
     # センターサークル（64点の短い線分で近似）
-    circle_r = 9.15
+    circle_r = 9.15 * _SCALE
     segments = 64
     import math
 
@@ -92,14 +109,14 @@ def build_field_only() -> None:
         seg.data.materials.append(white)
 
     # センタースポット
-    bpy.ops.mesh.primitive_circle_add(radius=0.2, location=(0, 0, lz))
+    bpy.ops.mesh.primitive_circle_add(radius=0.2 * _SCALE, location=(0, 0, lz))
     spot = bpy.context.active_object
     spot.name = "Line_CenterSpot"
     spot.data.materials.append(white)
 
     # ペナルティエリア（両ゴール側）— シンプルな矩形
-    box_depth = 16.5
-    box_width = 40.32
+    box_depth = 16.5 * _SCALE
+    box_width = 40.32 * _SCALE
     goal_x = half_l
 
     for side, gx in (("Left", -goal_x), ("Right", goal_x)):
@@ -122,8 +139,8 @@ def build_field_only() -> None:
         )
 
     # ゴールエリア（小さい箱）
-    goal_box_depth = 5.5
-    goal_box_width = 18.32
+    goal_box_depth = 5.5 * _SCALE
+    goal_box_width = 18.32 * _SCALE
     for side, gx in (("Left", -goal_x), ("Right", goal_x)):
         sign = 1 if gx < 0 else -1
         inner_x = gx + sign * goal_box_depth / 2
