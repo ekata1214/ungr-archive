@@ -409,14 +409,14 @@ def render_goal_front(side: str = "L") -> Path:
 
 
 def render_players() -> Path:
-    """青・赤棒人間のミドルショット"""
+    """2人並び正面 — 再現CGメーカー風プレビュー"""
     from build_player import S  # noqa: E402
 
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = 1920
     scene.render.resolution_y = 1080
-    scene.eevee.taa_render_samples = 80
+    scene.eevee.taa_render_samples = 96
     setup_black_world()
     setup_lights()
     _remove_cameras()
@@ -424,11 +424,11 @@ def render_players() -> Path:
     cam_data = bpy.data.cameras.new("CamPlayers")
     cam = bpy.data.objects.new("CamPlayers", cam_data)
     bpy.context.collection.objects.link(cam)
-    target = Vector((0, 0, 0.85 * S))
-    cam.location = Vector((0, -32, 6.5))
+    target = Vector((0, 0, 1.05 * S))
+    cam.location = Vector((0, -9.0, 4.8))
     cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
     scene.camera = cam
-    cam.data.lens = 52
+    cam.data.lens = 50
 
     out = RENDER_DIR / "players_mid.png"
     RENDER_DIR.mkdir(parents=True, exist_ok=True)
@@ -436,6 +436,35 @@ def render_players() -> Path:
     scene.render.filepath = str(out)
     bpy.ops.render.render(write_still=True)
     print(f"Players: {out}")
+    return out
+
+
+def render_players_close() -> Path:
+    """腰上アップ — 顔・服シルエット"""
+    from build_player import S  # noqa: E402
+
+    scene = bpy.context.scene
+    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x = 1920
+    scene.render.resolution_y = 1080
+    scene.eevee.taa_render_samples = 96
+    setup_black_world()
+    setup_lights()
+    _remove_cameras()
+
+    cam_data = bpy.data.cameras.new("CamPlayersClose")
+    cam = bpy.data.objects.new("CamPlayersClose", cam_data)
+    bpy.context.collection.objects.link(cam)
+    target = Vector((-3.5, 0, 1.30 * S))
+    cam.location = Vector((-3.5, -5.5, 1.35 * S))
+    cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
+    scene.camera = cam
+    cam.data.lens = 65
+
+    out = RENDER_DIR / "players_close.png"
+    scene.render.filepath = str(out)
+    bpy.ops.render.render(write_still=True)
+    print(f"Players close: {out}")
     return out
 
 
@@ -484,6 +513,7 @@ def main() -> None:
         render_goal_three_quarter("L")
     if "--render-players" in sys.argv:
         render_players()
+        render_players_close()
 
 
 if __name__ == "__main__":
