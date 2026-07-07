@@ -317,3 +317,91 @@ def animate_soccer_match_500f() -> None:
         f"Match animation: {MATCH_FRAMES}f @ {FPS}fps — "
         "pass(80-130) → run(130-280) → pass(240-270) → kick(268-310) → goal(295-400)"
     )
+
+
+def _remove_cameras() -> None:
+    for obj in list(bpy.data.objects):
+        if obj.type == "CAMERA":
+            bpy.data.objects.remove(obj, do_unlink=True)
+
+
+def _kf_cam(cam: bpy.types.Object, frame: int, pos: Vector, target: Vector) -> None:
+    cam.location = pos
+    cam.rotation_euler = (target - pos).to_track_quat("-Z", "Y").to_euler()
+    cam.keyframe_insert(data_path="location", frame=frame)
+    cam.keyframe_insert(data_path="rotation_euler", frame=frame)
+
+
+def setup_match_camera() -> bpy.types.Object:
+    """試合の流れに合わせてカメラをパン"""
+    _remove_cameras()
+    cam_data = bpy.data.cameras.new("CamMatch")
+    cam = bpy.data.objects.new("CamMatch", cam_data)
+    bpy.context.collection.objects.link(cam)
+    bpy.context.scene.camera = cam
+    cam.data.lens = 42
+
+    goal_x = -PITCH_HALF
+    _kf_cam(cam, 1, Vector((35, -38, 9)), Vector((20, -5, 1.5)))
+    _kf_cam(cam, 100, Vector((28, -32, 8)), Vector((22, -2, 1.2)))
+    _kf_cam(cam, 180, Vector((8, -28, 7)), Vector((5, 2, 1.2)))
+    _kf_cam(cam, 270, Vector((-18, -24, 6.5)), Vector((-20, 0, 1.5)))
+    _kf_cam(cam, 340, Vector((-55, -20, 6)), Vector((-45, 0, 2.0)))
+    _kf_cam(cam, 420, Vector((goal_x + 28, -16, 5.5)), Vector((goal_x + 2, 0, 2.5)))
+    _kf_cam(cam, 500, Vector((goal_x + 32, -14, 5)), Vector((goal_x, 0, 2.0)))
+    return cam
+
+
+def render_match_preview() -> "Path":
+    """500f アニメを MP4 で書き出し"""
+    from pathlib import Path
+
+    from build_part_field import RENDER_DIR, setup_black_world, setup_lights  # noqa: E402
+
+    setup_match_timeline()
+    setup_black_world()
+    setup_lights()
+    setup_match_camera()
+
+    scene = bpy.context.scene
+    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x = 960
+    scene.render.resolution_y = 540
+    scene.render.fps = FPS
+    scene.frame_start = 1
+    scene.frame_end = MATCH_FRAMES
+    scene.eevee.taa_render_samples = 24
+
+    scene.render.image_settings.file_format = "FFMPEG"
+    scene.render.ffmpeg.format = "MPEG4"
+    scene.render.ffmpeg.codec = "H264"
+    scene.render.ffmpeg.constant_rate_factor = "MEDIUM"
+    scene.render.ffmpeg.ffmpeg_preset = "GOOD"
+
+    out = RENDER_DIR / "match_preview.mp4"
+    RENDER_DIR.mkdir(parents=True, exist_ok=True)
+    scene.render.filepath = str(out)
+
+    print(f"Rendering video: {out} ({MATCH_FRAMES} frames)...")
+    bpy.ops.render.render(animation=True)
+    print(f"Video saved: {out}")
+    return out
+
+
+if __name__ == "__main__":
+    import sys
+    from pathlib import Path
+
+    _dir = Path(__file__).resolve().parent
+    if str(_dir) not in sys.path:
+        sys.path.insert(0, str(_dir))
+
+    from news_cg_common import open_blend, resolve_blend_path
+
+    blend = resolve_blend_path()
+    open_blend(blend)
+    if "--render" in sys.argv or "--render-match-video" in sys.argv:
+        render_match_preview()
+    elif "--animate" in sys.argv:
+        animate_soccer_match_500f()
+        bpy.ops.wm.save_mainfile(filepath=str(blend))
