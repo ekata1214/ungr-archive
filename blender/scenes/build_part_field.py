@@ -203,15 +203,8 @@ def build_field_only() -> None:
     half_w = PITCH_WIDTH / 2
     lz = 0.025
 
-    # 芝生（細分化で寄りショット用）
-    bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, 0))
-    pitch = bpy.context.active_object
-    pitch.name = "Field_Grass"
-    pitch.scale = (PITCH_LENGTH / 2, PITCH_WIDTH / 2, 1)
-    pitch.data.materials.append(grass)
-    sub = pitch.modifiers.new("Subsurf", "SUBSURF")
-    sub.levels = 2
-    sub.render_levels = 3
+    # 芝生 — 完全な長方形（Subsurfなし＝角が丸くならない）
+    add_plane("Field_Grass", PITCH_LENGTH, PITCH_WIDTH, Vector((0, 0, 0)), grass)
 
     # --- 外枠 ---
     add_line_segment("Line_Top", -half_l, half_w, half_l, half_w, white, lz)
@@ -278,8 +271,9 @@ def _remove_cameras() -> None:
 def render_wide() -> Path:
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE"
-    scene.render.resolution_x = 1920
+    field_aspect = PITCH_LENGTH / PITCH_WIDTH
     scene.render.resolution_y = 1080
+    scene.render.resolution_x = int(scene.render.resolution_y * field_aspect)
     scene.eevee.taa_render_samples = 64
     setup_black_world()
     _remove_cameras()
@@ -291,7 +285,8 @@ def render_wide() -> Path:
     cam.rotation_euler = (0, 0, 0)
     scene.camera = cam
     cam.data.type = "ORTHO"
-    cam.data.ortho_scale = max(PITCH_LENGTH, PITCH_WIDTH) * 1.04
+    # 縦幅＝ピッチ幅ぴったり → 横もピッチ長に一致、左右の黒帯なし
+    cam.data.ortho_scale = PITCH_WIDTH
 
     out = RENDER_DIR / "field_wide.png"
     RENDER_DIR.mkdir(parents=True, exist_ok=True)
