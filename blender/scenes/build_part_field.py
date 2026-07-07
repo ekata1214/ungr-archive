@@ -114,8 +114,9 @@ def make_line_material(name: str) -> bpy.types.Material:
 
 
 def clear_all() -> None:
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.object.delete(use_global=False)
+    # Hidden / unselectable objects can survive ops.delete; remove datablocks directly.
+    for obj in list(bpy.data.objects):
+        bpy.data.objects.remove(obj, do_unlink=True)
 
 
 def setup_black_world() -> None:
@@ -260,10 +261,10 @@ def build_field_only() -> None:
         add_circle_ring(f"Corner_{label}", ox, oy, CORNER_R, white, lz, 20, a0, a1)
 
     from build_goal import build_both_goals  # noqa: E402
-    from build_player import build_demo_players  # noqa: E402
+    from import_mannequiny import build_two_characters  # noqa: E402
 
     build_both_goals(half_l)
-    build_demo_players()
+    build_two_characters()
 
     print(f"Field: {PITCH_LENGTH:.1f}x{PITCH_WIDTH:.1f}m FIFA markings + grass stripes + 2 goals + 2 players")
 
