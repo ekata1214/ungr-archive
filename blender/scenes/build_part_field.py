@@ -332,6 +332,39 @@ def save_blend(path: Path) -> None:
     print(f"Saved: {path}")
 
 
+def render_goal_three_quarter(side: str = "L") -> Path:
+    """参考画像風 — 斜め前方から"""
+    from build_goal import GOAL_H  # noqa: E402
+
+    scene = bpy.context.scene
+    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x = 1920
+    scene.render.resolution_y = 1080
+    scene.eevee.taa_render_samples = 80
+    setup_black_world()
+    setup_lights()
+    _remove_cameras()
+
+    half_l = PITCH_LENGTH / 2
+    gx = -half_l if side == "L" else half_l
+    sign = 1 if side == "L" else -1
+
+    cam_data = bpy.data.cameras.new("CamGoal3Q")
+    cam = bpy.data.objects.new("CamGoal3Q", cam_data)
+    bpy.context.collection.objects.link(cam)
+    cam.location = Vector((gx + sign * 14, -16, 4.2))
+    target = Vector((gx, 0, GOAL_H * 0.42))
+    cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
+    scene.camera = cam
+    cam.data.lens = 55
+
+    out = RENDER_DIR / f"goal_{side.lower()}_3quarter.png"
+    scene.render.filepath = str(out)
+    bpy.ops.render.render(write_still=True)
+    print(f"Goal 3/4: {out}")
+    return out
+
+
 def render_goal_front(side: str = "L") -> Path:
     """ゴール真正面 — 門の中心を正面から"""
     from build_goal import GOAL_H  # noqa: E402
@@ -415,6 +448,7 @@ def main() -> None:
     if "--render-goal-front" in sys.argv:
         render_goal_front("L")
         render_goal_front("R")
+        render_goal_three_quarter("L")
 
 
 if __name__ == "__main__":

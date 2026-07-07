@@ -1,22 +1,19 @@
 # SPDX-License-Identifier: MIT
-"""サッカーゴールモデル — 両端配置用"""
+"""サッカーゴール — 参考画像風（斜め支柱 + たるんだネット）"""
 
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 import bpy
 from mathutils import Euler, Vector
 
-# FIFA寸法 × フィールドと同じスケール
 _SCALE = 2.5
-GOAL_INNER_W = 7.32 * _SCALE      # 門幅 18.3m
-GOAL_H = 2.44 * _SCALE            # 門高 6.1m
-POST_R = 0.07 * _SCALE            # ポスト半径
-POST_R_TOP = POST_R * 0.88
-NET_DEPTH = 2.4 * _SCALE          # ネット奥行き
-BACK_BAR_H = 0.06 * _SCALE
+GOAL_INNER_W = 7.32 * _SCALE
+GOAL_H = 2.44 * _SCALE
+POST_R = 0.055 * _SCALE
+NET_DEPTH = 2.0 * _SCALE
+GROUND_Z = POST_R * 0.85
 
 
 def make_post_material(name: str) -> bpy.types.Material:
@@ -27,12 +24,12 @@ def make_post_material(name: str) -> bpy.types.Material:
     nodes.clear()
     out = nodes.new("ShaderNodeOutputMaterial")
     bsdf = nodes.new("ShaderNodeBsdfPrincipled")
-    bsdf.inputs["Base Color"].default_value = (0.94, 0.94, 0.95, 1.0)
-    bsdf.inputs["Roughness"].default_value = 0.28
-    bsdf.inputs["Metallic"].default_value = 0.35
+    bsdf.inputs["Base Color"].default_value = (1.0, 1.0, 1.0, 1.0)
+    bsdf.inputs["Roughness"].default_value = 0.22
+    bsdf.inputs["Metallic"].default_value = 0.12
     spec = bsdf.inputs.get("Specular IOR Level") or bsdf.inputs.get("Specular")
     if spec:
-        spec.default_value = 0.45
+        spec.default_value = 0.35
     links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
     return mat
 
@@ -40,194 +37,184 @@ def make_post_material(name: str) -> bpy.types.Material:
 def make_net_material(name: str) -> bpy.types.Material:
     mat = bpy.data.materials.new(name=name)
     mat.use_nodes = True
-    mat.blend_method = "BLEND"
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
     nodes.clear()
     out = nodes.new("ShaderNodeOutputMaterial")
-    bsdf = nodes.new("ShaderNodeBsdfPrincipled")
-    bsdf.inputs["Base Color"].default_value = (0.88, 0.90, 0.92, 1.0)
-    bsdf.inputs["Alpha"].default_value = 0.42
-    bsdf.inputs["Roughness"].default_value = 0.65
-    bsdf.inputs["Metallic"].default_value = 0.0
-    links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+    emit = nodes.new("ShaderNodeEmission")
+    emit.inputs["Color"].default_value = (0.92, 0.94, 0.96, 1.0)
+    emit.inputs["Strength"].default_value = 0.85
+    links.new(emit.outputs["Emission"], out.inputs["Surface"])
     return mat
 
 
-def _link(obj: bpy.types.Object, parent: bpy.types.Object) -> bpy.types.Object:
-    bpy.context.collection.objects.link(obj)
-    obj.parent = parent
-    obj.matrix_parent_inverse = parent.matrix_world.inverted()
-    return obj
-
-
-def _add_cyl(
-    name: str,
-    radius: float,
-    depth: float,
-    loc: Vector,
-    rot: Euler,
-    mat: bpy.types.Material,
+def _cylinder_between(
     parent: bpy.types.Object,
+    name: str,
+    a: Vector,
+    b: Vector,
+    radius: float,
+    mat: bpy.types.Material,
 ) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=depth)
+    vec = b - a
+    length = vec.length
+    if length < 1e-6:
+        return parent
+    mid = (a + b) / 2
+    bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=length)
     obj = bpy.context.active_object
     obj.name = name
     obj.data.materials.append(mat)
-    bpy.context.collection.objects.link(obj) if obj.name not in bpy.context.collection.objects else None
     obj.parent = parent
-    obj.location = loc
-    obj.rotation_euler = rot
+    obj.location = mid
+    obj.rotation_euler = vec.to_track_quat("Z", "Y").to_euler()
     return obj
 
 
-def _create_net_mesh(
+def _sag_factor(u: float, v: float) -> float:
+    """中央ほどたるむ（0〜1）"""
+    return math.sin(u * math.pi) * math.sin(v * math.pi)
+
+
+def _build_draped_net(
+    parent: bpy.types.Object,
     name: str,
-    width: float,
+    half_w: float,
     height: float,
     depth: float,
-    outward: float,
+    back_x: float,
     mat: bpy.types.Material,
-    parent: bpy.types.Object,
-) -> None:
-    """ネット — ワイヤーフレームパネル（背面・側面・天面）"""
-    back_x = outward * depth
+) -> bpy.types.Object:
+    """背面・天面・側面のたるんだ四角メッシュネット"""
+    segs_y = 22
+    segs_z = 14
+    segs_x = 14
+    sag_strength = depth * 0.22
+    top_sag = height * 0.12
 
-    def panel(pname: str, loc: Vector, rot: Euler, sx: float, sy: float) -> None:
-        bpy.ops.mesh.primitive_plane_add(size=1)
-        p = bpy.context.active_object
-        p.name = f"{name}_{pname}"
-        p.parent = parent
-        p.location = loc
-        p.rotation_euler = rot
-        p.scale = (sx / 2, sy / 2, 1)
-        p.data.materials.append(mat)
-        subdiv = p.modifiers.new("Subdiv", "SUBSURF")
-        subdiv.levels = 3
-        wf = p.modifiers.new("Wireframe", "WIREFRAME")
-        wf.thickness = 0.03
-        wf.use_replace = True
+    verts: list[Vector] = []
+    edges: list[tuple[int, int]] = []
 
-    # 背面
-    panel("Back", Vector((back_x, 0, height / 2)), Euler((0, math.pi / 2, 0)), depth, height)
-    # 側面
-    panel("SideL", Vector((back_x / 2, -width / 2, height / 2)), Euler((0, 0, math.pi / 2)), depth, height)
-    panel("SideR", Vector((back_x / 2, width / 2, height / 2)), Euler((0, 0, math.pi / 2)), depth, height)
-    # 天面
-    panel("Top", Vector((back_x / 2, 0, height)), Euler((math.pi / 2, 0, 0)), depth, width)
+    def add_v(x: float, y: float, z: float) -> int:
+        verts.append(Vector((x, y, z)))
+        return len(verts) - 1
+
+    def grid_edges(row_major: list[list[int]], sx: int, sy: int) -> None:
+        for iy in range(sy):
+            for ix in range(sx):
+                i = row_major[iy][ix]
+                if ix + 1 < sx + 1:
+                    edges.append((i, row_major[iy][ix + 1]))
+                if iy + 1 < sy + 1:
+                    edges.append((i, row_major[iy + 1][ix]))
+
+    # --- 背面 ---
+    back_grid: list[list[int]] = []
+    for iz in range(segs_z + 1):
+        row = []
+        tz = iz / segs_z
+        z = tz * height
+        for iy in range(segs_y + 1):
+            ty = iy / segs_y
+            y = (ty - 0.5) * 2 * half_w
+            sag = sag_strength * _sag_factor(ty, tz) * 0.65
+            x = back_x + sag  # フィールド側へたるむ
+            row.append(add_v(x, y, z))
+        back_grid.append(row)
+    grid_edges(back_grid, segs_y, segs_z)
+
+    # --- 天面 ---
+    top_grid: list[list[int]] = []
+    for iy in range(segs_y + 1):
+        row = []
+        ty = iy / segs_y
+        y = (ty - 0.5) * 2 * half_w
+        for ix in range(segs_x + 1):
+            tx = ix / segs_x
+            x = tx * back_x
+            sag_z = top_sag * (_sag_factor(tx, ty) * 0.8 + 0.2 * tx)
+            z = height - sag_z
+            row.append(add_v(x, y, z))
+        top_grid.append(row)
+    grid_edges(top_grid, segs_x, segs_y)
+
+    # --- 左側面 ---
+    side_l: list[list[int]] = []
+    for iz in range(segs_z + 1):
+        row = []
+        tz = iz / segs_z
+        z = tz * height
+        for ix in range(segs_x + 1):
+            tx = ix / segs_x
+            x = tx * back_x
+            sag_y = sag_strength * 0.35 * _sag_factor(tx, tz)
+            y = -half_w + sag_y
+            row.append(add_v(x, y, z))
+        side_l.append(row)
+    grid_edges(side_l, segs_x, segs_z)
+
+    # --- 右側面 ---
+    side_r: list[list[int]] = []
+    for iz in range(segs_z + 1):
+        row = []
+        tz = iz / segs_z
+        z = tz * height
+        for ix in range(segs_x + 1):
+            tx = ix / segs_x
+            x = tx * back_x
+            sag_y = sag_strength * 0.35 * _sag_factor(tx, tz)
+            y = half_w - sag_y
+            row.append(add_v(x, y, z))
+        side_r.append(row)
+    grid_edges(side_r, segs_x, segs_z)
+
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(verts, edges, [])
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    obj.parent = parent
+    obj.data.materials.append(mat)
+
+    # 細い円柱風メッシュ（Skinの代わり — バッチ処理で安定）
+    bevel = obj.modifiers.new("Bevel", "BEVEL")
+    bevel.affect = "EDGES"
+    bevel.width = 0.022
+    bevel.segments = 2
+    return obj
 
 
 def build_goal(goalline_x: float, side: str, post_mat, net_mat) -> bpy.types.Object:
-    """
-    ゴールをゴールライン上に配置。
-    side='L': 左ゴール（ネットはフィールド外＝-X側）
-    side='R': 右ゴール（ネットは+X側）
-    """
     root = bpy.data.objects.new(f"Goal_{side}", None)
     bpy.context.collection.objects.link(root)
     root.location = Vector((goalline_x, 0, 0))
 
     half_w = GOAL_INNER_W / 2
     outward = -1.0 if side == "L" else 1.0
-
-    # --- 正面フレーム（ゴールライン上）---
-    for label, y in (("PostL", -half_w), ("PostR", half_w)):
-        _add_cyl(
-            f"Goal_{side}_{label}",
-            POST_R, GOAL_H,
-            Vector((0, y, GOAL_H / 2)),
-            Euler((0, 0, 0)),
-            post_mat, root,
-        )
-
-    _add_cyl(
-        f"Goal_{side}_Crossbar",
-        POST_R_TOP, GOAL_INNER_W,
-        Vector((0, 0, GOAL_H)),
-        Euler((math.pi / 2, 0, 0)),
-        post_mat, root,
-    )
-
-    # 地面バー（正面下部）
-    _add_cyl(
-        f"Goal_{side}_GroundBar",
-        POST_R * 0.7, GOAL_INNER_W,
-        Vector((0, 0, BACK_BAR_H / 2)),
-        Euler((math.pi / 2, 0, 0)),
-        post_mat, root,
-    )
-
-    # --- 奥フレーム ---
     back_x = outward * NET_DEPTH
-    _add_cyl(
-        f"Goal_{side}_BackBar",
-        POST_R * 0.65, GOAL_INNER_W,
-        Vector((back_x, 0, GOAL_H)),
-        Euler((math.pi / 2, 0, 0)),
-        post_mat, root,
-    )
-    _add_cyl(
-        f"Goal_{side}_BackGround",
-        POST_R * 0.55, GOAL_INNER_W,
-        Vector((back_x, 0, BACK_BAR_H / 2)),
-        Euler((math.pi / 2, 0, 0)),
-        post_mat, root,
-    )
 
-    # 奥の支柱2本
-    for label, y in (("BackPostL", -half_w), ("BackPostR", half_w)):
-        _add_cyl(
-            f"Goal_{side}_{label}",
-            POST_R * 0.6, GOAL_H,
-            Vector((back_x, y, GOAL_H / 2)),
-            Euler((0, 0, 0)),
-            post_mat, root,
-        )
+    fl = Vector((0, -half_w, GROUND_Z))
+    fr = Vector((0, half_w, GROUND_Z))
+    tl = Vector((0, -half_w, GOAL_H))
+    tr = Vector((0, half_w, GOAL_H))
+    bl = Vector((back_x, -half_w, GROUND_Z))
+    br = Vector((back_x, half_w, GROUND_Z))
 
-    # 屋根バー（上辺をつなぐ）
-    _add_cyl(
-        f"Goal_{side}_RoofBar",
-        POST_R * 0.5, NET_DEPTH,
-        Vector((back_x / 2, -half_w, GOAL_H)),
-        Euler((0, math.pi / 2, 0)),
-        post_mat, root,
-    )
-    _add_cyl(
-        f"Goal_{side}_RoofBarR",
-        POST_R * 0.5, NET_DEPTH,
-        Vector((back_x / 2, half_w, GOAL_H)),
-        Euler((0, math.pi / 2, 0)),
-        post_mat, root,
-    )
+    # 正面フレーム
+    _cylinder_between(root, f"Goal_{side}_PostL", fl, tl, POST_R, post_mat)
+    _cylinder_between(root, f"Goal_{side}_PostR", fr, tr, POST_R, post_mat)
+    _cylinder_between(root, f"Goal_{side}_Crossbar", tl, tr, POST_R * 0.95, post_mat)
+    _cylinder_between(root, f"Goal_{side}_FrontGround", fl, fr, POST_R * 0.75, post_mat)
 
-    # サイドの奥行きバー（四隅を接続）
-    for label, y in (("SideTopL", -half_w), ("SideTopR", half_w)):
-        _add_cyl(
-            f"Goal_{side}_{label}",
-            POST_R * 0.45, NET_DEPTH,
-            Vector((back_x / 2, y, GOAL_H)),
-            Euler((0, math.pi / 2, 0)),
-            post_mat, root,
-        )
-    for label, y in (("SideBotL", -half_w), ("SideBotR", half_w)):
-        _add_cyl(
-            f"Goal_{side}_{label}",
-            POST_R * 0.4, NET_DEPTH,
-            Vector((back_x / 2, y, BACK_BAR_H)),
-            Euler((0, math.pi / 2, 0)),
-            post_mat, root,
-        )
+    # 背面地面バー
+    _cylinder_between(root, f"Goal_{side}_BackGround", bl, br, POST_R * 0.75, post_mat)
 
-    # ネット
-    _create_net_mesh(
-        f"Goal_{side}_Net",
-        GOAL_INNER_W * 0.96,
-        GOAL_H * 0.96,
-        NET_DEPTH,
-        outward,
-        net_mat,
-        root,
-    )
+    # 斜め支柱（参考画像の三角形シルエット）
+    _cylinder_between(root, f"Goal_{side}_StrutL", tl, bl, POST_R * 0.82, post_mat)
+    _cylinder_between(root, f"Goal_{side}_StrutR", tr, br, POST_R * 0.82, post_mat)
+
+    # たるんだネット
+    _build_draped_net(root, f"Goal_{side}_Net", half_w, GOAL_H, NET_DEPTH, back_x, net_mat)
 
     return root
 
@@ -237,4 +224,4 @@ def build_both_goals(half_pitch_length: float) -> None:
     net_mat = make_net_material("GoalNet")
     build_goal(-half_pitch_length, "L", post_mat, net_mat)
     build_goal(half_pitch_length, "R", post_mat, net_mat)
-    print(f"Goals placed at x=±{half_pitch_length:.1f}  (W={GOAL_INNER_W:.1f} H={GOAL_H:.1f})")
+    print(f"Goals: classic frame + draped net  (W={GOAL_INNER_W:.1f} H={GOAL_H:.1f})")
