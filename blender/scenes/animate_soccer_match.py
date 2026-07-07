@@ -99,8 +99,18 @@ def _lerp(a: Vector, b: Vector, t: float) -> Vector:
     return a + (b - a) * t
 
 
+BALL_FOOT_AHEAD = 0.30  # 前足ボーンより進行方向へ（ワールド単位）
+
+
 def _forward_from_yaw(yaw: float) -> Vector:
     return Vector((-math.sin(yaw), math.cos(yaw), 0.0))
+
+
+def _arm_of_root(root: bpy.types.Object) -> bpy.types.Object | None:
+    for ch in root.children:
+        if ch.type == "ARMATURE":
+            return ch
+    return None
 
 
 def _ball_at_player(root_pos: Vector, yaw: float, ahead: float = 0.55, side: float = 0.0) -> Vector:
@@ -118,14 +128,45 @@ def _root_world_at(root: bpy.types.Object, frame: int) -> Vector:
     return root.matrix_world.translation.copy()
 
 
+def _ball_at_feet_frame(
+    arm: bpy.types.Object | None,
+    root: bpy.types.Object,
+    yaw: float,
+    frame: int,
+) -> Vector:
+    """走行中 — 前足のやや前方にボールを置く（足の後ろに入らない）"""
+    scene = bpy.context.scene
+    scene.frame_set(frame)
+    bpy.context.view_layer.update()
+    if arm and arm.pose.bones.get("foot.l") and arm.pose.bones.get("foot.r"):
+        rp = root.matrix_world.translation
+        fd = _forward_from_yaw(yaw)
+        fl = arm.matrix_world @ arm.pose.bones["foot.l"].head
+        fr = arm.matrix_world @ arm.pose.bones["foot.r"].head
+        lead = fl if (fl - rp).dot(fd) >= (fr - rp).dot(fd) else fr
+        trail = fr if lead is fl else fl
+        # 前足寄り + 両足の中間Yで自然なドリブル位置
+        mid_y = (fl.y + fr.y) * 0.5
+        p = lead + fd * BALL_FOOT_AHEAD
+        p.y = mid_y
+        # 万一トレイル足より後ろなら前足基準に補正
+        if (p - rp).dot(fd) < (trail - rp).dot(fd):
+            p = lead + fd * (BALL_FOOT_AHEAD + 0.12)
+            p.y = mid_y
+        p.z = BALL_GROUND_Z
+        return p
+    return _ball_at_player(root.matrix_world.translation.copy(), yaw)
+
+
 def _ball_at_root_frame(
     root: bpy.types.Object,
     yaw: float,
     frame: int,
-    ahead: float = 0.55,
-    side: float = 0.0,
+    arm: bpy.types.Object | None = None,
 ) -> Vector:
-    return _ball_at_player(_root_world_at(root, frame), yaw, ahead, side)
+    if arm is None:
+        arm = _arm_of_root(root)
+    return _ball_at_feet_frame(arm, root, yaw, frame)
 
 
 def _add_nla_strip(
@@ -169,15 +210,24 @@ def _clear_all_nla(arm: bpy.types.Object) -> None:
         ad.nla_tracks.remove(ad.nla_tracks[0])
 
 
-def _ball_hold(ball: bpy.types.Object, root: bpy.types.Object, yaw: float, f0: int, f1: int) -> None:
-    """ドリブル/保持 — 選手の足元にフレームごと追従"""
+def _ball_hold(
+    ball: bpy.types.Object,
+    root: bpy.types.Object,
+    arm: bpy.types.Object | None,
+    yaw: float,
+    f0: int,
+    f1: int,
+) -> None:
+    """ドリブル/保持 — 前足ボーンにフレームごと追従"""
     if f1 < f0:
         return
-    step = max(3, (f1 - f0) // 16) if f1 > f0 else 1
+    if arm is None:
+        arm = _arm_of_root(root)
+    step = 2 if f1 - f0 > 8 else 1
     for f in range(f0, f1 + 1, step):
-        _kf_loc(ball, f, _ball_at_root_frame(root, yaw, f))
+        _kf_loc(ball, f, _ball_at_feet_frame(arm, root, yaw, f))
     if (f1 - f0) % step != 0:
-        _kf_loc(ball, f1, _ball_at_root_frame(root, yaw, f1))
+        _kf_loc(ball, f1, _ball_at_feet_frame(arm, root, yaw, f1))
 
 
 def _ball_pass_roll(
@@ -364,23 +414,23 @@ def animate_soccer_match_500f() -> None:
         _add_nla_strip(arm, "fight_idle", KICK_BALL_RELEASE + 20, KICK_BALL_RELEASE + 55)
         _add_nla_strip(arm, "idle", KICK_BALL_RELEASE + 55, 500)
 
-    # --- ボール（選手足元追従 + パス/シュート同期） ---
-    p_passer = _ball_at_root_frame(rp, yaw_a, PASS1_START - 1)
-    p_recv = _ball_at_root_frame(rr, yaw_a, PASS1_RECEIVE)
-    p_pass2_from = _ball_at_root_frame(rr, yaw_a, PASS2_START - 1)
-    p_pass2_to = _ball_at_root_frame(rst, yaw_a, PASS2_RECEIVE)
-    p_shot_start = _ball_at_root_frame(rst, yaw_a, KICK_STRIP_START + 3)
+    # --- ボール（前足追従 + パス/シュート同期） ---
+    p_passer = _ball_at_feet_frame(b_passer, rp, yaw_a, PASS1_START - 1)
+    p_recv = _ball_at_feet_frame(b_runner, rr, yaw_a, PASS1_RECEIVE)
+    p_pass2_from = _ball_at_feet_frame(b_runner, rr, yaw_a, PASS2_START - 1)
+    p_pass2_to = _ball_at_feet_frame(b_striker, rst, yaw_a, PASS2_RECEIVE)
+    p_shot_start = _ball_at_feet_frame(b_striker, rst, yaw_a, KICK_STRIP_START + 3)
     p_goal = Vector((goal_x + 2.0, 0.0, BALL_GROUND_Z * 0.85))
 
-    _ball_hold(ball, rp, yaw_a, 1, PASS1_START - 1)
+    _ball_hold(ball, rp, b_passer, yaw_a, 1, PASS1_START - 1)
     _ball_pass_roll(
         ball, PASS1_START, PASS1_RELEASE, PASS1_RECEIVE, p_passer, p_recv, yaw_a, arc=0.4,
     )
-    _ball_hold(ball, rr, yaw_a, PASS1_RECEIVE, PASS2_START - 1)
+    _ball_hold(ball, rr, b_runner, yaw_a, PASS1_RECEIVE, PASS2_START - 1)
     _ball_pass_roll(
         ball, PASS2_START, PASS2_RELEASE, PASS2_RECEIVE, p_pass2_from, p_pass2_to, yaw_a, arc=0.35,
     )
-    _ball_hold(ball, rst, yaw_a, PASS2_RECEIVE, KICK_STRIP_START + 3)
+    _ball_hold(ball, rst, b_striker, yaw_a, PASS2_RECEIVE, KICK_STRIP_START + 3)
     _ball_shot(ball, KICK_STRIP_START + 3, KICK_BALL_RELEASE, SHOT_LAND, p_shot_start, p_goal, yaw_a)
 
     _ease_all_ball_keyframes(ball)
