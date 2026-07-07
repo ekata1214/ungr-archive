@@ -332,6 +332,47 @@ def save_blend(path: Path) -> None:
     print(f"Saved: {path}")
 
 
+def render_goal_front(side: str = "L") -> Path:
+    """ゴール真正面 — 門の中心を正面から"""
+    from build_goal import GOAL_H  # noqa: E402
+
+    scene = bpy.context.scene
+    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x = 1920
+    scene.render.resolution_y = 1080
+    scene.eevee.taa_render_samples = 80
+    setup_black_world()
+    setup_lights()
+    _remove_cameras()
+
+    half_l = PITCH_LENGTH / 2
+    gx = -half_l if side == "L" else half_l
+    dist = 20.0
+    eye_z = GOAL_H * 0.48
+    target = Vector((gx, 0, GOAL_H * 0.5))
+
+    if side == "L":
+        cam_pos = Vector((gx + dist, 0, eye_z))
+    else:
+        cam_pos = Vector((gx - dist, 0, eye_z))
+
+    cam_data = bpy.data.cameras.new("CamGoalFront")
+    cam = bpy.data.objects.new("CamGoalFront", cam_data)
+    bpy.context.collection.objects.link(cam)
+    cam.location = cam_pos
+    direction = target - cam_pos
+    cam.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+    scene.camera = cam
+    cam.data.lens = 42
+
+    out = RENDER_DIR / f"goal_{side.lower()}_front.png"
+    RENDER_DIR.mkdir(parents=True, exist_ok=True)
+    scene.render.filepath = str(out)
+    bpy.ops.render.render(write_still=True)
+    print(f"Goal front: {out}")
+    return out
+
+
 def render_goal_close(side: str = "L") -> Path:
     """ゴールの斜めアップ"""
     scene = bpy.context.scene
@@ -371,6 +412,9 @@ def main() -> None:
         render_grass_close()
         render_goal_close("L")
         render_goal_close("R")
+    if "--render-goal-front" in sys.argv:
+        render_goal_front("L")
+        render_goal_front("R")
 
 
 if __name__ == "__main__":
