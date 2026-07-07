@@ -9,7 +9,7 @@ This repo keeps a local copy under `blender/assets/third_party/mannequiny/`.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Tuple
+from typing import Iterable, List, Tuple
 
 import bpy
 from mathutils import Euler, Vector
@@ -170,4 +170,34 @@ def build_two_characters() -> Tuple[bpy.types.Object, bpy.types.Object]:
 
     print("Players: imported Mannequiny rig + animations (run, fight_kick)")
     return blue, red
+
+
+def build_team(
+    prefix: str,
+    color_rgba,
+    positions: Iterable[Vector],
+    actions: List[str],
+    facing_yaw: float = 0.0,
+) -> List[bpy.types.Object]:
+    """Build multiple characters, cycling through actions."""
+    base_arm, base_mesh = _ensure_loaded()
+    base_arm.hide_viewport = True
+    base_arm.hide_render = True
+    base_mesh.hide_viewport = True
+    base_mesh.hide_render = True
+
+    out: List[bpy.types.Object] = []
+    actions_cycle = list(actions) if actions else ["idle"]
+    for i, pos in enumerate(list(positions)):
+        arm = _duplicate_character(
+            base_arm,
+            base_mesh,
+            name=f"{prefix}_{i+1:02d}",
+            location=pos,
+            rotation=Euler((0, 0, facing_yaw)),
+            color_rgba=color_rgba,
+        )
+        assign_action(arm, actions_cycle[i % len(actions_cycle)])
+        out.append(arm)
+    return out
 

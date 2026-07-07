@@ -40,6 +40,23 @@ SPOT_R = 0.12 * _SCALE
 RENDER_DIR = Path("/workspace/blender/renders/parts")
 
 
+def make_ball_material(name: str) -> bpy.types.Material:
+    mat = bpy.data.materials.new(name=name)
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    nodes.clear()
+    out = nodes.new("ShaderNodeOutputMaterial")
+    bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+    bsdf.inputs["Base Color"].default_value = (0.96, 0.96, 0.96, 1.0)
+    bsdf.inputs["Roughness"].default_value = 0.35
+    spec = bsdf.inputs.get("Specular IOR Level") or bsdf.inputs.get("Specular")
+    if spec:
+        spec.default_value = 0.35
+    links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+    return mat
+
+
 def make_grass_material(name: str) -> bpy.types.Material:
     """芝生 — 刈り跡ストライプ + ノイズ"""
     mat = bpy.data.materials.new(name=name)
@@ -261,12 +278,29 @@ def build_field_only() -> None:
         add_circle_ring(f"Corner_{label}", ox, oy, CORNER_R, white, lz, 20, a0, a1)
 
     from build_goal import build_both_goals  # noqa: E402
-    from import_mannequiny import build_two_characters  # noqa: E402
+    from import_mannequiny import build_team  # noqa: E402
 
     build_both_goals(half_l)
-    build_two_characters()
+    # チーム配置（センター付近の簡易フォーメーション）
+    blue_positions = [
+        Vector((-10, -6, 0)), Vector((-8, -2, 0)), Vector((-8, 2, 0)),
+        Vector((-5, -3, 0)), Vector((-5, 3, 0)),
+    ]
+    red_positions = [
+        Vector((10, 6, 0)), Vector((8, 2, 0)), Vector((8, -2, 0)),
+        Vector((5, 3, 0)), Vector((5, -3, 0)),
+    ]
+    build_team("Blue", (0.12, 0.45, 0.95, 1.0), blue_positions, actions=["run", "walk", "idle"], facing_yaw=0.0)
+    build_team("Red", (0.92, 0.18, 0.15, 1.0), red_positions, actions=["fight_kick", "run", "idle"], facing_yaw=math.pi)
 
-    print(f"Field: {PITCH_LENGTH:.1f}x{PITCH_WIDTH:.1f}m FIFA markings + grass stripes + 2 goals + 2 players")
+    # ボール（センターライン付近）
+    ball_mat = make_ball_material("Ball")
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=16, radius=0.22 * _SCALE, location=(0, 0, 0.22 * _SCALE))
+    ball = bpy.context.active_object
+    ball.name = "Ball"
+    ball.data.materials.append(ball_mat)
+
+    print(f"Field: {PITCH_LENGTH:.1f}x{PITCH_WIDTH:.1f}m FIFA markings + grass stripes + 2 goals + players")
 
 
 def _remove_cameras() -> None:
@@ -442,9 +476,7 @@ def render_players() -> Path:
 
 
 def render_players_close() -> Path:
-    """腰上アップ — 顔・服シルエット"""
-    from build_player import S  # noqa: E402
-
+    """選手アップ — リグ素材の動き確認用"""
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = 1920
@@ -457,18 +489,70 @@ def render_players_close() -> Path:
     cam_data = bpy.data.cameras.new("CamPlayersClose")
     cam = bpy.data.objects.new("CamPlayersClose", cam_data)
     bpy.context.collection.objects.link(cam)
-    # 頭〜胴が入るよう、やや引きで上を見る
-    target = Vector((-1.8, 0.2, 1.45 * S))
-    cam.location = Vector((-1.8, -3.5, 1.55 * S))
+    # 青チーム付近をアップ
+    target = Vector((-8.0, -2.0, 2.0))
+    cam.location = Vector((-10.0, -9.0, 2.2))
     cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
     scene.camera = cam
-    cam.data.lens = 85
+    cam.data.lens = 55
 
     out = RENDER_DIR / "players_close.png"
     scene.render.filepath = str(out)
     bpy.ops.render.render(write_still=True)
     print(f"Players close: {out}")
     return out
+
+
+def render_views_5() -> list[Path]:
+    """5パターン画角で確認用レンダーをまとめて出す"""
+    outs: list[Path] = []
+    outs.append(render_wide())
+
+    # 低い引き（全体）
+    scene = bpy.context.scene
+    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x = 1920
+    scene.render.resolution_y = 1080
+    scene.eevee.taa_render_samples = 80
+    setup_black_world()
+    setup_lights()
+    _remove_cameras()
+    cam_data = bpy.data.cameras.new("CamLowWide")
+    cam = bpy.data.objects.new("CamLowWide", cam_data)
+    bpy.context.collection.objects.link(cam)
+    cam.location = Vector((0, -40, 6.5))
+    target = Vector((0, 0, 1.6))
+    cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
+    scene.camera = cam
+    cam.data.lens = 36
+    out = RENDER_DIR / "view_02_low_wide.png"
+    scene.render.filepath = str(out)
+    bpy.ops.render.render(write_still=True)
+    outs.append(out)
+
+    # センター寄り（ボール確認）
+    _remove_cameras()
+    cam_data = bpy.data.cameras.new("CamBall")
+    cam = bpy.data.objects.new("CamBall", cam_data)
+    bpy.context.collection.objects.link(cam)
+    cam.location = Vector((6, -10, 2.2))
+    target = Vector((0, 0, 0.8))
+    cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
+    scene.camera = cam
+    cam.data.lens = 55
+    out = RENDER_DIR / "view_03_ball.png"
+    scene.render.filepath = str(out)
+    bpy.ops.render.render(write_still=True)
+    outs.append(out)
+
+    # ゴール正面（既存）
+    outs.append(render_goal_front("L"))
+
+    # 選手寄り（既存 close）
+    outs.append(render_players_close())
+
+    print("Views5:", ", ".join(p.name for p in outs))
+    return outs
 
 
 def render_goal_close(side: str = "L") -> Path:
@@ -517,6 +601,8 @@ def main() -> None:
     if "--render-players" in sys.argv:
         render_players()
         render_players_close()
+    if "--render-views" in sys.argv:
+        render_views_5()
 
 
 if __name__ == "__main__":
