@@ -660,6 +660,10 @@ def main() -> None:
     blend = resolve_blend_path()
     open_blend(blend)
     build_field_only()
+    if "--animate-match" in sys.argv:
+        from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
+
+        animate_soccer_match_500f()
     save_blend(blend)
     if "--render" in sys.argv:
         render_wide()
