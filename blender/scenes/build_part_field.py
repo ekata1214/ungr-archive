@@ -424,11 +424,12 @@ def render_players() -> Path:
     cam_data = bpy.data.cameras.new("CamPlayers")
     cam = bpy.data.objects.new("CamPlayers", cam_data)
     bpy.context.collection.objects.link(cam)
+    # 2人がフレーム内に収まる距離にする
     target = Vector((0, 0, 1.05 * S))
-    cam.location = Vector((0, -9.0, 4.8))
+    cam.location = Vector((0, -7.5, 3.2))
     cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
     scene.camera = cam
-    cam.data.lens = 50
+    cam.data.lens = 42
 
     out = RENDER_DIR / "players_mid.png"
     RENDER_DIR.mkdir(parents=True, exist_ok=True)
@@ -455,11 +456,12 @@ def render_players_close() -> Path:
     cam_data = bpy.data.cameras.new("CamPlayersClose")
     cam = bpy.data.objects.new("CamPlayersClose", cam_data)
     bpy.context.collection.objects.link(cam)
-    target = Vector((-3.5, 0, 1.30 * S))
-    cam.location = Vector((-3.5, -5.5, 1.35 * S))
+    # 頭〜胴が入るよう、やや引きで上を見る
+    target = Vector((-1.8, 0.2, 1.45 * S))
+    cam.location = Vector((-1.8, -3.5, 1.55 * S))
     cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
     scene.camera = cam
-    cam.data.lens = 65
+    cam.data.lens = 85
 
     out = RENDER_DIR / "players_close.png"
     scene.render.filepath = str(out)

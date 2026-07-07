@@ -1,10 +1,16 @@
 # SPDX-License-Identifier: MIT
-"""再現CGメーカー風 人型キャラ（赤・青）— フィールドスケール対応"""
+"""簡易人型キャラ（赤・青）— 頭＋胴＋手足＋簡易顔
+
+要望に合わせて:
+- 服パーツは作らない
+- 簡易的な顔（鼻・眉）
+- 両手足が付いて「人の形」に見える
+"""
 
 from __future__ import annotations
 
 import math
-from typing import Dict, Literal, Tuple
+from typing import Dict, Tuple
 
 import bpy
 from mathutils import Euler, Vector
@@ -16,9 +22,6 @@ S = _SCALE
 
 TEAM_BLUE = (0.10, 0.40, 0.90, 1.0)
 TEAM_RED = (0.88, 0.12, 0.20, 1.0)
-
-BodyType = Literal["male", "female"]
-
 
 def _make_cg_material(name: str, color: Tuple[float, float, float, float]) -> bpy.types.Material:
     mat = make_flat_material(name, color)
@@ -119,94 +122,88 @@ def _add_sphere(
     return obj
 
 
-def _build_head(
-    name: str,
-    mat: bpy.types.Material,
-    joint: bpy.types.Object,
-    body_type: BodyType,
-) -> None:
-    r = 0.108 * S
-    _add_sphere(f"{name}_head", r, Vector((0, 0, 0.10 * S)), mat, joint, Vector((0.94, 1.0, 1.06)), subdiv=1)
-    # 鼻（前に出る）
+def _build_head(name: str, mat: bpy.types.Material, joint: bpy.types.Object) -> None:
+    """頭＋簡易顔（鼻・眉）"""
+    r = 0.11 * S
+    _add_sphere(
+        f"{name}_head",
+        r,
+        Vector((0, 0, 0.12 * S)),
+        mat,
+        joint,
+        Vector((0.96, 1.0, 1.04)),
+        subdiv=1,
+    )
+    # 顔パーツは少しだけ暗くして視認性を上げる
+    # 目鼻は黒寄りでハッキリ見せる
+    face_mat = _make_cg_material(f"{name}_face_mat", (0.05, 0.05, 0.05, 1.0))
     _add_box(
         f"{name}_nose",
-        Vector((0.032 * S, 0.065 * S, 0.038 * S)),
-        Vector((0, 0.10 * S, 0.06 * S)),
-        mat, joint, subdiv=0,
+        Vector((0.034 * S, 0.075 * S, 0.040 * S)),
+        Vector((0, -0.125 * S, 0.05 * S)),
+        face_mat,
+        joint,
+        subdiv=0,
     )
-    # 眉
     _add_box(
         f"{name}_brow",
-        Vector((0.12 * S, 0.028 * S, 0.024 * S)),
-        Vector((0, 0.085 * S, 0.13 * S)),
-        mat, joint, subdiv=0,
+        Vector((0.13 * S, 0.032 * S, 0.024 * S)),
+        Vector((0, -0.105 * S, 0.14 * S)),
+        face_mat,
+        joint,
+        subdiv=0,
     )
-    # 顎〜口
-    _add_box(
-        f"{name}_mouth",
-        Vector((0.055 * S, 0.03 * S, 0.018 * S)),
-        Vector((0, 0.09 * S, 0.0)),
-        mat, joint, subdiv=0,
+    # 目（小さい球を2つ）
+    _add_sphere(
+        f"{name}_eye_l",
+        0.030 * S,
+        Vector((-0.040 * S, -0.135 * S, 0.11 * S)),
+        face_mat,
+        joint,
+        subdiv=0,
     )
-    if body_type == "female":
-        _add_sphere(
-            f"{name}_hair_vol",
-            r * 0.95,
-            Vector((0, -0.035 * S, 0.12 * S)),
-            mat, joint, Vector((1.02, 0.90, 1.02)), subdiv=1,
-        )
+    _add_sphere(
+        f"{name}_eye_r",
+        0.030 * S,
+        Vector((0.040 * S, -0.135 * S, 0.11 * S)),
+        face_mat,
+        joint,
+        subdiv=0,
+    )
 
 
-def _build_torso_clothing(
-    name: str,
-    mat: bpy.types.Material,
-    parent: bpy.types.Object,
-    body_type: BodyType,
-) -> None:
-    if body_type == "male":
-        # 半袖シャツ（肩幅広め）
-        _add_box(
-            f"{name}_shirt",
-            Vector((0.50 * S, 0.14 * S, 0.32 * S)),
-            Vector((0, 0, 1.04 * S)),
-            mat, parent, subdiv=1,
-        )
-        # 襟元
-        _add_box(
-            f"{name}_collar",
-            Vector((0.18 * S, 0.06 * S, 0.04 * S)),
-            Vector((0, 0.04 * S, 1.22 * S)),
-            mat, parent, subdiv=0,
-        )
-        for side, tag in ((-1, "L"), (1, "R")):
-            _add_capsule(
-                f"{name}_sleeve_{tag}",
-                0.048 * S, 0.12 * S,
-                Vector((side * 0.24 * S, 0, 1.10 * S)),
-                mat, parent, Euler((0, math.pi / 2, 0)), subdiv=1,
-            )
-        hip_w = 0.44 * S
-    else:
-        # 女性：トップス＋くびれ
-        _add_box(
-            f"{name}_top",
-            Vector((0.40 * S, 0.12 * S, 0.30 * S)),
-            Vector((0, 0, 1.06 * S)),
-            mat, parent, subdiv=1,
-        )
-        _add_box(
-            f"{name}_waist",
-            Vector((0.32 * S, 0.10 * S, 0.12 * S)),
-            Vector((0, 0, 0.86 * S)),
-            mat, parent, subdiv=1,
-        )
-        hip_w = 0.38 * S
-
-    _add_box(
-        f"{name}_pants",
-        Vector((hip_w, 0.13 * S, 0.24 * S)),
-        Vector((0, 0, 0.70 * S)),
-        mat, parent, subdiv=1,
+def _build_torso(name: str, mat: bpy.types.Material, parent: bpy.types.Object) -> None:
+    """胴体（服なし・単純形状）"""
+    _add_capsule(
+        f"{name}_torso",
+        0.12 * S,
+        0.70 * S,
+        Vector((0, 0, 0.95 * S)),
+        mat,
+        parent,
+        Euler((0, 0, 0)),
+        subdiv=1,
+    )
+    # 首（頭が浮かないよう接続）
+    _add_capsule(
+        f"{name}_neck",
+        0.055 * S,
+        0.16 * S,
+        Vector((0, 0, 1.29 * S)),
+        mat,
+        parent,
+        Euler((0, 0, 0)),
+        subdiv=1,
+    )
+    _add_capsule(
+        f"{name}_pelvis",
+        0.14 * S,
+        0.22 * S,
+        Vector((0, 0, 0.62 * S)),
+        mat,
+        parent,
+        Euler((0, 0, 0)),
+        subdiv=1,
     )
 
 
@@ -219,13 +216,14 @@ def _build_limb(
     root: bpy.types.Object,
     parts: Dict[str, bpy.types.Object],
 ) -> None:
-    upper_len = (0.27 if is_arm else 0.40) * S
-    lower_len = (0.25 if is_arm else 0.42) * S
-    upper_r = (0.050 if is_arm else 0.070) * S
-    lower_r = (0.040 if is_arm else 0.058) * S
+    upper_len = (0.34 if is_arm else 0.50) * S
+    lower_len = (0.32 if is_arm else 0.54) * S
+    upper_r = (0.060 if is_arm else 0.080) * S
+    lower_r = (0.050 if is_arm else 0.070) * S
 
-    x = axis_sign * ((0.25 if is_arm else 0.11) * S)
-    z = (1.06 if is_arm else 0.60) * S
+    # 体に「くっついて」見える位置
+    x = axis_sign * ((0.22 if is_arm else 0.11) * S)
+    z = (1.24 if is_arm else 0.64) * S
 
     upper_joint = add_empty(f"{name}_{side}_upper_joint", Vector((x, 0, z)), root)
     parts[f"{side}_upper_joint"] = upper_joint
@@ -250,15 +248,15 @@ def _build_limb(
     if is_arm:
         _add_box(
             f"{name}_{side}_hand",
-            Vector((0.05 * S, 0.035 * S, 0.022 * S)),
-            Vector((0, 0, -lower_len)),
+            Vector((0.06 * S, 0.05 * S, 0.028 * S)),
+            Vector((0, 0.03 * S, -lower_len)),
             mat, lower_joint, subdiv=0,
         )
     else:
         _add_box(
-            f"{name}_{side}_shoe",
-            Vector((0.075 * S, 0.15 * S, 0.045 * S)),
-            Vector((0, 0.05 * S, -lower_len)),
+            f"{name}_{side}_foot",
+            Vector((0.085 * S, 0.18 * S, 0.05 * S)),
+            Vector((0, 0.07 * S, -lower_len)),
             mat, lower_joint, subdiv=0,
         )
 
@@ -268,9 +266,8 @@ def build_stick_figure(
     color: Tuple[float, float, float, float],
     location: Vector,
     facing_yaw: float = 0.0,
-    body_type: BodyType = "male",
 ) -> StickFigure:
-    """再現CGメーカー風の立体人型。関節は Empty でポーズ可能。"""
+    """簡易人型。関節は Empty でポーズ可能。"""
     mat = _make_cg_material(f"{name}_mat", color)
     parts: Dict[str, bpy.types.Object] = {}
 
@@ -279,8 +276,8 @@ def build_stick_figure(
 
     head_joint = add_empty(f"{name}_head_joint", Vector((0, 0, 1.36 * S)), root)
     parts["head_joint"] = head_joint
-    _build_head(name, mat, head_joint, body_type)
-    _build_torso_clothing(name, mat, root, body_type)
+    _build_head(name, mat, head_joint)
+    _build_torso(name, mat, root)
 
     _build_limb(name, "arm_l", -1.0, True, mat, root, parts)
     _build_limb(name, "arm_r", 1.0, True, mat, root, parts)
@@ -291,29 +288,29 @@ def build_stick_figure(
 
 
 def apply_idle_pose(fig: StickFigure) -> None:
-    fig.parts["arm_l_upper_joint"].rotation_euler = Euler((0.40, 0, -0.22))
+    fig.parts["arm_l_upper_joint"].rotation_euler = Euler((0.55, 0, -0.38))
     fig.parts["arm_l_lower_joint"].rotation_euler = Euler((0.18, 0, 0))
-    fig.parts["arm_r_upper_joint"].rotation_euler = Euler((0.10, 0, 0.28))
+    fig.parts["arm_r_upper_joint"].rotation_euler = Euler((0.10, 0, 0.38))
     fig.parts["arm_r_lower_joint"].rotation_euler = Euler((0.25, 0, 0))
-    fig.parts["leg_l_upper_joint"].rotation_euler = Euler((-0.06, 0, 0.03))
-    fig.parts["leg_l_lower_joint"].rotation_euler = Euler((0.10, 0, 0))
-    fig.parts["leg_r_upper_joint"].rotation_euler = Euler((0.12, 0, -0.02))
+    fig.parts["leg_l_upper_joint"].rotation_euler = Euler((-0.08, 0, 0.02))
+    fig.parts["leg_l_lower_joint"].rotation_euler = Euler((0.16, 0, 0))
+    fig.parts["leg_r_upper_joint"].rotation_euler = Euler((0.20, 0, -0.03))
     fig.parts["leg_r_lower_joint"].rotation_euler = Euler((-0.05, 0, 0))
 
 
 def build_demo_players() -> Tuple[StickFigure, StickFigure]:
-    """青（男性）・赤（女性）を並べて配置 — アプリ参考画像風。"""
+    """青・赤を見やすい距離で並べて配置"""
     blue = build_stick_figure(
-        "Player_Blue", TEAM_BLUE, Vector((-3.5, 0, 0)),
-        facing_yaw=0.0, body_type="male",
+        "Player_Blue", TEAM_BLUE, Vector((-1.8, 0, 0)),
+        facing_yaw=0.0,
     )
     apply_idle_pose(blue)
 
     red = build_stick_figure(
-        "Player_Red", TEAM_RED, Vector((3.5, 0, 0)),
-        facing_yaw=0.0, body_type="female",
+        "Player_Red", TEAM_RED, Vector((1.8, 0, 0)),
+        facing_yaw=0.0,
     )
     apply_idle_pose(red)
 
-    print(f"Players: 再現CG風 humanoids blue(male) + red(female)  scale={S}")
+    print(f"Players: simple humanoids (head+torso+limbs) blue+red  scale={S}")
     return blue, red
