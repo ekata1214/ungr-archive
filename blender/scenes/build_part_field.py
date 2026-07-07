@@ -688,10 +688,6 @@ def main() -> None:
     if "--render-views" in sys.argv:
         render_views_5()
         write_views_preview_html()
-    if "--render-match-video" in sys.argv:
-        from animate_soccer_match import render_match_preview  # noqa: E402
-
-        render_match_preview()
 
 
 if __name__ == "__main__":
