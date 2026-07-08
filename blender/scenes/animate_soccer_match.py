@@ -99,9 +99,9 @@ def _lerp(a: Vector, b: Vector, t: float) -> Vector:
     return a + (b - a) * t
 
 
-BALL_DRIBBLE_AHEAD = 0.95  # ドリブル時: 体の前方（ワールド単位）
+BALL_DRIBBLE_AHEAD = 1.15  # ドリブル時: 体の前方（ワールド単位）
 BALL_DRIBBLE_SIDE = 0.10   # ドリブル時: 左右の微揺れ幅
-BALL_FEET_CLEARANCE = 0.28  # 両足の最前点より前に出す量
+BALL_FEET_CLEARANCE = 0.55  # 両足の最前点より前に出す量（トゥより前）
 
 
 def _forward_from_yaw(yaw: float) -> Vector:
@@ -158,9 +158,11 @@ def _ball_at_dribble_frame(
 
     min_ahead = BALL_DRIBBLE_AHEAD
     if arm and arm.pose and arm.pose.bones.get("foot.l") and arm.pose.bones.get("foot.r"):
-        # 足の前方投影（速度方向）で “前に出てる足” を検出 → その少し前へ
-        fl = arm.matrix_world @ arm.pose.bones["foot.l"].head
-        fr = arm.matrix_world @ arm.pose.bones["foot.r"].head
+        # 足先(=ball.*) を優先して “前に出てる足” を検出 → その少し前へ
+        bl = arm.pose.bones.get("ball.l") or arm.pose.bones["foot.l"]
+        br = arm.pose.bones.get("ball.r") or arm.pose.bones["foot.r"]
+        fl = arm.matrix_world @ bl.head
+        fr = arm.matrix_world @ br.head
         smax = max((fl - rp).dot(fd), (fr - rp).dot(fd))
         min_ahead = max(min_ahead, smax + BALL_FEET_CLEARANCE)
 
@@ -467,7 +469,8 @@ def animate_soccer_match_500f() -> None:
     p_pass2_to = _ball_at_root_frame(rst, yaw_a, PASS2_RECEIVE)
     p_shot_start = _ball_at_root_frame(rst, yaw_a, KICK_STRIP_START + 3)
     # シュートはGKが横っ飛びで止める（ゴールではなくセーブ→弾く）
-    p_goal = Vector((goal_x + 6.2, 2.4, BALL_GROUND_Z * 0.85))
+    # ゴール枠内の上寄り（GKが飛びつきやすい）へ
+    p_goal = Vector((goal_x + 6.8, 3.2, BALL_GROUND_Z * 0.85))
 
     _ball_hold(ball, rp, b_passer, yaw_a, 1, PASS1_START - 1)
     _ball_pass_roll(
@@ -481,7 +484,7 @@ def animate_soccer_match_500f() -> None:
     _ball_shot(ball, KICK_STRIP_START + 3, KICK_BALL_RELEASE, SHOT_LAND, p_shot_start, p_goal, yaw_a)
     # セーブ後のこぼれ球（右方向へ弾く）
     _kf_loc(ball, SHOT_LAND + 1, p_goal)
-    spill = Vector((goal_x + 16.0, 9.5, BALL_GROUND_Z))
+    spill = Vector((goal_x + 18.0, 11.0, BALL_GROUND_Z))
     _kf_loc(ball, SHOT_LAND + 14, spill)
     _kf_loc(ball, SHOT_LAND + 60, spill)
 
@@ -508,10 +511,16 @@ def animate_soccer_match_500f() -> None:
     _add_nla_strip(r_gk, "jump_full", SHOT_LAND - 16, SHOT_LAND + 18)
     _add_nla_strip(r_gk, "fight_idle", SHOT_LAND + 18, MATCH_FRAMES)
 
-    # GKの横移動（ボールへ真横に飛ぶ感じ）
-    # ball.y (p_goal.y) へ一気にスライドしてブロック
-    for f in (SHOT_LAND - 14, SHOT_LAND - 6, SHOT_LAND):
-        gk_keys.append((f, Vector((goal_x + 7.2, p_goal.y, 0.0))))
+    # GKの横っ飛び（ルートを横へ「移動」させて、ジャンプモーションと合成）
+    dive_x0 = goal_x + 6.0
+    dive_x1 = goal_x + 8.8
+    for f, t in ((SHOT_LAND - 18, 0.0), (SHOT_LAND - 10, 0.55), (SHOT_LAND - 4, 0.9), (SHOT_LAND, 1.0)):
+        x = dive_x0 + (dive_x1 - dive_x0) * t
+        y = p_goal.y * (0.85 + 0.15 * t)
+        gk_keys.append((f, Vector((x, y, 0.0))))
+    # 着地後は少し戻る
+    gk_keys.append((SHOT_LAND + 22, Vector((goal_x + 7.2, p_goal.y * 0.6, 0.0))))
+    gk_keys.append((MATCH_FRAMES, gk_keys[-1][1]))
     gk_keys = sorted({f: v for f, v in gk_keys}.items(), key=lambda kv: kv[0])
     _key_track_root(rg, yaw_d, [(f, v) for f, v in gk_keys])
 
