@@ -149,10 +149,11 @@ def _ball_at_dribble_frame(
     yaw: float,
     frame: int,
     phase: float = 0.0,
+    preferred_dir: Vector | None = None,
 ) -> Vector:
     """ドリブル — **両足の最前点より常に前** に置く（右足でも左足でも前）"""
     rp = _root_world_at(root, frame)
-    fd = _dribble_dir(root, yaw, frame)
+    fd = preferred_dir.normalized() if preferred_dir and preferred_dir.length > 1e-6 else _dribble_dir(root, yaw, frame)
     right = Vector((fd.y, -fd.x, 0.0))
     side = BALL_DRIBBLE_SIDE * math.sin(phase)
 
@@ -230,6 +231,7 @@ def _ball_hold(
     yaw: float,
     f0: int,
     f1: int,
+    preferred_dir: Vector | None = None,
 ) -> None:
     """ドリブル/保持 — 常に体の前（速度方向）に追従"""
     if f1 < f0:
@@ -239,7 +241,7 @@ def _ball_hold(
         arm = _arm_of_root(root)
     for i, f in enumerate(range(f0, f1 + 1)):
         phase = (i / 6.0) * math.tau  # 軽い左右タッチ感
-        _kf_loc(ball, f, _ball_at_dribble_frame(root, arm, yaw, f, phase=phase))
+        _kf_loc(ball, f, _ball_at_dribble_frame(root, arm, yaw, f, phase=phase, preferred_dir=preferred_dir))
 
 
 def _ball_pass_roll(
@@ -472,15 +474,18 @@ def animate_soccer_match_500f() -> None:
     # ゴール枠内の上寄り（GKが飛びつきやすい）へ
     p_goal = Vector((goal_x + 6.8, 3.2, BALL_GROUND_Z * 0.85))
 
-    _ball_hold(ball, rp, b_passer, yaw_a, 1, PASS1_START - 1)
+    # 青は左ゴールへ攻める（常にゴール方向にボールを前へ）
+    blue_goal_dir = (Vector((goal_x, 0.0, 0.0)) - rp.matrix_world.translation)
+
+    _ball_hold(ball, rp, b_passer, yaw_a, 1, PASS1_START - 1, preferred_dir=blue_goal_dir)
     _ball_pass_roll(
         ball, PASS1_START, PASS1_RELEASE, PASS1_RECEIVE, p_passer, p_recv, yaw_a, arc=0.4,
     )
-    _ball_hold(ball, rr, b_runner, yaw_a, PASS1_RECEIVE, PASS2_START - 1)
+    _ball_hold(ball, rr, b_runner, yaw_a, PASS1_RECEIVE, PASS2_START - 1, preferred_dir=blue_goal_dir)
     _ball_pass_roll(
         ball, PASS2_START, PASS2_RELEASE, PASS2_RECEIVE, p_pass2_from, p_pass2_to, yaw_a, arc=0.35,
     )
-    _ball_hold(ball, rst, b_striker, yaw_a, PASS2_RECEIVE, KICK_STRIP_START + 3)
+    _ball_hold(ball, rst, b_striker, yaw_a, PASS2_RECEIVE, KICK_STRIP_START + 3, preferred_dir=blue_goal_dir)
     _ball_shot(ball, KICK_STRIP_START + 3, KICK_BALL_RELEASE, SHOT_LAND, p_shot_start, p_goal, yaw_a)
     # セーブ後のこぼれ球（右方向へ弾く）
     _kf_loc(ball, SHOT_LAND + 1, p_goal)
