@@ -310,15 +310,11 @@ def build_field_only() -> None:
     build_team("Blue", (0.12, 0.45, 0.95, 1.0), blue_positions, actions=["run", "walk", "idle"], facing_yaw=0.0)
     build_team("Red", (0.92, 0.18, 0.15, 1.0), red_positions, actions=["fight_kick", "run", "idle"], facing_yaw=math.pi)
 
-    # ボール（截頭二十面体 — 12五角形 + 20六角形）
-    from build_soccer_ball import build_soccer_ball_mesh  # noqa: E402
+    # ボール（フリー素材 GLB — gitdolucas/sport-assets MIT）
+    from import_soccer_ball import import_soccer_ball  # noqa: E402
 
     ball_r = 0.22 * _SCALE
-    build_soccer_ball_mesh(
-        name="Ball",
-        radius=ball_r,
-        location=Vector((0, 0, ball_r)),
-    )
+    import_soccer_ball(radius=ball_r, location=Vector((0, 0, ball_r)))
 
     print(
         f"Field: {PITCH_LENGTH:.1f}x{PITCH_WIDTH:.1f}m FIFA markings + "
