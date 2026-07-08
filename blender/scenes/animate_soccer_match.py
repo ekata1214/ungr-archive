@@ -99,8 +99,9 @@ def _lerp(a: Vector, b: Vector, t: float) -> Vector:
     return a + (b - a) * t
 
 
-BALL_DRIBBLE_AHEAD = 0.72  # ドリブル時: 体の前方（ワールド単位）
+BALL_DRIBBLE_AHEAD = 0.95  # ドリブル時: 体の前方（ワールド単位）
 BALL_DRIBBLE_SIDE = 0.10   # ドリブル時: 左右の微揺れ幅
+BALL_FEET_CLEARANCE = 0.28  # 両足の最前点より前に出す量
 
 
 def _forward_from_yaw(yaw: float) -> Vector:
@@ -144,19 +145,26 @@ def _dribble_dir(root: bpy.types.Object, yaw: float, frame: int) -> Vector:
 
 def _ball_at_dribble_frame(
     root: bpy.types.Object,
+    arm: bpy.types.Object | None,
     yaw: float,
     frame: int,
     phase: float = 0.0,
 ) -> Vector:
-    """ドリブル — 常に体の前に置く（足が左右交互でも後ろに入らない）"""
+    """ドリブル — **両足の最前点より常に前** に置く（右足でも左足でも前）"""
     rp = _root_world_at(root, frame)
     fd = _dribble_dir(root, yaw, frame)
     right = Vector((fd.y, -fd.x, 0.0))
     side = BALL_DRIBBLE_SIDE * math.sin(phase)
-    p = rp + fd * BALL_DRIBBLE_AHEAD + right * side
-    # 必ず前方（速度方向）にあることを保証
-    if (p - rp).dot(fd) < BALL_DRIBBLE_AHEAD * 0.85:
-        p = rp + fd * (BALL_DRIBBLE_AHEAD * 0.95)
+
+    min_ahead = BALL_DRIBBLE_AHEAD
+    if arm and arm.pose and arm.pose.bones.get("foot.l") and arm.pose.bones.get("foot.r"):
+        # 足の前方投影（速度方向）で “前に出てる足” を検出 → その少し前へ
+        fl = arm.matrix_world @ arm.pose.bones["foot.l"].head
+        fr = arm.matrix_world @ arm.pose.bones["foot.r"].head
+        smax = max((fl - rp).dot(fd), (fr - rp).dot(fd))
+        min_ahead = max(min_ahead, smax + BALL_FEET_CLEARANCE)
+
+    p = rp + fd * min_ahead + right * side
     p.z = BALL_GROUND_Z
     return p
 
@@ -167,8 +175,9 @@ def _ball_at_root_frame(
     frame: int,
     arm: bpy.types.Object | None = None,
 ) -> Vector:
-    # arm 引数は互換のため残す（ドリブル位置は root + 速度方向で決める）
-    return _ball_at_dribble_frame(root, yaw, frame)
+    if arm is None:
+        arm = _arm_of_root(root)
+    return _ball_at_dribble_frame(root, arm, yaw, frame)
 
 
 def _add_nla_strip(
@@ -224,9 +233,11 @@ def _ball_hold(
     if f1 < f0:
         return
     # 1fごとにキーを打つ（足の切り替えで後ろに回り込むのを防ぐ）
+    if arm is None:
+        arm = _arm_of_root(root)
     for i, f in enumerate(range(f0, f1 + 1)):
         phase = (i / 6.0) * math.tau  # 軽い左右タッチ感
-        _kf_loc(ball, f, _ball_at_dribble_frame(root, yaw, f, phase=phase))
+        _kf_loc(ball, f, _ball_at_dribble_frame(root, arm, yaw, f, phase=phase))
 
 
 def _ball_pass_roll(
@@ -328,6 +339,36 @@ def _key_track_root(
                 kp.handle_right_type = "AUTO_CLAMPED"
 
 
+def _yaw_from_dir(d: Vector, fallback: float) -> float:
+    d2 = Vector((d.x, d.y, 0.0))
+    if d2.length < 1e-6:
+        return fallback
+    # our forward vector is (-sin(yaw), cos(yaw)) -> yaw = atan2(-x, y)
+    return math.atan2(-d2.x, d2.y)
+
+
+def _move_root_face_dir(
+    root: bpy.types.Object,
+    key_pos: List[Tuple[int, Vector]],
+    fallback_yaw: float,
+) -> None:
+    """位置キーから移動方向を推定して向きを付ける（向き逆問題を潰す）"""
+    _clear_anim(root)
+    last_yaw = fallback_yaw
+    for i, (f, loc) in enumerate(key_pos):
+        if i + 1 < len(key_pos):
+            d = key_pos[i + 1][1] - loc
+            last_yaw = _yaw_from_dir(d, last_yaw)
+        _kf_loc(root, f, loc)
+        _kf_rot_z(root, f, last_yaw)
+    if root.animation_data and root.animation_data.action:
+        for fc in root.animation_data.action.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation = "BEZIER"
+                kp.handle_left_type = "AUTO_CLAMPED"
+                kp.handle_right_type = "AUTO_CLAMPED"
+
+
 def _find_arms(prefix: str) -> List[bpy.types.Object]:
     return sorted(
         [o for o in bpy.data.objects if o.name.startswith(prefix) and o.name.endswith("_Armature")],
@@ -356,7 +397,7 @@ def animate_soccer_match_500f() -> None:
         raise RuntimeError("Ball object not found")
 
     goal_x = -PITCH_HALF
-    yaw_a = math.pi / 2
+    yaw_a = math.pi / 2   # fallback only; actual yaw follows movement direction
     yaw_d = -math.pi / 2
 
     b_passer, b_runner, b_wing, b_support, b_striker = blues[:5]
@@ -375,21 +416,21 @@ def animate_soccer_match_500f() -> None:
     rs = roots[b_support.name]
     rst = roots[b_striker.name]
 
-    _move_root(rp, [(1, Vector((22, -7, 0))), (500, Vector((22, -7, 0)))], yaw_a)
-    _move_root(rr, [
+    _move_root_face_dir(rp, [(1, Vector((22, -7, 0))), (500, Vector((22, -7, 0)))], yaw_a)
+    _move_root_face_dir(rr, [
         (1, Vector((16, 5, 0))), (PASS1_RECEIVE, Vector((16, 5, 0))),
         (200, Vector((-2, 3, 0))), (PASS2_START, Vector((-8, 2, 0))),
         (500, Vector((-12, 2, 0))),
     ], yaw_a)
-    _move_root(rw, [
+    _move_root_face_dir(rw, [
         (1, Vector((18, 11, 0))), (150, Vector((18, 11, 0))),
         (280, Vector((-6, 12, 0))), (500, Vector((-6, 12, 0))),
     ], yaw_a)
-    _move_root(rs, [
+    _move_root_face_dir(rs, [
         (1, Vector((10, -10, 0))), (220, Vector((10, -10, 0))),
         (340, Vector((-28, -8, 0))), (500, Vector((-28, -8, 0))),
     ], yaw_a)
-    _move_root(rst, [
+    _move_root_face_dir(rst, [
         (1, Vector((6, 0, 0))),
         (PASS2_RECEIVE, Vector((6, 0, 0))),
         (KICK_STRIP_START - 10, Vector((-10, 0, 0))),
@@ -425,7 +466,8 @@ def animate_soccer_match_500f() -> None:
     p_pass2_from = _ball_at_root_frame(rr, yaw_a, PASS2_START - 1)
     p_pass2_to = _ball_at_root_frame(rst, yaw_a, PASS2_RECEIVE)
     p_shot_start = _ball_at_root_frame(rst, yaw_a, KICK_STRIP_START + 3)
-    p_goal = Vector((goal_x + 2.0, 0.0, BALL_GROUND_Z * 0.85))
+    # シュートはGKが横っ飛びで止める（ゴールではなくセーブ→弾く）
+    p_goal = Vector((goal_x + 6.2, 2.4, BALL_GROUND_Z * 0.85))
 
     _ball_hold(ball, rp, b_passer, yaw_a, 1, PASS1_START - 1)
     _ball_pass_roll(
@@ -437,6 +479,11 @@ def animate_soccer_match_500f() -> None:
     )
     _ball_hold(ball, rst, b_striker, yaw_a, PASS2_RECEIVE, KICK_STRIP_START + 3)
     _ball_shot(ball, KICK_STRIP_START + 3, KICK_BALL_RELEASE, SHOT_LAND, p_shot_start, p_goal, yaw_a)
+    # セーブ後のこぼれ球（右方向へ弾く）
+    _kf_loc(ball, SHOT_LAND + 1, p_goal)
+    spill = Vector((goal_x + 16.0, 9.5, BALL_GROUND_Z))
+    _kf_loc(ball, SHOT_LAND + 14, spill)
+    _kf_loc(ball, SHOT_LAND + 60, spill)
 
     _ease_all_ball_keyframes(ball)
     bpy.context.scene.frame_set(1)
@@ -456,7 +503,17 @@ def animate_soccer_match_500f() -> None:
         gk_keys.append((f, Vector((x, y, 0.0))))
     gk_keys.append((MATCH_FRAMES, gk_keys[-1][1]))
     _key_track_root(rg, yaw_d, gk_keys)
-    _add_nla_strip(r_gk, "fight_idle", 1, MATCH_FRAMES)
+    _add_nla_strip(r_gk, "fight_idle", 1, SHOT_LAND - 18)
+    # 横っ飛び（jump_full）をシュート着弾に合わせる
+    _add_nla_strip(r_gk, "jump_full", SHOT_LAND - 16, SHOT_LAND + 18)
+    _add_nla_strip(r_gk, "fight_idle", SHOT_LAND + 18, MATCH_FRAMES)
+
+    # GKの横移動（ボールへ真横に飛ぶ感じ）
+    # ball.y (p_goal.y) へ一気にスライドしてブロック
+    for f in (SHOT_LAND - 14, SHOT_LAND - 6, SHOT_LAND):
+        gk_keys.append((f, Vector((goal_x + 7.2, p_goal.y, 0.0))))
+    gk_keys = sorted({f: v for f, v in gk_keys}.items(), key=lambda kv: kv[0])
+    _key_track_root(rg, yaw_d, [(f, v) for f, v in gk_keys])
 
     # DFライン: ボールのYへスライドしつつ、ボールが近づいたら下がる
     def_specs = [
