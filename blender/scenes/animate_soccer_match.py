@@ -355,14 +355,15 @@ def _move_root_face_dir(
     root: bpy.types.Object,
     key_pos: List[Tuple[int, Vector]],
     fallback_yaw: float,
+    yaw_offset: float = 0.0,
 ) -> None:
     """位置キーから移動方向を推定して向きを付ける（向き逆問題を潰す）"""
     _clear_anim(root)
-    last_yaw = fallback_yaw
+    last_yaw = fallback_yaw + yaw_offset
     for i, (f, loc) in enumerate(key_pos):
         if i + 1 < len(key_pos):
             d = key_pos[i + 1][1] - loc
-            last_yaw = _yaw_from_dir(d, last_yaw)
+            last_yaw = _yaw_from_dir(d, last_yaw) + yaw_offset
         _kf_loc(root, f, loc)
         _kf_rot_z(root, f, last_yaw)
     if root.animation_data and root.animation_data.action:
@@ -420,27 +421,30 @@ def animate_soccer_match_500f() -> None:
     rs = roots[b_support.name]
     rst = roots[b_striker.name]
 
-    _move_root_face_dir(rp, [(1, Vector((22, -7, 0))), (500, Vector((22, -7, 0)))], yaw_a)
+    # Mannequiny の正面が逆なので、青は yaw を 180°反転して進行方向へ向ける
+    blue_yaw_offset = math.pi
+
+    _move_root_face_dir(rp, [(1, Vector((22, -7, 0))), (500, Vector((22, -7, 0)))], yaw_a, yaw_offset=blue_yaw_offset)
     _move_root_face_dir(rr, [
         (1, Vector((16, 5, 0))), (PASS1_RECEIVE, Vector((16, 5, 0))),
         (200, Vector((-2, 3, 0))), (PASS2_START, Vector((-8, 2, 0))),
         (500, Vector((-12, 2, 0))),
-    ], yaw_a)
+    ], yaw_a, yaw_offset=blue_yaw_offset)
     _move_root_face_dir(rw, [
         (1, Vector((18, 11, 0))), (150, Vector((18, 11, 0))),
         (280, Vector((-6, 12, 0))), (500, Vector((-6, 12, 0))),
-    ], yaw_a)
+    ], yaw_a, yaw_offset=blue_yaw_offset)
     _move_root_face_dir(rs, [
         (1, Vector((10, -10, 0))), (220, Vector((10, -10, 0))),
         (340, Vector((-28, -8, 0))), (500, Vector((-28, -8, 0))),
-    ], yaw_a)
+    ], yaw_a, yaw_offset=blue_yaw_offset)
     _move_root_face_dir(rst, [
         (1, Vector((6, 0, 0))),
         (PASS2_RECEIVE, Vector((6, 0, 0))),
         (KICK_STRIP_START - 10, Vector((-10, 0, 0))),
         (KICK_STRIP_START - 2, Vector((-18, 0, 0))),
         (500, Vector((-16, 1, 0))),
-    ], yaw_a)
+    ], yaw_a, yaw_offset=blue_yaw_offset)
 
     # --- 青：アクション（ボールと同期） ---
     _add_nla_strip(b_passer, "idle", 1, PASS1_START - 1)
