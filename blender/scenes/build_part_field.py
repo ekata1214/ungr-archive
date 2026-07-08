@@ -44,83 +44,17 @@ RENDER_DIR = Path("/workspace/blender/renders/parts")
 
 
 def make_ball_material(name: str) -> bpy.types.Material:
-    """サッカーボール — 白黒パネル（Voronoi セル + 黒シーム）"""
+    """互換用 — 実メッシュは build_soccer_ball を使用"""
+    return _make_panel_material_compat(name, (0.96, 0.96, 0.96))
+
+
+def _make_panel_material_compat(name: str, color: tuple) -> bpy.types.Material:
     mat = bpy.data.materials.new(name=name)
     mat.use_nodes = True
-    nodes = mat.node_tree.nodes
-    links = mat.node_tree.links
-    nodes.clear()
-
-    out = nodes.new("ShaderNodeOutputMaterial")
-    bsdf = nodes.new("ShaderNodeBsdfPrincipled")
-    bsdf.inputs["Roughness"].default_value = 0.40
-    spec = bsdf.inputs.get("Specular IOR Level") or bsdf.inputs.get("Specular")
-    if spec:
-        spec.default_value = 0.30
-
-    texcoord = nodes.new("ShaderNodeTexCoord")
-    mapping = nodes.new("ShaderNodeMapping")
-    mapping.vector_type = "POINT"
-    mapping.inputs["Scale"].default_value = (3.2, 3.2, 3.2)
-
-    vor = nodes.new("ShaderNodeTexVoronoi")
-    vor.feature = "F1"
-    vor.distance = "EUCLIDEAN"
-    vor.inputs["Randomness"].default_value = 0.85
-    vor.inputs["Scale"].default_value = 8.5
-
-    # セルごとにランダム → 白 or 黒パネル
-    cell_thresh = nodes.new("ShaderNodeMath")
-    cell_thresh.operation = "GREATER_THAN"
-    cell_thresh.inputs[1].default_value = 0.52
-
-    panel_ramp = nodes.new("ShaderNodeValToRGB")
-    panel_ramp.color_ramp.elements[0].position = 0.0
-    panel_ramp.color_ramp.elements[0].color = (0.04, 0.04, 0.04, 1.0)
-    panel_ramp.color_ramp.elements[1].position = 1.0
-    panel_ramp.color_ramp.elements[1].color = (0.97, 0.97, 0.97, 1.0)
-
-    # パネル境界の黒シーム
-    vor_edge = nodes.new("ShaderNodeTexVoronoi")
-    vor_edge.feature = "DISTANCE_TO_EDGE"
-    vor_edge.inputs["Randomness"].default_value = 0.85
-    vor_edge.inputs["Scale"].default_value = 8.5
-
-    seam_ramp = nodes.new("ShaderNodeValToRGB")
-    seam_ramp.color_ramp.elements[0].position = 0.0
-    seam_ramp.color_ramp.elements[0].color = (0.0, 0.0, 0.0, 1.0)
-    seam_ramp.color_ramp.elements[1].position = 0.08
-    seam_ramp.color_ramp.elements[1].color = (1.0, 1.0, 1.0, 1.0)
-
-    seam_mix = nodes.new("ShaderNodeMixRGB")
-    seam_mix.blend_type = "MULTIPLY"
-
-    leather_noise = nodes.new("ShaderNodeTexNoise")
-    leather_noise.inputs["Scale"].default_value = 90.0
-    leather_noise.inputs["Detail"].default_value = 6.0
-
-    grain_mix = nodes.new("ShaderNodeMixRGB")
-    grain_mix.blend_type = "OVERLAY"
-    grain_mix.inputs["Fac"].default_value = 0.10
-
-    bump = nodes.new("ShaderNodeBump")
-    bump.inputs["Strength"].default_value = 0.22
-
-    links.new(texcoord.outputs["Object"], mapping.inputs["Vector"])
-    links.new(mapping.outputs["Vector"], vor.inputs["Vector"])
-    links.new(mapping.outputs["Vector"], vor_edge.inputs["Vector"])
-    links.new(mapping.outputs["Vector"], leather_noise.inputs["Vector"])
-    links.new(vor.outputs["Color"], cell_thresh.inputs[0])
-    links.new(cell_thresh.outputs["Value"], panel_ramp.inputs["Fac"])
-    links.new(panel_ramp.outputs["Color"], seam_mix.inputs[1])
-    links.new(vor_edge.outputs["Distance"], seam_ramp.inputs["Fac"])
-    links.new(seam_ramp.outputs["Color"], seam_mix.inputs[2])
-    links.new(seam_mix.outputs["Color"], grain_mix.inputs[1])
-    links.new(leather_noise.outputs["Color"], grain_mix.inputs[2])
-    links.new(grain_mix.outputs["Color"], bsdf.inputs["Base Color"])
-    links.new(vor_edge.outputs["Distance"], bump.inputs["Height"])
-    links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
-    links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+    bsdf = mat.node_tree.nodes.get("Principled BSDF")
+    if bsdf:
+        bsdf.inputs["Base Color"].default_value = (*color, 1.0)
+        bsdf.inputs["Roughness"].default_value = 0.38
     return mat
 
 
@@ -376,15 +310,15 @@ def build_field_only() -> None:
     build_team("Blue", (0.12, 0.45, 0.95, 1.0), blue_positions, actions=["run", "walk", "idle"], facing_yaw=0.0)
     build_team("Red", (0.92, 0.18, 0.15, 1.0), red_positions, actions=["fight_kick", "run", "idle"], facing_yaw=math.pi)
 
-    # ボール（センターライン付近）
-    ball_mat = make_ball_material("Ball")
-    bpy.ops.mesh.primitive_uv_sphere_add(
-        segments=32, ring_count=32, radius=0.22 * _SCALE, location=(0, 0, 0.22 * _SCALE),
+    # ボール（截頭二十面体 — 12五角形 + 20六角形）
+    from build_soccer_ball import build_soccer_ball_mesh  # noqa: E402
+
+    ball_r = 0.22 * _SCALE
+    build_soccer_ball_mesh(
+        name="Ball",
+        radius=ball_r,
+        location=Vector((0, 0, ball_r)),
     )
-    ball = bpy.context.active_object
-    ball.name = "Ball"
-    ball.data.materials.append(ball_mat)
-    bpy.ops.object.shade_smooth()
 
     print(
         f"Field: {PITCH_LENGTH:.1f}x{PITCH_WIDTH:.1f}m FIFA markings + "
