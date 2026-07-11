@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""遠藤航 vs 少林幽霊ドリブル — 半透明すり抜けでタックルが空振り"""
+"""遠藤航 vs 少林 — 正面ドリブルから幽霊のように消失、ボールだけ残る"""
 
 from __future__ import annotations
 
@@ -21,19 +21,20 @@ from animate_soccer_match import (
     _root_of,
 )
 
-GHOST_FRAMES = 240
+VANISH_FRAMES = 260
 FPS = 24
 
 SHAOLIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 SHAOLIN_WHITE = (0.96, 0.96, 0.98, 1.0)
 ENDO_NAVY = (0.07, 0.14, 0.52, 1.0)
 
-MOVE_YAW = math.pi * 1.5
+# 遠藤は +X 向き（少林がいる方向）、少林は -X 向き
+ENDO_YAW = math.pi / 2
+SHAOLIN_YAW = math.pi * 1.5
 
-# 遠藤のタックル試行ピーク（この前後で少林が幽霊化）
-TACKLE_PEAKS = (42, 102, 162)
-GHOST_HALF = 20
-GHOST_ALPHA_MIN = 0.22
+FADE_START = 55
+FADE_END = 195
+ENDO_POS = Vector((4.0, 0.0, 0.0))
 
 
 def _remove_all_players() -> None:
@@ -46,86 +47,47 @@ def _right_of(d: Vector) -> Vector:
     return Vector((d.y, -d.x, 0.0)).normalized()
 
 
-def _base_shaolin_path(frame: int) -> Vector:
-    t = (frame - 1) / max(1, GHOST_FRAMES - 1)
-    x = 30.0 - t * 44.0
-    y = (
-        1.4 * math.sin(t * 8.5 * math.pi)
-        + 0.9 * math.sin(t * 13.5 * math.pi + 0.5)
-        + 0.5 * math.sin(t * 20.0 * math.pi + 1.0)
-    )
-    return Vector((x, y, 0.0))
-
-
-def _move_dir(frame: int) -> Vector:
-    p0 = _base_shaolin_path(max(1, frame - 3))
-    p1 = _base_shaolin_path(min(GHOST_FRAMES, frame + 3))
-    d = p1 - p0
-    d.z = 0.0
-    if d.length < 1e-5:
-        return Vector((-1.0, 0.0, 0.0))
-    return d.normalized()
-
-
-def _ghost_strength(frame: int) -> float:
-    strength = 0.0
-    for peak in TACKLE_PEAKS:
-        dist = abs(frame - peak)
-        if dist > GHOST_HALF:
-            continue
-        t = 1.0 - dist / GHOST_HALF
-        strength = max(strength, t * t)
-    return strength
+def _shaolin_alpha(frame: int) -> float:
+    if frame < FADE_START:
+        return 1.0
+    if frame >= FADE_END:
+        return 0.0
+    t = (frame - FADE_START) / (FADE_END - FADE_START)
+    # すーっと消える — 後半で急に薄くなる
+    return max(0.0, 1.0 - t ** 1.35)
 
 
 def _shaolin_path(frame: int) -> Vector:
-    """地面すれすれ — タックル時に横へ幽霊すり抜け"""
-    base = _base_shaolin_path(frame)
-    md = _move_dir(frame)
-    g = _ghost_strength(frame)
-    if g < 1e-4:
-        return base
-    right = _right_of(md)
-    slip = right * 1.55 * g + md * 0.75 * g
-    return base + slip
+    """少林 — 遠藤の真正面へゆっくりドリブル"""
+    t = min(1.0, (frame - 1) / 150.0)
+    x = 14.0 - t * 8.5  # 遠藤(x=4)の真正面 ~5.5m まで接近
+    y = 0.12 * math.sin(frame * 0.09) + 0.05 * math.sin(frame * 0.19)
+    return Vector((x, y, 0.0))
 
 
-def _endo_path(frame: int, shaolin: Vector, ball: Vector, move_dir: Vector) -> Vector:
-    """遠藤 — 前で守備、タックル突込 → 空振り"""
+def _endo_path(frame: int) -> Vector:
+    """遠藤 — 堅実に立って見失う"""
+    sway = 0.06 * math.sin(frame * 0.07)
+    lean = 0.04 * math.sin(frame * 0.14 + 0.5)
+    return Vector((ENDO_POS.x, ENDO_POS.y + sway, 0.0)) + Vector((lean, 0, 0))
+
+
+def _ball_pos(frame: int, shaolin: Vector) -> Vector:
+    """ボール — 少林足元 → 消失後も残る"""
+    phase = frame * 0.45
+    ahead = 0.34 + 0.06 * math.sin(phase * 2.0)
+    side = 0.14 * math.sin(phase * 3.2)
+    move_dir = Vector((-1.0, 0.0, 0.0))
     right = _right_of(move_dir)
-    guard = shaolin + move_dir * 2.1 + right * (-1.05)
 
-    surge = 0.0
-    for peak in TACKLE_PEAKS:
-        dist = abs(frame - peak)
-        if dist > 14:
-            continue
-        t = 1.0 - dist / 14.0
-        surge = max(surge, t ** 1.6)
-
-    if surge > 0.0:
-        to_ball = ball - guard
-        to_ball.z = 0.0
-        if to_ball.length > 1e-5:
-            guard = guard + to_ball.normalized() * 1.35 * surge
-    return guard
-
-
-def _ball_at_feet(shaolin: Vector, frame: int, move_dir: Vector) -> Vector:
-    phase = frame * 0.58
-    ahead = 0.36 + 0.07 * math.sin(phase * 2.0)
-    side = 0.20 * math.sin(phase * 3.5) + 0.11 * math.sin(phase * 5.6)
-    right = _right_of(move_dir)
-    p = shaolin + move_dir * ahead + right * side
+    if frame < FADE_END:
+        p = shaolin + move_dir * ahead + right * side
+    else:
+        # 消えたあとも同じ場所で微動
+        anchor = _shaolin_path(FADE_END - 1)
+        p = anchor + move_dir * 0.36 + right * (0.12 * math.sin(phase * 0.8))
     p.z = BALL_GROUND_Z
     return p
-
-
-def _ghost_alpha(frame: int) -> float:
-    g = _ghost_strength(frame)
-    if g < 1e-4:
-        return 1.0
-    return 1.0 - (1.0 - GHOST_ALPHA_MIN) * g
 
 
 def _animate_root_fixed(
@@ -171,7 +133,7 @@ def _kf_mesh_alpha(mesh_obj: bpy.types.Object, frame: int, alpha: float) -> None
         inp.keyframe_insert("default_value", frame=frame)
 
 
-def setup_endo_ghost_characters() -> Tuple[bpy.types.Object, bpy.types.Object, bpy.types.Object, bpy.types.Object]:
+def setup_endo_vanish_characters() -> Tuple[bpy.types.Object, bpy.types.Object, bpy.types.Object, bpy.types.Object]:
     from import_mannequiny import _mesh_child, build_team, set_mesh_split_vertical  # noqa: E402
 
     _remove_all_players()
@@ -179,16 +141,16 @@ def setup_endo_ghost_characters() -> Tuple[bpy.types.Object, bpy.types.Object, b
     shaolin_arm = build_team(
         "Shaolin",
         SHAOLIN_ORANGE,
-        [Vector((30, 0, 0))],
-        actions=["run"],
-        facing_yaw=MOVE_YAW,
+        [Vector((15, 0, 0))],
+        actions=["walk"],
+        facing_yaw=SHAOLIN_YAW,
     )[0]
     endo_arm = build_team(
         "Endo",
         ENDO_NAVY,
-        [Vector((28, -1.0, 0))],
-        actions=["run"],
-        facing_yaw=MOVE_YAW,
+        [ENDO_POS],
+        actions=["idle"],
+        facing_yaw=ENDO_YAW,
     )[0]
 
     shaolin_mesh = _mesh_child(shaolin_arm)
@@ -201,14 +163,14 @@ def setup_endo_ghost_characters() -> Tuple[bpy.types.Object, bpy.types.Object, b
 def animate_endo_shaolin_ghost() -> None:
     scene = bpy.context.scene
     scene.frame_start = 1
-    scene.frame_end = GHOST_FRAMES
+    scene.frame_end = VANISH_FRAMES
     scene.render.fps = FPS
 
     ball = bpy.data.objects.get("Ball")
     if not ball:
         raise RuntimeError("Ball not found — run build_field_only first")
 
-    endo_arm, shaolin_arm, endo_root, shaolin_root = setup_endo_ghost_characters()
+    endo_arm, shaolin_arm, endo_root, shaolin_root = setup_endo_vanish_characters()
     shaolin_mesh = next(ch for ch in shaolin_arm.children if ch.type == "MESH")
 
     for arm in (endo_arm, shaolin_arm):
@@ -216,41 +178,28 @@ def animate_endo_shaolin_ghost() -> None:
     if ball.animation_data:
         ball.animation_data_clear()
 
-    shaolin_keys: List[Tuple[int, Vector]] = []
-    endo_keys: List[Tuple[int, Vector]] = []
-    alpha_keys: List[Tuple[int, float]] = []
+    shaolin_keys = [(f, _shaolin_path(f)) for f in range(1, VANISH_FRAMES + 1)]
+    endo_keys = [(f, _endo_path(f)) for f in range(1, VANISH_FRAMES + 1)]
 
-    for f in range(1, GHOST_FRAMES + 1):
+    _animate_root_fixed(shaolin_root, shaolin_keys, SHAOLIN_YAW)
+    _animate_root_fixed(endo_root, endo_keys, ENDO_YAW)
+
+    _add_nla_strip(shaolin_arm, "walk", 1, FADE_END)
+    _add_nla_strip(endo_arm, "idle", 1, VANISH_FRAMES)
+
+    for f in range(1, VANISH_FRAMES + 1):
         s = _shaolin_path(f)
-        md = _move_dir(f)
-        ball_p = _ball_at_feet(s, f, md)
-        shaolin_keys.append((f, s))
-        endo_keys.append((f, _endo_path(f, s, ball_p, md)))
-        alpha_keys.append((f, _ghost_alpha(f)))
-
-    _animate_root_fixed(shaolin_root, shaolin_keys, MOVE_YAW)
-    _animate_root_fixed(endo_root, endo_keys, MOVE_YAW)
-
-    _add_nla_strip(shaolin_arm, "run", 1, GHOST_FRAMES)
-    _add_nla_strip(endo_arm, "run", 1, GHOST_FRAMES)
-
-    for f in range(1, GHOST_FRAMES + 1):
-        s = shaolin_keys[f - 1][1]
-        _kf_loc(ball, f, _ball_at_feet(s, f, _move_dir(f)))
+        _kf_loc(ball, f, _ball_pos(f, s))
     _ease_all_ball_keyframes(ball)
 
-    # 幽霊化アルファ（18f刻み + タックルピーク付近）
-    alpha_frame_set = set(range(1, GHOST_FRAMES + 1, 12))
-    for peak in TACKLE_PEAKS:
-        for d in range(-GHOST_HALF, GHOST_HALF + 1, 4):
-            alpha_frame_set.add(max(1, min(GHOST_FRAMES, peak + d)))
-    alpha_frame_set.add(GHOST_FRAMES)
-    for f in sorted(alpha_frame_set):
-        _kf_mesh_alpha(shaolin_mesh, f, alpha_keys[f - 1][1])
+    for f in range(1, VANISH_FRAMES + 1, 4):
+        _kf_mesh_alpha(shaolin_mesh, f, _shaolin_alpha(f))
+    _kf_mesh_alpha(shaolin_mesh, FADE_END, 0.0)
+    _kf_mesh_alpha(shaolin_mesh, VANISH_FRAMES, 0.0)
 
-    setup_endo_ghost_camera()
+    setup_endo_vanish_camera()
     scene.frame_set(1)
-    print(f"Endo ghost: {GHOST_FRAMES}f — Shaolin phantom dribble + Endo whiff")
+    print(f"Endo vanish: {VANISH_FRAMES}f — face-off dribble, Shaolin fades, ball remains")
 
 
 def _remove_cameras() -> None:
@@ -266,25 +215,26 @@ def _kf_cam(cam: bpy.types.Object, frame: int, pos: Vector, target: Vector) -> N
     cam.keyframe_insert(data_path="rotation_euler", frame=frame)
 
 
-def setup_endo_ghost_camera() -> bpy.types.Object:
+def setup_endo_vanish_camera() -> bpy.types.Object:
     _remove_cameras()
-    cam_data = bpy.data.cameras.new("CamEndoGhost")
-    cam = bpy.data.objects.new("CamEndoGhost", cam_data)
+    cam_data = bpy.data.cameras.new("CamEndoVanish")
+    cam = bpy.data.objects.new("CamEndoVanish", cam_data)
     bpy.context.collection.objects.link(cam)
     bpy.context.scene.camera = cam
-    cam.data.lens = 28
+    cam.data.lens = 30
 
-    key_frames = list(range(1, GHOST_FRAMES + 1, 18))
-    if GHOST_FRAMES not in key_frames:
-        key_frames.append(GHOST_FRAMES)
+    key_frames = list(range(1, VANISH_FRAMES + 1, 20))
+    if VANISH_FRAMES not in key_frames:
+        key_frames.append(VANISH_FRAMES)
 
     for f in key_frames:
-        s = _shaolin_path(f)
-        md = _move_dir(f)
-        ball = _ball_at_feet(s, f, md)
-        right = _right_of(md)
-        cam_pos = ball + md * 2.6 + right * (-3.4) + Vector((0.0, 0.0, 0.92))
-        cam_tgt = ball + Vector((0.0, 0.0, 0.10))
+        endo = _endo_path(f)
+        sh = _shaolin_path(f)
+        ball = _ball_pos(f, sh)
+        mid = (endo + sh) * 0.5
+        # 正面構図 — 2人の間、足元寄り
+        cam_pos = mid + Vector((0.0, -6.5, 1.05))
+        cam_tgt = ball + Vector((0.0, 0.0, 0.08))
         _kf_cam(cam, f, cam_pos, cam_tgt)
 
     if cam.animation_data and cam.animation_data.action:
@@ -308,9 +258,8 @@ def render_endo_ghost_video() -> Path:
     scene.render.resolution_y = 360
     scene.render.fps = FPS
     scene.frame_start = 1
-    scene.frame_end = GHOST_FRAMES
+    scene.frame_end = VANISH_FRAMES
     scene.eevee.taa_render_samples = 8
-    scene.render.film_transparent = False
 
     scene.render.image_settings.file_format = "FFMPEG"
     scene.render.ffmpeg.format = "MPEG4"
@@ -318,11 +267,11 @@ def render_endo_ghost_video() -> Path:
     scene.render.ffmpeg.constant_rate_factor = "HIGH"
     scene.render.ffmpeg.ffmpeg_preset = "REALTIME"
 
-    out = RENDER_DIR / "endo_shaolin_ghost.mp4"
+    out = RENDER_DIR / "endo_shaolin_vanish.mp4"
     RENDER_DIR.mkdir(parents=True, exist_ok=True)
     scene.render.filepath = str(out)
 
-    print(f"Rendering endo ghost video: {out}")
+    print(f"Rendering endo vanish video: {out}")
     bpy.ops.render.render(animation=True)
     print(f"Video saved: {out}")
     return out
