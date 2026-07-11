@@ -445,7 +445,6 @@ def animate_soccer_match_500f() -> None:
 
     # Mannequiny の正面が逆なので、青は yaw を 180°反転して進行方向へ向ける
     blue_yaw_offset = math.pi
-    blue_face = attack_yaw + blue_yaw_offset  # 全員そろえて左ゴール向き
 
     # キックオフ配置（自陣ハーフ・全員左ゴール向き → 走り出し後は進行方向）
     _move_root_face_dir(rp, [
