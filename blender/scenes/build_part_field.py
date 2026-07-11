@@ -696,7 +696,9 @@ def main() -> None:
     blend = resolve_blend_path()
     open_blend(blend)
     kubo_mode = "--animate-kubo-mark" in sys.argv or "--render-kubo-mark-video" in sys.argv
-    build_field_only(include_teams=not kubo_mode)
+    endo_mode = "--animate-endo-ghost" in sys.argv or "--render-endo-ghost-video" in sys.argv
+    vignette_mode = kubo_mode or endo_mode
+    build_field_only(include_teams=not vignette_mode)
     if "--animate-kubo-mark" in sys.argv:
         from animate_kubo_shaolin_mark import animate_kubo_shaolin_mark  # noqa: E402
 
@@ -705,6 +707,14 @@ def main() -> None:
         from animate_kubo_shaolin_mark import render_kubo_mark_video  # noqa: E402
 
         render_kubo_mark_video()
+    if "--animate-endo-ghost" in sys.argv:
+        from animate_endo_shaolin_ghost import animate_endo_shaolin_ghost  # noqa: E402
+
+        animate_endo_shaolin_ghost()
+    if "--render-endo-ghost-video" in sys.argv:
+        from animate_endo_shaolin_ghost import render_endo_ghost_video  # noqa: E402
+
+        render_endo_ghost_video()
     if "--animate-match" in sys.argv:
         from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
 
