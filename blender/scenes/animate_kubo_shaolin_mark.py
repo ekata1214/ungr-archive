@@ -191,13 +191,21 @@ def setup_kubo_mark_camera() -> bpy.types.Object:
     cam = bpy.data.objects.new("CamKuboMark", cam_data)
     bpy.context.collection.objects.link(cam)
     bpy.context.scene.camera = cam
-    cam.data.lens = 38
+    cam.data.lens = 28  # 足元寄りはやや広角
 
-    for f in (1, 60, 120, 180, MARK_FRAMES):
+    key_frames = list(range(1, MARK_FRAMES + 1, 18))
+    if MARK_FRAMES not in key_frames:
+        key_frames.append(MARK_FRAMES)
+
+    for f in key_frames:
         s = _shaolin_path(f)
-        k = _kubo_path(f, s, _move_dir(f))
-        mid = (s + k) * 0.5
-        _kf_cam(cam, f, Vector((mid.x + 12, mid.y - 14, 3.8)), Vector((mid.x - 3, mid.y, 0.9)))
+        md = _move_dir(f)
+        ball = _ball_at_feet(s, f, md)
+        right = _right_of(md)
+        # 低い位置からボール／足元を追う
+        cam_pos = ball + md * 2.8 + right * (-3.6) + Vector((0.0, 0.0, 0.95))
+        cam_tgt = ball + Vector((0.0, 0.0, 0.12))
+        _kf_cam(cam, f, cam_pos, cam_tgt)
 
     if cam.animation_data and cam.animation_data.action:
         for fc in cam.animation_data.action.fcurves:
