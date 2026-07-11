@@ -695,6 +695,14 @@ def main() -> None:
     blend = resolve_blend_path()
     open_blend(blend)
     build_field_only()
+    if "--animate-kubo-mark" in sys.argv:
+        from animate_kubo_shaolin_mark import animate_kubo_shaolin_mark  # noqa: E402
+
+        animate_kubo_shaolin_mark()
+    if "--render-kubo-mark-video" in sys.argv:
+        from animate_kubo_shaolin_mark import render_kubo_mark_video  # noqa: E402
+
+        render_kubo_mark_video()
     if "--animate-match" in sys.argv:
         from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
 

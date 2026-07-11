@@ -196,3 +196,12 @@ SCENES: Dict[str, SceneSpec] = {
                     "なぜあの人は重力を無視してるんだ…", 155,
                     {"01_kick": 55, "02_wall": 95, "03_save": 110, "04_react": 170}, run_scene_02),
 }
+
+# シーン03（Mannequinyベース）— 台本は scripts/scene_japan_kubo.md
+# 実行: build_part_field.py -- --animate-kubo-mark --render-kubo-mark-video
+SCENE_03_SCRIPT = (
+    "初戦の相手は日本代表。注目は久保建英です。彼の武器は、細かいタッチで相手を幻惑する巧みなドリブルと、"
+    "ゴール前での思い切りの良いシュート。しかし少林サッカーチームは、粘り気のある足技を持つ兄をぴったりと"
+    "マークにつけ、まるで接着剤のようにボールごと引っ付いてしまいます。久保がどれだけ細かく足元でボールを"
+    "転がしても、ボールごと吸い付いて離れない。"
+)
