@@ -298,17 +298,20 @@ def build_field_only() -> None:
     from import_mannequiny import build_team  # noqa: E402
 
     build_both_goals(half_l)
-    # チーム配置（センター付近の簡易フォーメーション）
+    # キックオフ配置（青=自陣ハーフ、赤=相手ハーフ）
     blue_positions = [
-        Vector((-10, -6, 0)), Vector((-8, -2, 0)), Vector((-8, 2, 0)),
-        Vector((-5, -3, 0)), Vector((-5, 3, 0)),
+        Vector((1.5, 0, 0)),    # キッカー（センター）
+        Vector((10, 5, 0)),     # パス受け
+        Vector((20, 11, 0)),
+        Vector((18, -10, 0)),
+        Vector((22, -3, 0)),
     ]
     red_positions = [
-        Vector((10, 6, 0)), Vector((8, 2, 0)), Vector((8, -2, 0)),
-        Vector((5, 3, 0)), Vector((5, -3, 0)),
+        Vector((-10, 6, 0)), Vector((-8, 2, 0)), Vector((-8, -2, 0)),
+        Vector((-5, 3, 0)), Vector((-5, -3, 0)),
     ]
-    build_team("Blue", (0.12, 0.45, 0.95, 1.0), blue_positions, actions=["run", "walk", "idle"], facing_yaw=0.0)
-    build_team("Red", (0.92, 0.18, 0.15, 1.0), red_positions, actions=["fight_kick", "run", "idle"], facing_yaw=math.pi)
+    build_team("Blue", (0.12, 0.45, 0.95, 1.0), blue_positions, actions=["run", "walk", "idle"], facing_yaw=math.pi / 2)
+    build_team("Red", (0.92, 0.18, 0.15, 1.0), red_positions, actions=["fight_kick", "run", "idle"], facing_yaw=-math.pi / 2)
 
     # ボール（フリー素材 GLB — gitdolucas/sport-assets MIT）
     from import_soccer_ball import import_soccer_ball  # noqa: E402

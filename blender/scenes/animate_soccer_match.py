@@ -19,9 +19,10 @@ BALL_GROUND_Z = BALL_R
 
 # fight_kick 内で足がボールに当たるおおよそのフレーム（アクション先頭=0）
 KICK_CONTACT_FRAME = 20
-PASS1_START = 88
-PASS1_RELEASE = 94
-PASS1_RECEIVE = 128
+# キックオフ（試合開始）— センターで足タッチ→短パス
+PASS1_START = 12
+PASS1_RELEASE = PASS1_START + KICK_CONTACT_FRAME
+PASS1_RECEIVE = 52
 PASS2_START = 248
 PASS2_RELEASE = 254
 PASS2_RECEIVE = 270
@@ -357,15 +358,34 @@ def _move_root_face_dir(
     fallback_yaw: float,
     yaw_offset: float = 0.0,
 ) -> None:
-    """位置キーから移動方向を推定して向きを付ける（向き逆問題を潰す）"""
+    """位置キーから移動方向を推定して向きを付ける（offset は1回だけ加算）"""
     _clear_anim(root)
-    last_yaw = fallback_yaw + yaw_offset
+    last_yaw = fallback_yaw
     for i, (f, loc) in enumerate(key_pos):
         if i + 1 < len(key_pos):
             d = key_pos[i + 1][1] - loc
-            last_yaw = _yaw_from_dir(d, last_yaw) + yaw_offset
+            if d.length > 1e-6:
+                last_yaw = _yaw_from_dir(d, last_yaw)
         _kf_loc(root, f, loc)
-        _kf_rot_z(root, f, last_yaw)
+        _kf_rot_z(root, f, last_yaw + yaw_offset)
+    if root.animation_data and root.animation_data.action:
+        for fc in root.animation_data.action.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation = "BEZIER"
+                kp.handle_left_type = "AUTO_CLAMPED"
+                kp.handle_right_type = "AUTO_CLAMPED"
+
+
+def _move_root_fixed_yaw(
+    root: bpy.types.Object,
+    key_pos: List[Tuple[int, Vector]],
+    yaw: float,
+) -> None:
+    """全キーで同じ向き（キックオフの整列用）"""
+    _clear_anim(root)
+    for f, loc in key_pos:
+        _kf_loc(root, f, loc)
+        _kf_rot_z(root, f, yaw)
     if root.animation_data and root.animation_data.action:
         for fc in root.animation_data.action.fcurves:
             for kp in fc.keyframe_points:
@@ -402,8 +422,10 @@ def animate_soccer_match_500f() -> None:
         raise RuntimeError("Ball object not found")
 
     goal_x = -PITCH_HALF
-    yaw_a = math.pi / 2   # fallback only; actual yaw follows movement direction
-    yaw_d = -math.pi / 2
+    # 青は左ゴール（-X）へ攻める → 前方向は (-1, 0) → base yaw = pi/2
+    attack_yaw = math.pi / 2
+    yaw_d = -math.pi / 2   # 赤DF: フィールド中央（+X）向き
+    yaw_gk = math.pi / 2   # GKだけモデル向きが逆なので +X（フィールド）向き
 
     b_passer, b_runner, b_wing, b_support, b_striker = blues[:5]
     r_gk, r_def_l, r_def_c, r_def_r, r_fb = reds[:5]
@@ -423,33 +445,47 @@ def animate_soccer_match_500f() -> None:
 
     # Mannequiny の正面が逆なので、青は yaw を 180°反転して進行方向へ向ける
     blue_yaw_offset = math.pi
+    blue_face = attack_yaw + blue_yaw_offset  # 全員そろえて左ゴール向き
 
-    _move_root_face_dir(rp, [(1, Vector((22, -7, 0))), (500, Vector((22, -7, 0)))], yaw_a, yaw_offset=blue_yaw_offset)
+    # キックオフ配置（自陣ハーフ・全員左ゴール向き → 走り出し後は進行方向）
+    _move_root_face_dir(rp, [
+        (1, Vector((1.5, 0, 0))),
+        (PASS1_RECEIVE, Vector((1.5, 0, 0))),
+        (PASS1_RECEIVE + 1, Vector((14, -6, 0))),
+        (500, Vector((14, -6, 0))),
+    ], attack_yaw, yaw_offset=blue_yaw_offset)
     _move_root_face_dir(rr, [
-        (1, Vector((16, 5, 0))), (PASS1_RECEIVE, Vector((16, 5, 0))),
-        (200, Vector((-2, 3, 0))), (PASS2_START, Vector((-8, 2, 0))),
+        (1, Vector((10, 5, 0))),
+        (PASS1_RECEIVE - 1, Vector((10, 5, 0))),
+        (200, Vector((-2, 3, 0))),
+        (PASS2_START, Vector((-8, 2, 0))),
         (500, Vector((-12, 2, 0))),
-    ], yaw_a, yaw_offset=blue_yaw_offset)
+    ], attack_yaw, yaw_offset=blue_yaw_offset)
     _move_root_face_dir(rw, [
-        (1, Vector((18, 11, 0))), (150, Vector((18, 11, 0))),
-        (280, Vector((-6, 12, 0))), (500, Vector((-6, 12, 0))),
-    ], yaw_a, yaw_offset=blue_yaw_offset)
+        (1, Vector((20, 11, 0))),
+        (150, Vector((20, 11, 0))),
+        (280, Vector((-6, 12, 0))),
+        (500, Vector((-6, 12, 0))),
+    ], attack_yaw, yaw_offset=blue_yaw_offset)
     _move_root_face_dir(rs, [
-        (1, Vector((10, -10, 0))), (220, Vector((10, -10, 0))),
-        (340, Vector((-28, -8, 0))), (500, Vector((-28, -8, 0))),
-    ], yaw_a, yaw_offset=blue_yaw_offset)
+        (1, Vector((18, -10, 0))),
+        (220, Vector((18, -10, 0))),
+        (340, Vector((-28, -8, 0))),
+        (500, Vector((-28, -8, 0))),
+    ], attack_yaw, yaw_offset=blue_yaw_offset)
     _move_root_face_dir(rst, [
-        (1, Vector((6, 0, 0))),
+        (1, Vector((22, -3, 0))),
+        (PASS2_RECEIVE - 1, Vector((22, -3, 0))),
         (PASS2_RECEIVE, Vector((6, 0, 0))),
         (KICK_STRIP_START - 10, Vector((-10, 0, 0))),
         (KICK_STRIP_START - 2, Vector((-18, 0, 0))),
         (500, Vector((-16, 1, 0))),
-    ], yaw_a, yaw_offset=blue_yaw_offset)
+    ], attack_yaw, yaw_offset=blue_yaw_offset)
 
-    # --- 青：アクション（ボールと同期） ---
+    # --- 青：アクション（キックオフ＝足でタッチ→パス） ---
     _add_nla_strip(b_passer, "idle", 1, PASS1_START - 1)
-    _add_nla_strip(b_passer, "fight_punch", PASS1_START, PASS1_START + 18)  # パス動作
-    _add_nla_strip(b_passer, "idle", PASS1_START + 18, 500)
+    _add_nla_strip(b_passer, "fight_kick", PASS1_START, PASS1_START + 37)  # 足でキックオフパス
+    _add_nla_strip(b_passer, "idle", PASS1_START + 37, 500)
 
     _add_nla_strip(b_runner, "idle", 1, PASS1_RECEIVE - 1)
     _add_nla_strip(b_runner, "run", PASS1_RECEIVE, PASS2_START + 10)
@@ -468,29 +504,28 @@ def animate_soccer_match_500f() -> None:
     _add_nla_strip(b_striker, "fight_kick", KICK_STRIP_START, KICK_STRIP_START + 37)
     _add_nla_strip(b_striker, "idle", KICK_STRIP_START + 37, 500)
 
-    # --- ボール（ドリブル=常に体の前 + パス/シュート同期） ---
-    p_passer = _ball_at_root_frame(rp, yaw_a, PASS1_START - 1)
-    p_recv = _ball_at_root_frame(rr, yaw_a, PASS1_RECEIVE)
-    p_pass2_from = _ball_at_root_frame(rr, yaw_a, PASS2_START - 1)
-    p_pass2_to = _ball_at_root_frame(rst, yaw_a, PASS2_RECEIVE)
-    p_shot_start = _ball_at_root_frame(rst, yaw_a, KICK_STRIP_START + 3)
-    # シュートはGKが横っ飛びで止める（ゴールではなくセーブ→弾く）
-    # ゴール枠内の上寄り（GKが飛びつきやすい）へ
+    # --- ボール（キックオフ=センター → 足パス → ドリブル） ---
+    p_center = Vector((0.0, 0.0, BALL_GROUND_Z))
+    p_passer = Vector((0.0, 0.0, BALL_GROUND_Z))
+    p_recv = _ball_at_root_frame(rr, attack_yaw, PASS1_RECEIVE)
+    p_pass2_from = _ball_at_root_frame(rr, attack_yaw, PASS2_START - 1)
+    p_pass2_to = _ball_at_root_frame(rst, attack_yaw, PASS2_RECEIVE)
+    p_shot_start = _ball_at_root_frame(rst, attack_yaw, KICK_STRIP_START + 3)
     p_goal = Vector((goal_x + 6.8, 3.2, BALL_GROUND_Z * 0.85))
 
-    # 青は左ゴールへ攻める（常にゴール方向にボールを前へ）
-    blue_goal_dir = (Vector((goal_x, 0.0, 0.0)) - rp.matrix_world.translation)
+    blue_goal_dir = Vector((goal_x, 0.0, 0.0)) - Vector((1.5, 0.0, 0.0))
 
-    _ball_hold(ball, rp, b_passer, yaw_a, 1, PASS1_START - 1, preferred_dir=blue_goal_dir)
+    _kf_loc(ball, 1, p_center)
+    _kf_loc(ball, PASS1_START - 1, p_center)
     _ball_pass_roll(
-        ball, PASS1_START, PASS1_RELEASE, PASS1_RECEIVE, p_passer, p_recv, yaw_a, arc=0.4,
+        ball, PASS1_START, PASS1_RELEASE, PASS1_RECEIVE, p_passer, p_recv, attack_yaw, arc=0.25,
     )
-    _ball_hold(ball, rr, b_runner, yaw_a, PASS1_RECEIVE, PASS2_START - 1, preferred_dir=blue_goal_dir)
+    _ball_hold(ball, rr, b_runner, attack_yaw, PASS1_RECEIVE, PASS2_START - 1, preferred_dir=blue_goal_dir)
     _ball_pass_roll(
-        ball, PASS2_START, PASS2_RELEASE, PASS2_RECEIVE, p_pass2_from, p_pass2_to, yaw_a, arc=0.35,
+        ball, PASS2_START, PASS2_RELEASE, PASS2_RECEIVE, p_pass2_from, p_pass2_to, attack_yaw, arc=0.35,
     )
-    _ball_hold(ball, rst, b_striker, yaw_a, PASS2_RECEIVE, KICK_STRIP_START + 3, preferred_dir=blue_goal_dir)
-    _ball_shot(ball, KICK_STRIP_START + 3, KICK_BALL_RELEASE, SHOT_LAND, p_shot_start, p_goal, yaw_a)
+    _ball_hold(ball, rst, b_striker, attack_yaw, PASS2_RECEIVE, KICK_STRIP_START + 3, preferred_dir=blue_goal_dir)
+    _ball_shot(ball, KICK_STRIP_START + 3, KICK_BALL_RELEASE, SHOT_LAND, p_shot_start, p_goal, attack_yaw)
     # セーブ後のこぼれ球（右方向へ弾く）
     _kf_loc(ball, SHOT_LAND + 1, p_goal)
     spill = Vector((goal_x + 18.0, 11.0, BALL_GROUND_Z))
@@ -514,7 +549,7 @@ def animate_soccer_match_500f() -> None:
             x = goal_x + 8.5  # 一歩前に出る
         gk_keys.append((f, Vector((x, y, 0.0))))
     gk_keys.append((MATCH_FRAMES, gk_keys[-1][1]))
-    _key_track_root(rg, yaw_d, gk_keys)
+    _key_track_root(rg, yaw_gk, gk_keys)
     _add_nla_strip(r_gk, "fight_idle", 1, SHOT_LAND - 18)
     # 横っ飛び（jump_full）をシュート着弾に合わせる
     _add_nla_strip(r_gk, "jump_full", SHOT_LAND - 16, SHOT_LAND + 18)
@@ -531,7 +566,7 @@ def animate_soccer_match_500f() -> None:
     gk_keys.append((SHOT_LAND + 22, Vector((goal_x + 7.2, p_goal.y * 0.6, 0.0))))
     gk_keys.append((MATCH_FRAMES, gk_keys[-1][1]))
     gk_keys = sorted({f: v for f, v in gk_keys}.items(), key=lambda kv: kv[0])
-    _key_track_root(rg, yaw_d, [(f, v) for f, v in gk_keys])
+    _key_track_root(rg, yaw_gk, [(f, v) for f, v in gk_keys])
 
     # DFライン: ボールのYへスライドしつつ、ボールが近づいたら下がる
     def_specs = [
@@ -557,7 +592,7 @@ def animate_soccer_match_500f() -> None:
         _add_nla_strip(arm, "run", 1, MATCH_FRAMES)
 
     print(
-        f"Match v2: pass1 f{PASS1_RELEASE} pass2 f{PASS2_RELEASE} "
+        f"Match v3 kickoff: pass1 f{PASS1_RELEASE} pass2 f{PASS2_RELEASE} "
         f"kick f{KICK_BALL_RELEASE} goal f{SHOT_LAND}"
     )
 
