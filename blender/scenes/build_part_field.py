@@ -224,7 +224,7 @@ def add_filled_spot(name: str, cx: float, cy: float, radius: float, mat, z: floa
     bpy.ops.object.transform_apply(scale=True)
 
 
-def build_field_only() -> None:
+def build_field_only(include_teams: bool = True) -> None:
     clear_all()
     setup_black_world()
     setup_lights()
@@ -298,20 +298,21 @@ def build_field_only() -> None:
     from import_mannequiny import build_team  # noqa: E402
 
     build_both_goals(half_l)
-    # キックオフ配置（青=自陣ハーフ、赤=相手ハーフ）
-    blue_positions = [
-        Vector((1.5, 0, 0)),    # キッカー（センター）
-        Vector((10, 5, 0)),     # パス受け
-        Vector((20, 11, 0)),
-        Vector((18, -10, 0)),
-        Vector((22, -3, 0)),
-    ]
-    red_positions = [
-        Vector((-10, 6, 0)), Vector((-8, 2, 0)), Vector((-8, -2, 0)),
-        Vector((-5, 3, 0)), Vector((-5, -3, 0)),
-    ]
-    build_team("Blue", (0.12, 0.45, 0.95, 1.0), blue_positions, actions=["run", "walk", "idle"], facing_yaw=math.pi / 2)
-    build_team("Red", (0.92, 0.18, 0.15, 1.0), red_positions, actions=["fight_kick", "run", "idle"], facing_yaw=-math.pi / 2)
+    if include_teams:
+        # キックオフ配置（青=自陣ハーフ、赤=相手ハーフ）
+        blue_positions = [
+            Vector((1.5, 0, 0)),    # キッカー（センター）
+            Vector((10, 5, 0)),     # パス受け
+            Vector((20, 11, 0)),
+            Vector((18, -10, 0)),
+            Vector((22, -3, 0)),
+        ]
+        red_positions = [
+            Vector((-10, 6, 0)), Vector((-8, 2, 0)), Vector((-8, -2, 0)),
+            Vector((-5, 3, 0)), Vector((-5, -3, 0)),
+        ]
+        build_team("Blue", (0.12, 0.45, 0.95, 1.0), blue_positions, actions=["run", "walk", "idle"], facing_yaw=math.pi / 2)
+        build_team("Red", (0.92, 0.18, 0.15, 1.0), red_positions, actions=["fight_kick", "run", "idle"], facing_yaw=-math.pi / 2)
 
     # ボール（フリー素材 GLB — gitdolucas/sport-assets MIT）
     from import_soccer_ball import import_soccer_ball  # noqa: E402
@@ -694,7 +695,8 @@ def render_goal_close(side: str = "L") -> Path:
 def main() -> None:
     blend = resolve_blend_path()
     open_blend(blend)
-    build_field_only()
+    kubo_mode = "--animate-kubo-mark" in sys.argv or "--render-kubo-mark-video" in sys.argv
+    build_field_only(include_teams=not kubo_mode)
     if "--animate-kubo-mark" in sys.argv:
         from animate_kubo_shaolin_mark import animate_kubo_shaolin_mark  # noqa: E402
 

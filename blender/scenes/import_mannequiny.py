@@ -53,20 +53,52 @@ def _set_mesh_color(mesh_obj: bpy.types.Object, rgba) -> None:
     for mat in mesh_obj.data.materials:
         if not mat:
             continue
-        mat.use_nodes = True
-        nodes = mat.node_tree.nodes
-        bsdf = nodes.get("Principled BSDF")
-        if bsdf:
-            bsdf.inputs["Base Color"].default_value = rgba
-            try:
-                bsdf.inputs["Alpha"].default_value = 1.0
-            except Exception:
-                pass
-            bsdf.inputs["Roughness"].default_value = 0.85
-            spec = bsdf.inputs.get("Specular IOR Level") or bsdf.inputs.get("Specular")
-            if spec:
-                spec.default_value = 0.06
-        mat.blend_method = "OPAQUE"
+        _apply_principled_color(mat, rgba)
+
+
+def _apply_principled_color(mat: bpy.types.Material, rgba) -> None:
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    bsdf = nodes.get("Principled BSDF")
+    if bsdf:
+        bsdf.inputs["Base Color"].default_value = rgba
+        try:
+            bsdf.inputs["Alpha"].default_value = 1.0
+        except Exception:
+            pass
+        bsdf.inputs["Roughness"].default_value = 0.85
+        spec = bsdf.inputs.get("Specular IOR Level") or bsdf.inputs.get("Specular")
+        if spec:
+            spec.default_value = 0.06
+    mat.blend_method = "OPAQUE"
+
+
+def set_mesh_split_vertical(
+    mesh_obj: bpy.types.Object,
+    upper_rgba,
+    lower_rgba,
+    z_cut: float = 0.42,
+) -> None:
+    """上半身 / 下半身で色分け（Mannequiny ローカルZ）"""
+    mesh = mesh_obj.data
+    mat_upper = bpy.data.materials.new(f"{mesh_obj.name}_upper")
+    mat_lower = bpy.data.materials.new(f"{mesh_obj.name}_lower")
+    _apply_principled_color(mat_upper, upper_rgba)
+    _apply_principled_color(mat_lower, lower_rgba)
+    mesh.materials.clear()
+    mesh.materials.append(mat_upper)
+    mesh.materials.append(mat_lower)
+    for poly in mesh.polygons:
+        zs = [mesh.vertices[v].co.z for v in poly.vertices]
+        poly.material_index = 0 if (sum(zs) / len(zs)) >= z_cut else 1
+    mesh.update()
+
+
+def _mesh_child(arm: bpy.types.Object) -> bpy.types.Object:
+    for ch in arm.children:
+        if ch.type == "MESH":
+            return ch
+    raise RuntimeError(f"No mesh child on {arm.name}")
 
 
 def _duplicate_character(
