@@ -235,13 +235,13 @@ def _animate_handshake_poses(
             (95, _bones(neck_01=z, head=z, upperarm_r=z, lowerarm_r=z, upperarm_l=z, lowerarm_l=z)),
             (120, _bones(
                 neck_01=(0.18, 0.0, 0.55), head=(0.12, 0.0, 0.45),
-                upperarm_r=(0.35, 0.0, -0.15), lowerarm_r=(0.25, 0.0, 0.0),
-                upperarm_l=(0.35, 0.0, 0.15), lowerarm_l=(0.25, 0.0, 0.0),
+                upperarm_r=(0.42, 0.0, -0.22), lowerarm_r=(0.72, 0.0, 0.0),
+                upperarm_l=(0.42, 0.0, 0.22), lowerarm_l=(0.72, 0.0, 0.0),
             )),
             (HANDSHAKE_FRAMES, _bones(
                 neck_01=(0.18, 0.0, 0.55), head=(0.12, 0.0, 0.45),
-                upperarm_r=(0.35, 0.0, -0.15), lowerarm_r=(0.25, 0.0, 0.0),
-                upperarm_l=(0.35, 0.0, 0.15), lowerarm_l=(0.25, 0.0, 0.0),
+                upperarm_r=(0.42, 0.0, -0.22), lowerarm_r=(0.72, 0.0, 0.0),
+                upperarm_l=(0.42, 0.0, 0.22), lowerarm_l=(0.72, 0.0, 0.0),
             )),
         ],
     )
