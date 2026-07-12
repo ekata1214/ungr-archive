@@ -47,7 +47,7 @@ RONALDO_YAW = 0.0
 LEAO_POS = Vector((2.0, 5.0, 0.0))
 SHIN_START = Vector((20.0, 4.8, 0.0))
 SHIN_END = Vector((8.5, 5.0, 0.0))
-RONALDO_POS = Vector((5.5, -6.0, 0.0))
+RONALDO_POS = Vector((1.0, -5.5, 0.0))
 
 SHIN_OFFER_DELTA = {
     "upperarm.r": (0.0, 0.0, 1.4),
@@ -134,7 +134,7 @@ def _add_pose_overlay_strip(
     track = arm.animation_data.nla_tracks.new()
     track.name = name
     strip = track.strips.new(name, strip_start, act)
-    strip.frame_end = strip_end
+    strip.frame_end = strip_end + 1
     strip.action_frame_start = min(f for f, _ in bone_keys)
     strip.action_frame_end = max(f for f, _ in bone_keys)
     strip.blend_type = "ADD"
@@ -321,9 +321,9 @@ def setup_portugal_handshake_camera() -> bpy.types.Object:
     cam = bpy.data.objects.new("CamPortugalHandshake", cam_data)
     bpy.context.collection.objects.link(cam)
     bpy.context.scene.camera = cam
-    cam.data.lens = 24
+    cam.data.lens = 20
 
-    bg_target = (SHIN_END + LEAO_POS) * 0.5 + Vector((0.0, 0.0, 2.0))
+    bg_target = (SHIN_END + LEAO_POS) * 0.5 + Vector((0.0, 0.0, 2.2))
 
     key_frames = [
         F_INTRO,
@@ -335,8 +335,8 @@ def setup_portugal_handshake_camera() -> bpy.types.Object:
         HANDSHAKE_FRAMES,
     ]
     for f in key_frames:
-        # ロナウドの肩越し — 手前に青、奥に橙＋青
-        cam_pos = RONALDO_POS + Vector((1.8, -3.2, 3.6))
+        # やや引いた肩越し — 手前ロナウド全身＋奥の握手
+        cam_pos = RONALDO_POS + Vector((2.5, -5.5, 4.8))
         cam_tgt = bg_target
         _kf_cam(cam, f, cam_pos, cam_tgt)
 
