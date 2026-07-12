@@ -35,27 +35,27 @@ F_LEAO_REPLY = 360
 F_HANDSHAKE_HOLD = 432
 
 SHIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
-PORTUGAL_BLUE = (0.08, 0.22, 0.65, 1.0)
+PORTUGAL_RED = (0.88, 0.12, 0.12, 1.0)
 PORTUGAL_GREEN = (0.12, 0.55, 0.28, 1.0)
 
 SHIN_YAW = math.pi * 1.5
 LEAO_YAW = math.pi / 2
-# 手前のロナウド — 奥の握手を見る向き（+Y）
-RONALDO_YAW = 0.0
+# 手前ロナウド — 奥の2人の方を向く（今までと逆）
+RONALDO_YAW = math.pi
 
-# 奥：シン＋レオン（背景） / 手前：ロナウド（前景・カメラ寄り）
-LEAO_POS = Vector((2.0, 5.0, 0.0))
+# 奥：シン＋レオン / 手前：ロナウド
+LEAO_POS = Vector((2.15, 5.0, 0.0))
 SHIN_START = Vector((20.0, 4.8, 0.0))
-SHIN_END = Vector((8.5, 5.0, 0.0))
+SHIN_END = Vector((5.05, 5.0, 0.0))  # 握手時に手が重なる距離
 RONALDO_POS = Vector((1.0, -5.5, 0.0))
 
 SHIN_OFFER_DELTA = {
-    "upperarm.r": (0.0, 0.0, 1.4),
-    "lowerarm.r": (0.3, 0.0, 0.0),
+    "upperarm.r": (0.0, 0.0, 1.9),
+    "lowerarm.r": (0.85, 0.0, 0.0),
 }
 LEAO_OFFER_DELTA = {
-    "upperarm.r": (0.0, 0.0, 1.4),
-    "lowerarm.r": (0.3, 0.0, 0.0),
+    "upperarm.r": (0.0, 0.0, 1.9),
+    "lowerarm.r": (0.85, 0.0, 0.0),
 }
 ARM_NEUTRAL = (0.0, 0.0, 0.0)
 
@@ -106,7 +106,8 @@ def _shin_path(frame: int) -> Vector:
     p = SHIN_END.copy()
     if F_WALK_END < frame <= F_ARRIVE_HOLD:
         hop = (frame - F_WALK_END) / (F_ARRIVE_HOLD - F_WALK_END)
-        p.z = 0.32 * math.sin(hop * math.pi)
+        # 嬉しそうなジャンプ — 高め＋二連跳ね
+        p.z = 0.65 * math.sin(hop * math.pi) + 0.22 * math.sin(hop * math.pi * 2.0)
     return p
 
 
@@ -223,21 +224,21 @@ def setup_portugal_handshake_characters() -> Tuple[
     )[0]
     leao_arm = build_team(
         "Leao",
-        PORTUGAL_BLUE,
+        PORTUGAL_RED,
         [LEAO_POS],
         actions=["idle"],
         facing_yaw=LEAO_YAW,
     )[0]
     ronaldo_arm = build_team(
         "Ronaldo",
-        PORTUGAL_BLUE,
+        PORTUGAL_RED,
         [RONALDO_POS],
         actions=["idle"],
         facing_yaw=RONALDO_YAW,
     )[0]
 
-    set_mesh_split_vertical(_mesh_child(leao_arm), PORTUGAL_BLUE, PORTUGAL_GREEN, z_cut=0.42)
-    set_mesh_split_vertical(_mesh_child(ronaldo_arm), PORTUGAL_BLUE, PORTUGAL_GREEN, z_cut=0.42)
+    set_mesh_split_vertical(_mesh_child(leao_arm), PORTUGAL_RED, PORTUGAL_GREEN, z_cut=0.42)
+    set_mesh_split_vertical(_mesh_child(ronaldo_arm), PORTUGAL_RED, PORTUGAL_GREEN, z_cut=0.42)
 
     return (
         shin_arm,
