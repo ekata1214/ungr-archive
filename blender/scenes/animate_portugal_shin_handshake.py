@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""ポルトガル戦 — シンがレオンに握手を求める（ロナウド無視）"""
+"""ポルトガル戦 — シンがレオンに握手を求める（手前ロナウド idle、奥で握手）"""
 
 from __future__ import annotations
 
@@ -19,27 +19,36 @@ from animate_soccer_match import (
     _root_of,
 )
 
-HANDSHAKE_FRAMES = 180
 FPS = 24
+
+# 尺は長め — 各アクションが全部見えるまで余裕を持たせる（約18秒）
+HANDSHAKE_FRAMES = 432
+
+# タイムライン
+F_INTRO = 1
+F_WALK_START = 72
+F_WALK_END = 228
+F_ARRIVE_HOLD = 258
+F_HAND_OFFER = 288
+F_OFFER_HOLD = 330
+F_LEAO_REPLY = 360
+F_HANDSHAKE_HOLD = 432
 
 SHIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 PORTUGAL_BLUE = (0.08, 0.22, 0.65, 1.0)
 PORTUGAL_GREEN = (0.12, 0.55, 0.28, 1.0)
 
-# シンは -X へ、ポルトガルは +X 向き
 SHIN_YAW = math.pi * 1.5
-PORTUGAL_YAW = math.pi / 2
+LEAO_YAW = math.pi / 2
+# 手前のロナウド — 奥の握手を見る向き（+Y）
+RONALDO_YAW = 0.0
 
-LEAO_POS = Vector((1.5, 0.8, 0.0))
-RONALDO_POS = Vector((11.0, -4.2, 0.0))
-SHIN_START = Vector((18.0, -1.2, 0.0))
-SHIN_END = Vector((7.6, 0.85, 0.0))  # レオンの前で止まる（握手は腕だけ伸ばす）
+# 奥：シン＋レオン（背景） / 手前：ロナウド（前景・カメラ寄り）
+LEAO_POS = Vector((2.0, 5.0, 0.0))
+SHIN_START = Vector((20.0, 4.8, 0.0))
+SHIN_END = Vector((8.5, 5.0, 0.0))
+RONALDO_POS = Vector((5.5, -6.0, 0.0))
 
-WALK_END = 105
-HAND_OFFER = 118
-HAND_HOLD = 140
-
-# 握手ポーズ（idle への ADD オーバーレイ — 右腕を前方へ）
 SHIN_OFFER_DELTA = {
     "upperarm.r": (0.0, 0.0, 1.4),
     "lowerarm.r": (0.3, 0.0, 0.0),
@@ -49,8 +58,6 @@ LEAO_OFFER_DELTA = {
     "lowerarm.r": (0.3, 0.0, 0.0),
 }
 ARM_NEUTRAL = (0.0, 0.0, 0.0)
-
-RONALDO_WATCH_YAW = 2.2
 
 
 def _remove_all_players() -> None:
@@ -89,61 +96,18 @@ def _animate_root_fixed(
 
 
 def _shin_path(frame: int) -> Vector:
-    """シン — ロナウドを横目に、レオンの方へ直進 → 到着で小ジャンプ"""
-    if frame <= WALK_END:
-        t = min(1.0, (frame - 1) / max(1, WALK_END - 1))
+    """シン — 奥でレオンの方へ歩行 → 到着 → 喜びのホップ"""
+    if frame < F_WALK_START:
+        return SHIN_START.copy()
+    if frame <= F_WALK_END:
+        t = (frame - F_WALK_START) / max(1, F_WALK_END - F_WALK_START)
         t = t * t * (3.0 - 2.0 * t)
-        p = SHIN_START.lerp(SHIN_END, t)
-    else:
-        p = SHIN_END.copy()
-    if WALK_END < frame <= WALK_END + 14:
-        hop = (frame - WALK_END) / 14.0
-        p.z = 0.28 * math.sin(hop * math.pi)
+        return SHIN_START.lerp(SHIN_END, t)
+    p = SHIN_END.copy()
+    if F_WALK_END < frame <= F_ARRIVE_HOLD:
+        hop = (frame - F_WALK_END) / (F_ARRIVE_HOLD - F_WALK_END)
+        p.z = 0.32 * math.sin(hop * math.pi)
     return p
-
-
-def _ronaldo_yaw(frame: int) -> float:
-    """ロナウド — 握手の様子を見るために振り向く"""
-    watch_start, watch_end = 92, 118
-    if frame < watch_start:
-        return PORTUGAL_YAW
-    if frame >= watch_end:
-        return RONALDO_WATCH_YAW
-    t = (frame - watch_start) / (watch_end - watch_start)
-    t = t * t * (3.0 - 2.0 * t)
-    return PORTUGAL_YAW + (RONALDO_WATCH_YAW - PORTUGAL_YAW) * t
-
-
-def _animate_root_with_yaw(
-    root: bpy.types.Object,
-    keys: List[Tuple[int, Vector]],
-    yaw_at: callable,
-) -> None:
-    _clear_anim(root)
-    for f, loc in keys:
-        _kf_loc(root, f, loc)
-        _kf_rot_z(root, f, yaw_at(f))
-    if root.animation_data and root.animation_data.action:
-        for fc in root.animation_data.action.fcurves:
-            for kp in fc.keyframe_points:
-                kp.interpolation = "BEZIER"
-                kp.handle_left_type = "AUTO_CLAMPED"
-                kp.handle_right_type = "AUTO_CLAMPED"
-
-
-def _kf_pose_euler(
-    arm: bpy.types.Object,
-    bone_name: str,
-    frame: int,
-    rot: Tuple[float, float, float],
-) -> None:
-    bpy.context.scene.frame_set(frame)
-    bone = arm.pose.bones.get(bone_name)
-    if not bone:
-        return
-    bone.rotation_mode = "XYZ"
-    bone.rotation_euler = Euler(rot)
-    bone.keyframe_insert(data_path="rotation_euler", frame=frame)
 
 
 def _add_pose_overlay_strip(
@@ -153,7 +117,6 @@ def _add_pose_overlay_strip(
     strip_end: int,
     bone_keys: List[Tuple[int, dict]],
 ) -> None:
-    """idle/walk の上に ADD でポーズを重ねる（NLA が腕を潰さないように）"""
     if not arm.animation_data:
         arm.animation_data_create()
     act = bpy.data.actions.new(name)
@@ -179,31 +142,39 @@ def _add_pose_overlay_strip(
 
 
 def _bones(**kwargs: Tuple[float, float, float]) -> dict:
-    """キーワード引数をボーン名へ（upperarm_r → upperarm.r）"""
     return {k.replace("_", "."): v for k, v in kwargs.items()}
 
 
-def _animate_handshake_poses(
-    shin_arm: bpy.types.Object,
-    leao_arm: bpy.types.Object,
-    ronaldo_arm: bpy.types.Object,
-) -> None:
-    """喜んで握手を差し出すシン、応えるレオン、それを見るロナウド"""
+def _animate_handshake_poses(shin_arm: bpy.types.Object, leao_arm: bpy.types.Object) -> None:
+    """奥のシン＋レオンのみ握手。ロナウドにはポーズを付けない。"""
     z = ARM_NEUTRAL
     sd, ld = SHIN_OFFER_DELTA, LEAO_OFFER_DELTA
 
     _add_pose_overlay_strip(
         shin_arm,
         "Shin_ExcitedHandshake",
-        WALK_END,
+        F_WALK_END,
         HANDSHAKE_FRAMES,
         [
-            (WALK_END, _bones(upperarm_r=z, lowerarm_r=z, spine_02=z, neck_01=z, head=z)),
-            (WALK_END + 6, _bones(
+            (F_WALK_END, _bones(upperarm_r=z, lowerarm_r=z, spine_02=z, neck_01=z, head=z)),
+            (F_WALK_END + 18, _bones(
                 upperarm_r=z, lowerarm_r=z,
                 spine_02=(0.1, 0.0, 0.0), neck_01=(0.08, 0.0, -0.06), head=(0.05, 0.0, -0.08),
             )),
-            (HAND_OFFER, _bones(
+            (F_ARRIVE_HOLD, _bones(
+                upperarm_r=z, lowerarm_r=z,
+                spine_02=(0.1, 0.0, 0.0), neck_01=(0.08, 0.0, -0.06), head=(0.05, 0.0, -0.08),
+            )),
+            (F_HAND_OFFER - 12, _bones(
+                upperarm_r=(sd["upperarm.r"][0] * 0.4, sd["upperarm.r"][1], sd["upperarm.r"][2] * 0.4),
+                lowerarm_r=(sd["lowerarm.r"][0] * 0.4, 0.0, 0.0),
+                spine_02=(0.11, 0.0, 0.0), neck_01=(0.09, 0.0, -0.07), head=(0.05, 0.0, -0.09),
+            )),
+            (F_HAND_OFFER, _bones(
+                upperarm_r=sd["upperarm.r"], lowerarm_r=sd["lowerarm.r"],
+                spine_02=(0.12, 0.0, 0.0), neck_01=(0.1, 0.0, -0.08), head=(0.06, 0.0, -0.1),
+            )),
+            (F_OFFER_HOLD, _bones(
                 upperarm_r=sd["upperarm.r"], lowerarm_r=sd["lowerarm.r"],
                 spine_02=(0.12, 0.0, 0.0), neck_01=(0.1, 0.0, -0.08), head=(0.06, 0.0, -0.1),
             )),
@@ -217,32 +188,16 @@ def _animate_handshake_poses(
     _add_pose_overlay_strip(
         leao_arm,
         "Leao_HandshakeReply",
-        HAND_OFFER + 6,
+        F_LEAO_REPLY - 12,
         HANDSHAKE_FRAMES,
         [
-            (HAND_OFFER + 6, _bones(upperarm_r=z, lowerarm_r=z)),
-            (HAND_OFFER + 16, _bones(upperarm_r=ld["upperarm.r"], lowerarm_r=ld["lowerarm.r"])),
+            (F_LEAO_REPLY - 12, _bones(upperarm_r=z, lowerarm_r=z)),
+            (F_LEAO_REPLY, _bones(
+                upperarm_r=(ld["upperarm.r"][0] * 0.5, 0.0, ld["upperarm.r"][2] * 0.5),
+                lowerarm_r=(ld["lowerarm.r"][0] * 0.5, 0.0, 0.0),
+            )),
+            (F_LEAO_REPLY + 18, _bones(upperarm_r=ld["upperarm.r"], lowerarm_r=ld["lowerarm.r"])),
             (HANDSHAKE_FRAMES, _bones(upperarm_r=ld["upperarm.r"], lowerarm_r=ld["lowerarm.r"])),
-        ],
-    )
-
-    _add_pose_overlay_strip(
-        ronaldo_arm,
-        "Ronaldo_Watching",
-        95,
-        HANDSHAKE_FRAMES,
-        [
-            (95, _bones(neck_01=z, head=z, upperarm_r=z, lowerarm_r=z, upperarm_l=z, lowerarm_l=z)),
-            (120, _bones(
-                neck_01=(0.18, 0.0, 0.55), head=(0.12, 0.0, 0.45),
-                upperarm_r=(0.42, 0.0, -0.22), lowerarm_r=(0.72, 0.0, 0.0),
-                upperarm_l=(0.42, 0.0, 0.22), lowerarm_l=(0.72, 0.0, 0.0),
-            )),
-            (HANDSHAKE_FRAMES, _bones(
-                neck_01=(0.18, 0.0, 0.55), head=(0.12, 0.0, 0.45),
-                upperarm_r=(0.42, 0.0, -0.22), lowerarm_r=(0.72, 0.0, 0.0),
-                upperarm_l=(0.42, 0.0, 0.22), lowerarm_l=(0.72, 0.0, 0.0),
-            )),
         ],
     )
 
@@ -263,7 +218,7 @@ def setup_portugal_handshake_characters() -> Tuple[
         "Shin",
         SHIN_ORANGE,
         [SHIN_START],
-        actions=["walk"],
+        actions=["idle"],
         facing_yaw=SHIN_YAW,
     )[0]
     leao_arm = build_team(
@@ -271,14 +226,14 @@ def setup_portugal_handshake_characters() -> Tuple[
         PORTUGAL_BLUE,
         [LEAO_POS],
         actions=["idle"],
-        facing_yaw=PORTUGAL_YAW,
+        facing_yaw=LEAO_YAW,
     )[0]
     ronaldo_arm = build_team(
         "Ronaldo",
         PORTUGAL_BLUE,
         [RONALDO_POS],
         actions=["idle"],
-        facing_yaw=PORTUGAL_YAW,
+        facing_yaw=RONALDO_YAW,
     )[0]
 
     set_mesh_split_vertical(_mesh_child(leao_arm), PORTUGAL_BLUE, PORTUGAL_GREEN, z_cut=0.42)
@@ -324,21 +279,25 @@ def animate_portugal_shin_handshake() -> None:
     ronaldo_keys = [(f, RONALDO_POS) for f in range(1, HANDSHAKE_FRAMES + 1)]
 
     _animate_root_fixed(shin_root, shin_keys, SHIN_YAW)
-    _animate_root_fixed(leao_root, leao_keys, PORTUGAL_YAW)
-    _animate_root_with_yaw(ronaldo_root, ronaldo_keys, _ronaldo_yaw)
+    _animate_root_fixed(leao_root, leao_keys, LEAO_YAW)
+    _animate_root_fixed(ronaldo_root, ronaldo_keys, RONALDO_YAW)
 
-    _add_nla_strip(shin_arm, "walk", 1, WALK_END)
-    _add_nla_strip(shin_arm, "idle", WALK_END + 1, HANDSHAKE_FRAMES)
+    # シン：待機 → 歩行 → 到着後 idle
+    _add_nla_strip(shin_arm, "idle", 1, F_WALK_START - 1)
+    _add_nla_strip(shin_arm, "walk", F_WALK_START, F_WALK_END)
+    _add_nla_strip(shin_arm, "idle", F_WALK_END + 1, HANDSHAKE_FRAMES)
+
+    # レオン・ロナウド：ずっと idle のみ（ロナウドにポーズ追加なし）
     _add_nla_strip(leao_arm, "idle", 1, HANDSHAKE_FRAMES)
     _add_nla_strip(ronaldo_arm, "idle", 1, HANDSHAKE_FRAMES)
 
-    _animate_handshake_poses(shin_arm, leao_arm, ronaldo_arm)
+    _animate_handshake_poses(shin_arm, leao_arm)
 
     setup_portugal_handshake_camera()
     scene.frame_set(1)
     print(
-        f"Portugal handshake: {HANDSHAKE_FRAMES}f — "
-        "Shin seeks Leao handshake, Ronaldo ignored"
+        f"Portugal handshake: {HANDSHAKE_FRAMES}f @ {FPS}fps — "
+        "foreground Ronaldo idle, background Shin-Leao handshake"
     )
 
 
@@ -356,19 +315,29 @@ def _kf_cam(cam: bpy.types.Object, frame: int, pos: Vector, target: Vector) -> N
 
 
 def setup_portugal_handshake_camera() -> bpy.types.Object:
+    """手前ロナウド＋奥の握手が同時に見える構図"""
     _remove_cameras()
     cam_data = bpy.data.cameras.new("CamPortugalHandshake")
     cam = bpy.data.objects.new("CamPortugalHandshake", cam_data)
     bpy.context.collection.objects.link(cam)
     bpy.context.scene.camera = cam
-    cam.data.lens = 22  # 広角で3人全身
+    cam.data.lens = 24
 
-    key_frames = [1, 50, WALK_END, HAND_OFFER, HANDSHAKE_FRAMES]
+    bg_target = (SHIN_END + LEAO_POS) * 0.5 + Vector((0.0, 0.0, 2.0))
+
+    key_frames = [
+        F_INTRO,
+        F_WALK_START,
+        F_WALK_END,
+        F_HAND_OFFER,
+        F_OFFER_HOLD,
+        F_LEAO_REPLY,
+        HANDSHAKE_FRAMES,
+    ]
     for f in key_frames:
-        shin = _shin_path(f)
-        group_center = (shin + LEAO_POS + RONALDO_POS) / 3.0
-        cam_pos = group_center + Vector((0.0, -17.5, 5.2))
-        cam_tgt = group_center + Vector((0.0, 0.0, 2.1))
+        # ロナウドの肩越し — 手前に青、奥に橙＋青
+        cam_pos = RONALDO_POS + Vector((1.8, -3.2, 3.6))
+        cam_tgt = bg_target
         _kf_cam(cam, f, cam_pos, cam_tgt)
 
     if cam.animation_data and cam.animation_data.action:
