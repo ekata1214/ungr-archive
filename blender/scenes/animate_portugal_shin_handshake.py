@@ -46,7 +46,7 @@ RONALDO_YAW = math.pi
 # 奥：シン＋レオン / 手前：ロナウド
 LEAO_POS = Vector((2.15, 5.0, 0.0))
 SHIN_START = Vector((20.0, 4.8, 0.0))
-SHIN_END = Vector((5.05, 5.0, 0.0))  # 握手時に手が重なる距離
+SHIN_END = Vector((5.8, 5.0, 0.0))  # レオンの前で一歩引いた距離
 RONALDO_POS = Vector((1.0, -5.5, 0.0))
 
 SHIN_OFFER_DELTA = {
