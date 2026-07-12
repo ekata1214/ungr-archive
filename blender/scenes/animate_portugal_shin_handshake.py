@@ -30,10 +30,10 @@ PORTUGAL_GREEN = (0.12, 0.55, 0.28, 1.0)
 SHIN_YAW = math.pi * 1.5
 PORTUGAL_YAW = math.pi / 2
 
-LEAO_POS = Vector((2.5, 0.6, 0.0))
-RONALDO_POS = Vector((9.0, -2.8, 0.0))
-SHIN_START = Vector((16.0, -1.8, 0.0))
-SHIN_END = Vector((3.8, 0.75, 0.0))
+LEAO_POS = Vector((1.5, 0.8, 0.0))
+RONALDO_POS = Vector((11.0, -4.2, 0.0))
+SHIN_START = Vector((18.0, -1.2, 0.0))
+SHIN_END = Vector((8.2, 0.85, 0.0))  # レオンと約6.7m — 体は重ならず手だけ伸ばす
 
 WALK_END = 108
 HAND_REACH = 132
@@ -123,18 +123,18 @@ def _animate_handshake_poses(
 
     for f, ua, la in (
         (WALK_END, (0.15, 0.0, 0.0), (0.05, 0.0, 0.0)),
-        (HAND_REACH - 6, (0.55, 0.0, -0.35), (0.85, 0.0, 0.0)),
-        (HAND_REACH, (0.95, 0.0, -0.55), (1.15, 0.0, 0.0)),
-        (HANDSHAKE_FRAMES, (0.95, 0.0, -0.55), (1.15, 0.0, 0.0)),
+        (HAND_REACH - 6, (0.45, 0.0, -0.25), (0.65, 0.0, 0.0)),
+        (HAND_REACH, (0.62, 0.0, -0.32), (0.82, 0.0, 0.0)),
+        (HANDSHAKE_FRAMES, (0.62, 0.0, -0.32), (0.82, 0.0, 0.0)),
     ):
         _kf_pose_euler(shin_arm, "upperarm.l", f, ua)
         _kf_pose_euler(shin_arm, "lowerarm.l", f, la)
 
     for f, ua, la in (
         (1, (0.15, 0.0, 0.0), (0.05, 0.0, 0.0)),
-        (HAND_REACH - 4, (0.45, 0.0, 0.35), (0.75, 0.0, 0.0)),
-        (HAND_REACH + 6, (0.75, 0.0, 0.45), (1.05, 0.0, 0.0)),
-        (HANDSHAKE_FRAMES, (0.75, 0.0, 0.45), (1.05, 0.0, 0.0)),
+        (HAND_REACH - 4, (0.38, 0.0, 0.22), (0.62, 0.0, 0.0)),
+        (HAND_REACH + 6, (0.55, 0.0, 0.28), (0.78, 0.0, 0.0)),
+        (HANDSHAKE_FRAMES, (0.55, 0.0, 0.28), (0.78, 0.0, 0.0)),
     ):
         _kf_pose_euler(leao_arm, "upperarm.r", f, ua)
         _kf_pose_euler(leao_arm, "lowerarm.r", f, la)
@@ -262,14 +262,16 @@ def setup_portugal_handshake_camera() -> bpy.types.Object:
     cam = bpy.data.objects.new("CamPortugalHandshake", cam_data)
     bpy.context.collection.objects.link(cam)
     bpy.context.scene.camera = cam
-    cam.data.lens = 32
+    cam.data.lens = 22  # 広角で3人全身
 
     key_frames = [1, 50, WALK_END, HAND_REACH, HANDSHAKE_FRAMES]
     for f in key_frames:
         shin = _shin_path(f)
-        mid = (shin + LEAO_POS + RONALDO_POS) / 3.0
-        cam_pos = mid + Vector((0.0, -7.8, 1.85))
-        cam_tgt = (shin + LEAO_POS) * 0.5 + Vector((0.0, 0.0, 1.05))
+        ron = _ronaldo_path(f)
+        # 3人の重心を捉える — 引いた位置から全身
+        group_center = (shin + LEAO_POS + ron) / 3.0
+        cam_pos = group_center + Vector((0.0, -17.5, 5.2))
+        cam_tgt = group_center + Vector((0.0, 0.0, 2.1))
         _kf_cam(cam, f, cam_pos, cam_tgt)
 
     if cam.animation_data and cam.animation_data.action:
