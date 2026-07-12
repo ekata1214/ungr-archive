@@ -210,3 +210,10 @@ SCENE_04_SCRIPT = (
     "もう一人の要、遠藤航の堅実な中盤の守備の前で、少林選手が真正面からゆっくりドリブル。"
     "だんだんすーっと消えていき、最後はボールだけが残る。"
 )
+
+# シーン05（Mannequinyベース）— 台本は scripts/scene_portugal_shin_handshake.md
+# 実行: build_part_field.py -- --animate-portugal-handshake --render-portugal-handshake-video
+SCENE_05_SCRIPT = (
+    "予選第1戦、相手はポルトガル代表。シンがレオンのミュージシャンとしての活動、"
+    "通称WAY45の大ファンだったため、試合開始早々ロナウドそっちのけで握手を求めに行ってしまう。"
+)

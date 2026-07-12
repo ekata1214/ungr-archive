@@ -697,7 +697,11 @@ def main() -> None:
     open_blend(blend)
     kubo_mode = "--animate-kubo-mark" in sys.argv or "--render-kubo-mark-video" in sys.argv
     endo_mode = "--animate-endo-ghost" in sys.argv or "--render-endo-ghost-video" in sys.argv
-    vignette_mode = kubo_mode or endo_mode
+    portugal_mode = (
+        "--animate-portugal-handshake" in sys.argv
+        or "--render-portugal-handshake-video" in sys.argv
+    )
+    vignette_mode = kubo_mode or endo_mode or portugal_mode
     build_field_only(include_teams=not vignette_mode)
     if "--animate-kubo-mark" in sys.argv:
         from animate_kubo_shaolin_mark import animate_kubo_shaolin_mark  # noqa: E402
@@ -715,6 +719,14 @@ def main() -> None:
         from animate_endo_shaolin_ghost import render_endo_ghost_video  # noqa: E402
 
         render_endo_ghost_video()
+    if "--animate-portugal-handshake" in sys.argv:
+        from animate_portugal_shin_handshake import animate_portugal_shin_handshake  # noqa: E402
+
+        animate_portugal_shin_handshake()
+    if "--render-portugal-handshake-video" in sys.argv:
+        from animate_portugal_shin_handshake import render_portugal_handshake_video  # noqa: E402
+
+        render_portugal_handshake_video()
     if "--animate-match" in sys.argv:
         from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
 
