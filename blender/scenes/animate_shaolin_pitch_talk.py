@@ -284,13 +284,13 @@ def setup_camera() -> bpy.types.Object:
     cam = bpy.data.objects.new("CamShaolinTalk", cam_data)
     bpy.context.collection.objects.link(cam)
     bpy.context.scene.camera = cam
-    cam_data.lens = 55
+    # 低めの位置から見上げるバストショット（胸〜頭、頭部 z≈4.0）
+    cam_data.lens = 50
 
     for f in (1, F_TALK_END, TOTAL_FRAMES):
         t = (f - 1) / max(1, TOTAL_FRAMES - 1)
-        # バストショット：やや低い位置から胸〜頭を収める
-        pos = Vector((-0.12 + 0.05 * t, -3.9 + 0.25 * t, 2.05 - 0.04 * t))
-        tgt = Vector((0.0, 0.04, 2.42))
+        pos = Vector((-0.08 + 0.04 * t, -5.0 + 0.18 * t, 3.12 - 0.04 * t))
+        tgt = Vector((0.0, -0.78, 3.78))
         _kf_cam(cam, f, pos, tgt)
 
     if cam.animation_data and cam.animation_data.action:
@@ -325,6 +325,7 @@ def animate_shaolin_pitch_talk() -> None:
 def render_shaolin_pitch_talk_video() -> Path:
     from build_part_field import RENDER_DIR, setup_black_world, setup_lights  # noqa: E402
 
+    animate_shaolin_pitch_talk()
     setup_black_world()
     setup_lights()
     scene = bpy.context.scene
