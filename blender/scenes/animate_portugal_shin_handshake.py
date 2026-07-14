@@ -1,17 +1,23 @@
 # SPDX-License-Identifier: MIT
-"""ポルトガル戦 — シンがレオンに握手を求める（手前ロナウド idle、奥で握手）"""
+"""ポルトガル戦 — シンがレオンに握手を求める（手前ロナウド idle、奥で握手）
+
+流れ:
+  シン: idle → 楽しそうに走っていく → 到着ホップ → 右手を差し出す
+  レオン: idle のまま待つ → 左手で握手に応じる
+  ロナウド: 手前で idle のみ（ポーズ変更なし）
+"""
 
 from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import bpy
-from mathutils import Euler, Vector
+from mathutils import Euler, Quaternion, Vector
 
 from animate_soccer_match import (
-    _add_nla_strip,
+    _add_nla_strip as _add_nla_strip_raw,
     _clear_all_nla,
     _clear_anim,
     _kf_loc,
@@ -26,9 +32,9 @@ HANDSHAKE_FRAMES = 432
 
 # タイムライン
 F_INTRO = 1
-F_WALK_START = 72
-F_WALK_END = 228
-F_ARRIVE_HOLD = 258
+F_RUN_START = 48
+F_RUN_END = 216
+F_ARRIVE_HOLD = 252
 F_HAND_OFFER = 288
 F_OFFER_HOLD = 330
 F_LEAO_REPLY = 360
@@ -40,24 +46,58 @@ PORTUGAL_GREEN = (0.12, 0.55, 0.28, 1.0)
 
 SHIN_YAW = math.pi * 1.5
 LEAO_YAW = math.pi / 2
-# 手前ロナウド — 奥の2人の方を向く（今までと逆）
+# 手前ロナウド — 奥の2人の方を向く
 RONALDO_YAW = math.pi
 
 # 奥：シン＋レオン / 手前：ロナウド
+# 握手が届く距離（スケール2.5の腕の長さを考慮）
 LEAO_POS = Vector((2.15, 5.0, 0.0))
-SHIN_START = Vector((20.0, 4.8, 0.0))
-SHIN_END = Vector((5.8, 5.0, 0.0))  # レオンの前で一歩引いた距離
+SHIN_START = Vector((20.0, 5.0, 0.0))
+SHIN_END = Vector((3.85, 5.0, 0.0))
 RONALDO_POS = Vector((1.0, -5.5, 0.0))
 
+# idle 上に掛ける腕のオイラー差分（親ローカル）。対面で手が合う組み合わせ。
+# シン=右手 / レオン=左手（同じワールド側へ伸ばす）
 SHIN_OFFER_DELTA = {
-    "upperarm.r": (0.0, 0.0, 1.9),
-    "lowerarm.r": (0.85, 0.0, 0.0),
+    "upperarm.r": (0.35, -1.45, 0.95),
+    "lowerarm.r": (-1.15, 0.15, 0.1),
 }
-LEAO_OFFER_DELTA = {
-    "upperarm.r": (0.0, 0.0, 1.9),
-    "lowerarm.r": (0.85, 0.0, 0.0),
+LEAO_REPLY_DELTA = {
+    "upperarm.l": (0.35, 1.45, -0.95),
+    "lowerarm.l": (-1.15, -0.15, -0.1),
 }
-ARM_NEUTRAL = (0.0, 0.0, 0.0)
+
+PoseDict = Dict[str, Quaternion]
+
+
+def _resolve_action_name(name: str) -> str:
+    if bpy.data.actions.get(name):
+        return name
+    candidates = [a.name for a in bpy.data.actions if a.name == name or a.name.startswith(f"{name}.")]
+    if not candidates:
+        raise KeyError(name)
+    # 無印があれば優先、なければ最も若いサフィックス
+    exact = [c for c in candidates if c == name]
+    return exact[0] if exact else sorted(candidates)[0]
+
+
+def _add_nla_strip(
+    arm: bpy.types.Object,
+    action_name: str,
+    frame_start: int,
+    frame_end: int,
+    action_offset: int = 0,
+    repeat: bool = True,
+) -> None:
+    resolved = _resolve_action_name(action_name)
+    _add_nla_strip_raw(arm, resolved, frame_start, frame_end, action_offset=action_offset, repeat=repeat)
+    ad = arm.animation_data
+    if not ad:
+        return
+    track = ad.nla_tracks[-1]
+    for strip in track.strips:
+        strip.influence = 1.0
+        strip.use_auto_blend = False
 
 
 def _remove_all_players() -> None:
@@ -96,110 +136,137 @@ def _animate_root_fixed(
 
 
 def _shin_path(frame: int) -> Vector:
-    """シン — 奥でレオンの方へ歩行 → 到着 → 喜びのホップ"""
-    if frame < F_WALK_START:
+    """シン — 奥でレオンの方へ走る → 到着 → 喜びのホップ"""
+    if frame < F_RUN_START:
         return SHIN_START.copy()
-    if frame <= F_WALK_END:
-        t = (frame - F_WALK_START) / max(1, F_WALK_END - F_WALK_START)
+    if frame <= F_RUN_END:
+        t = (frame - F_RUN_START) / max(1, F_RUN_END - F_RUN_START)
         t = t * t * (3.0 - 2.0 * t)
         return SHIN_START.lerp(SHIN_END, t)
     p = SHIN_END.copy()
-    if F_WALK_END < frame <= F_ARRIVE_HOLD:
-        hop = (frame - F_WALK_END) / (F_ARRIVE_HOLD - F_WALK_END)
+    if F_RUN_END < frame <= F_ARRIVE_HOLD:
+        hop = (frame - F_RUN_END) / (F_ARRIVE_HOLD - F_RUN_END)
         # 嬉しそうなジャンプ — 高め＋二連跳ね
-        p.z = 0.65 * math.sin(hop * math.pi) + 0.22 * math.sin(hop * math.pi * 2.0)
+        p.z = 0.55 * math.sin(hop * math.pi) + 0.18 * math.sin(hop * math.pi * 2.0)
     return p
 
 
-def _add_pose_overlay_strip(
+def _snapshot_pose(arm: bpy.types.Object) -> PoseDict:
+    pose: PoseDict = {}
+    for bone in arm.pose.bones:
+        bone.rotation_mode = "QUATERNION"
+        pose[bone.name] = bone.rotation_quaternion.copy()
+    return pose
+
+
+def _pose_with_deltas(base: PoseDict, deltas: Dict[str, Tuple[float, float, float]], weight: float = 1.0) -> PoseDict:
+    out: PoseDict = {name: q.copy() for name, q in base.items()}
+    w = max(0.0, min(1.0, weight))
+    for bone_name, euler_xyz in deltas.items():
+        if bone_name not in out:
+            continue
+        delta = Euler(euler_xyz, "XYZ").to_quaternion()
+        if w >= 0.999:
+            out[bone_name] = out[bone_name] @ delta
+        else:
+            out[bone_name] = out[bone_name] @ Quaternion((1.0, 0.0, 0.0, 0.0)).slerp(delta, w)
+    return out
+
+
+def _capture_evaluated_pose(arm: bpy.types.Object, frame: int) -> PoseDict:
+    bpy.context.scene.frame_set(frame)
+    bpy.context.view_layer.update()
+    return _snapshot_pose(arm)
+
+
+def _add_full_pose_replace_strip(
     arm: bpy.types.Object,
     name: str,
     strip_start: int,
     strip_end: int,
-    bone_keys: List[Tuple[int, dict]],
+    keyed_poses: List[Tuple[int, PoseDict]],
 ) -> None:
+    """全身クォータニオンを REPLACE で重ねる。ADD+Euler は Mannequiny で T-pose 化するので使わない。"""
     if not arm.animation_data:
         arm.animation_data_create()
-    act = bpy.data.actions.new(name)
-    arm.animation_data.action = act
-    for frame, rotations in bone_keys:
-        bpy.context.scene.frame_set(frame)
-        for bone_name, rot in rotations.items():
+    ad = arm.animation_data
+
+    # キー投入中は既存 NLA をミュート（スナップショット済みの値だけを焼く）
+    muted = [(t, t.mute) for t in ad.nla_tracks]
+    for t, _ in muted:
+        t.mute = True
+
+    act_name = name
+    if bpy.data.actions.get(act_name):
+        act_name = f"{name}_{len(bpy.data.actions)}"
+    act = bpy.data.actions.new(act_name)
+    ad.action = act
+
+    for frame, pose in keyed_poses:
+        for bone_name, quat in pose.items():
             bone = arm.pose.bones.get(bone_name)
             if not bone:
                 continue
-            bone.rotation_mode = "XYZ"
-            bone.rotation_euler = Euler(rot)
-            bone.keyframe_insert(data_path="rotation_euler", frame=frame)
-    arm.animation_data.action = None
-    track = arm.animation_data.nla_tracks.new()
+            bone.rotation_mode = "QUATERNION"
+            bone.rotation_quaternion = quat
+            bone.keyframe_insert(data_path="rotation_quaternion", frame=frame)
+
+    if act.fcurves:
+        for fc in act.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation = "BEZIER"
+                kp.handle_left_type = "AUTO_CLAMPED"
+                kp.handle_right_type = "AUTO_CLAMPED"
+
+    ad.action = None
+    for t, was_muted in muted:
+        t.mute = was_muted
+
+    track = ad.nla_tracks.new()
     track.name = name
     strip = track.strips.new(name, strip_start, act)
+    strip.frame_start = strip_start
     strip.frame_end = strip_end + 1
-    strip.action_frame_start = min(f for f, _ in bone_keys)
-    strip.action_frame_end = max(f for f, _ in bone_keys)
-    strip.blend_type = "ADD"
+    strip.action_frame_start = min(f for f, _ in keyed_poses)
+    strip.action_frame_end = max(f for f, _ in keyed_poses)
+    strip.blend_type = "REPLACE"
     strip.extrapolation = "HOLD_FORWARD"
-
-
-def _bones(**kwargs: Tuple[float, float, float]) -> dict:
-    return {k.replace("_", "."): v for k, v in kwargs.items()}
+    strip.influence = 1.0
+    strip.use_auto_blend = False
 
 
 def _animate_handshake_poses(shin_arm: bpy.types.Object, leao_arm: bpy.types.Object) -> None:
-    """奥のシン＋レオンのみ握手。ロナウドにはポーズを付けない。"""
-    z = ARM_NEUTRAL
-    sd, ld = SHIN_OFFER_DELTA, LEAO_OFFER_DELTA
+    """到着後の idle を土台に、腕だけ伸ばした全身 REPLACE を乗せる。"""
+    shin_base = _capture_evaluated_pose(shin_arm, F_ARRIVE_HOLD)
+    leao_base = _capture_evaluated_pose(leao_arm, F_OFFER_HOLD)
 
-    _add_pose_overlay_strip(
+    shin_keys = [
+        (F_ARRIVE_HOLD, shin_base),
+        (F_HAND_OFFER - 18, _pose_with_deltas(shin_base, SHIN_OFFER_DELTA, 0.35)),
+        (F_HAND_OFFER, _pose_with_deltas(shin_base, SHIN_OFFER_DELTA, 1.0)),
+        (F_OFFER_HOLD, _pose_with_deltas(shin_base, SHIN_OFFER_DELTA, 1.0)),
+        (HANDSHAKE_FRAMES, _pose_with_deltas(shin_base, SHIN_OFFER_DELTA, 1.0)),
+    ]
+    _add_full_pose_replace_strip(
         shin_arm,
         "Shin_ExcitedHandshake",
-        F_WALK_END,
+        F_ARRIVE_HOLD,
         HANDSHAKE_FRAMES,
-        [
-            (F_WALK_END, _bones(upperarm_r=z, lowerarm_r=z, spine_02=z, neck_01=z, head=z)),
-            (F_WALK_END + 18, _bones(
-                upperarm_r=z, lowerarm_r=z,
-                spine_02=(0.1, 0.0, 0.0), neck_01=(0.08, 0.0, -0.06), head=(0.05, 0.0, -0.08),
-            )),
-            (F_ARRIVE_HOLD, _bones(
-                upperarm_r=z, lowerarm_r=z,
-                spine_02=(0.1, 0.0, 0.0), neck_01=(0.08, 0.0, -0.06), head=(0.05, 0.0, -0.08),
-            )),
-            (F_HAND_OFFER - 12, _bones(
-                upperarm_r=(sd["upperarm.r"][0] * 0.4, sd["upperarm.r"][1], sd["upperarm.r"][2] * 0.4),
-                lowerarm_r=(sd["lowerarm.r"][0] * 0.4, 0.0, 0.0),
-                spine_02=(0.11, 0.0, 0.0), neck_01=(0.09, 0.0, -0.07), head=(0.05, 0.0, -0.09),
-            )),
-            (F_HAND_OFFER, _bones(
-                upperarm_r=sd["upperarm.r"], lowerarm_r=sd["lowerarm.r"],
-                spine_02=(0.12, 0.0, 0.0), neck_01=(0.1, 0.0, -0.08), head=(0.06, 0.0, -0.1),
-            )),
-            (F_OFFER_HOLD, _bones(
-                upperarm_r=sd["upperarm.r"], lowerarm_r=sd["lowerarm.r"],
-                spine_02=(0.12, 0.0, 0.0), neck_01=(0.1, 0.0, -0.08), head=(0.06, 0.0, -0.1),
-            )),
-            (HANDSHAKE_FRAMES, _bones(
-                upperarm_r=sd["upperarm.r"], lowerarm_r=sd["lowerarm.r"],
-                spine_02=(0.12, 0.0, 0.0), neck_01=(0.1, 0.0, -0.08), head=(0.06, 0.0, -0.1),
-            )),
-        ],
+        shin_keys,
     )
 
-    _add_pose_overlay_strip(
+    leao_keys = [
+        (F_LEAO_REPLY - 16, leao_base),
+        (F_LEAO_REPLY - 4, _pose_with_deltas(leao_base, LEAO_REPLY_DELTA, 0.45)),
+        (F_LEAO_REPLY + 10, _pose_with_deltas(leao_base, LEAO_REPLY_DELTA, 1.0)),
+        (HANDSHAKE_FRAMES, _pose_with_deltas(leao_base, LEAO_REPLY_DELTA, 1.0)),
+    ]
+    _add_full_pose_replace_strip(
         leao_arm,
         "Leao_HandshakeReply",
-        F_LEAO_REPLY - 12,
+        F_LEAO_REPLY - 16,
         HANDSHAKE_FRAMES,
-        [
-            (F_LEAO_REPLY - 12, _bones(upperarm_r=z, lowerarm_r=z)),
-            (F_LEAO_REPLY, _bones(
-                upperarm_r=(ld["upperarm.r"][0] * 0.5, 0.0, ld["upperarm.r"][2] * 0.5),
-                lowerarm_r=(ld["lowerarm.r"][0] * 0.5, 0.0, 0.0),
-            )),
-            (F_LEAO_REPLY + 18, _bones(upperarm_r=ld["upperarm.r"], lowerarm_r=ld["lowerarm.r"])),
-            (HANDSHAKE_FRAMES, _bones(upperarm_r=ld["upperarm.r"], lowerarm_r=ld["lowerarm.r"])),
-        ],
+        leao_keys,
     )
 
 
@@ -283,12 +350,12 @@ def animate_portugal_shin_handshake() -> None:
     _animate_root_fixed(leao_root, leao_keys, LEAO_YAW)
     _animate_root_fixed(ronaldo_root, ronaldo_keys, RONALDO_YAW)
 
-    # シン：待機 → 歩行 → 到着後 idle
-    _add_nla_strip(shin_arm, "idle", 1, F_WALK_START - 1)
-    _add_nla_strip(shin_arm, "walk", F_WALK_START, F_WALK_END)
-    _add_nla_strip(shin_arm, "idle", F_WALK_END + 1, HANDSHAKE_FRAMES)
+    # シン：待機 → 走る → 到着後 idle
+    _add_nla_strip(shin_arm, "idle", 1, F_RUN_START - 1)
+    _add_nla_strip(shin_arm, "run", F_RUN_START, F_RUN_END)
+    _add_nla_strip(shin_arm, "idle", F_RUN_END + 1, HANDSHAKE_FRAMES)
 
-    # レオン・ロナウド：ずっと idle のみ（ロナウドにポーズ追加なし）
+    # レオン・ロナウド：ずっと idle（握手は REPLACE オーバーレイで応答）
     _add_nla_strip(leao_arm, "idle", 1, HANDSHAKE_FRAMES)
     _add_nla_strip(ronaldo_arm, "idle", 1, HANDSHAKE_FRAMES)
 
@@ -298,7 +365,7 @@ def animate_portugal_shin_handshake() -> None:
     scene.frame_set(1)
     print(
         f"Portugal handshake: {HANDSHAKE_FRAMES}f @ {FPS}fps — "
-        "foreground Ronaldo idle, background Shin-Leao handshake"
+        "Shin run→offer, Leao idle→reply, Ronaldo idle"
     )
 
 
@@ -328,15 +395,14 @@ def setup_portugal_handshake_camera() -> bpy.types.Object:
 
     key_frames = [
         F_INTRO,
-        F_WALK_START,
-        F_WALK_END,
+        F_RUN_START,
+        F_RUN_END,
         F_HAND_OFFER,
         F_OFFER_HOLD,
         F_LEAO_REPLY,
         HANDSHAKE_FRAMES,
     ]
     for f in key_frames:
-        # やや引いた肩越し — 手前ロナウド全身＋奥の握手
         cam_pos = RONALDO_POS + Vector((2.5, -5.5, 4.8))
         cam_tgt = bg_target
         _kf_cam(cam, f, cam_pos, cam_tgt)
