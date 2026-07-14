@@ -175,7 +175,7 @@ def setup_character() -> Tuple[bpy.types.Object, bpy.types.Object]:
     arm = build_team(
         "Shaolin",
         SHAOLIN_ORANGE,
-        [Vector((0.0, -8.0, 0.0))],
+        [Vector((10.0, 0.0, 0.0))],
         actions=["run"],
         facing_yaw=MOVE_YAW,
     )[0]
