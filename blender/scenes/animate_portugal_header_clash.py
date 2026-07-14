@@ -54,53 +54,34 @@ PORTUGAL_RED = (0.88, 0.12, 0.12, 1.0)
 PORTUGAL_GREEN = (0.12, 0.55, 0.28, 1.0)
 SHAOLIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 
-# ヘディング：正の spine/neck で相手方向へ前傾（負は後傾で体が寄ってしまう）
+# ヘディング：正の spine/neck で相手方向へ前傾。
+# 腕: Rx+ で上げ、Ry は外側（右:+ / 左:-）。逆にするとクロスする
+_ARMS_RAISE = {
+    "upperarm.r": (1.0, 0.85, -0.1),
+    "lowerarm.r": (-0.55, 0.0, 0.0),
+    "upperarm.l": (1.0, -0.85, 0.1),
+    "lowerarm.l": (-0.55, 0.0, 0.0),
+}
 HEADER_WINDUP_R = {
-    "spine_02": (0.65, 0.0, 0.0),
-    "neck_01": (0.4, 0.0, 0.0),
-    "head": (0.22, 0.0, 0.0),
-    "upperarm.r": (0.55, -1.4, 0.8),
-    "lowerarm.r": (-0.85, 0.1, 0.0),
-    "upperarm.l": (0.55, 1.25, -0.65),
-    "lowerarm.l": (-0.75, -0.1, 0.0),
+    "spine_02": (0.55, 0.0, 0.0),
+    "neck_01": (0.35, 0.0, 0.0),
+    "head": (0.18, 0.0, 0.0),
+    **{k: (v[0] * 0.55, v[1] * 0.55, v[2] * 0.55) for k, v in _ARMS_RAISE.items()},
 }
 HEADER_CLASH_R = {
-    "spine_02": (1.25, 0.0, 0.0),
-    "neck_01": (1.0, 0.0, 0.0),
-    "head": (0.65, 0.0, 0.0),
-    "upperarm.r": (0.65, -1.55, 0.95),
-    "lowerarm.r": (-0.95, 0.15, 0.0),
-    "upperarm.l": (0.65, 1.45, -0.75),
-    "lowerarm.l": (-0.9, -0.1, 0.0),
+    "spine_02": (1.05, 0.0, 0.0),
+    "neck_01": (0.85, 0.0, 0.0),
+    "head": (0.5, 0.0, 0.0),
+    **_ARMS_RAISE,
 }
-HEADER_WINDUP_L = {
-    "spine_02": (0.65, 0.0, 0.0),
-    "neck_01": (0.4, 0.0, 0.0),
-    "head": (0.22, 0.0, 0.0),
-    "upperarm.l": (0.55, 1.4, -0.8),
-    "lowerarm.l": (-0.85, -0.1, 0.0),
-    "upperarm.r": (0.55, -1.25, 0.65),
-    "lowerarm.r": (-0.75, 0.1, 0.0),
-}
-HEADER_CLASH_L = {
-    "spine_02": (1.25, 0.0, 0.0),
-    "neck_01": (1.0, 0.0, 0.0),
-    "head": (0.65, 0.0, 0.0),
-    "upperarm.l": (0.65, 1.55, -0.95),
-    "lowerarm.l": (-0.95, -0.15, 0.0),
-    "upperarm.r": (0.65, -1.45, 0.75),
-    "lowerarm.r": (-0.9, 0.1, 0.0),
-}
+HEADER_WINDUP_L = dict(HEADER_WINDUP_R)
+HEADER_CLASH_L = dict(HEADER_CLASH_R)
 
 HEADER_BONES = [
-    "clavicle.r",
     "upperarm.r",
     "lowerarm.r",
-    "hand.r",
-    "clavicle.l",
     "upperarm.l",
     "lowerarm.l",
-    "hand.l",
     "spine_02",
     "neck_01",
     "head",
