@@ -276,6 +276,7 @@ def build_01() -> int:
 # ---------------------------------------------------------------------------
 def build_02() -> int:
     remove_players()
+    _show_pitch()
     hide_ball()
     frames = 192
     # elevated stands on +Y

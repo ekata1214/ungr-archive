@@ -722,6 +722,10 @@ def main() -> None:
         or "--render-shaolin-aerial-shot-video" in sys.argv
         or "--animate-netherlands-sad-interview" in sys.argv
         or "--render-netherlands-sad-interview-video" in sys.argv
+        or "--cut" in sys.argv
+        or "--cuts-all" in sys.argv
+        or "--render-cut" in sys.argv
+        or "--render-cuts" in sys.argv
     )
     vignette_mode = kubo_mode or endo_mode or portugal_mode
     build_field_only(include_teams=not vignette_mode)
@@ -847,6 +851,10 @@ def main() -> None:
         )
 
         render_netherlands_sad_interview_video()
+    if "--cut" in sys.argv or "--cuts-all" in sys.argv:
+        from cuts.run_cut import main_from_argv  # noqa: E402
+
+        main_from_argv(sys.argv)
     if "--animate-match" in sys.argv:
         from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
 

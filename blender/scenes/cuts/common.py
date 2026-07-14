@@ -388,7 +388,7 @@ def render_cut_video(slug: str, frames: int) -> Path:
     sc.render.fps = FPS
     sc.frame_start = 1
     sc.frame_end = frames
-    sc.eevee.taa_render_samples = 8
+    sc.eevee.taa_render_samples = 4
     sc.render.image_settings.file_format = "FFMPEG"
     sc.render.ffmpeg.format = "MPEG4"
     sc.render.ffmpeg.codec = "H264"
@@ -422,8 +422,10 @@ def still_qc(slug: str, frame: int, tag: str) -> Path:
     sc = bpy.context.scene
     sc.frame_set(frame)
     sc.render.image_settings.file_format = "PNG"
-    sc.render.resolution_x = 960
-    sc.render.resolution_y = 540
+    sc.render.resolution_x = 640
+    sc.render.resolution_y = 360
+    if hasattr(sc, "eevee"):
+        sc.eevee.taa_render_samples = 4
     RENDER_DIR.mkdir(parents=True, exist_ok=True)
     ART_DIR.mkdir(parents=True, exist_ok=True)
     out = RENDER_DIR / f"{slug}_{tag}.png"
