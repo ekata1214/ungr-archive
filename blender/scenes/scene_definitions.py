@@ -221,5 +221,5 @@ SCENE_05_SCRIPT = (
 # シーン06 — 台本は scripts/scene_portugal_ronaldo_header.md
 # 実行: build_part_field.py -- --animate-portugal-header --render-portugal-header-video
 SCENE_06_SCRIPT = (
-    "キレたロナウドが単独でジャンプヘディング。スローモーションでボールを頭に合わせる。"
+    "キレたロナウドが一人でゆっくりジャンプする（ボールなし・スロー）。"
 )
