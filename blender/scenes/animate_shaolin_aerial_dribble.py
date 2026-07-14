@@ -37,8 +37,10 @@ HOVER_AMP = 0.32
 SHAOLIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 SHAOLIN_WHITE = (0.96, 0.96, 0.98, 1.0)
 
-# +Y 方向へ進む（カメラは -X / 斜め後方）
-MOVE_YAW = 0.0
+# +Y 方向へ進む（カメラは横 / 斜め）
+# yaw=0 はカメラ側（-Y）向きなので、+Y 進行には π
+MOVE_YAW = math.pi
+MOVE_DIR = Vector((0.0, 1.0, 0.0))
 
 
 def _ease_in_out(t: float) -> float:
@@ -70,7 +72,7 @@ def _right_of(d: Vector) -> Vector:
 
 
 def _move_dir(_frame: int) -> Vector:
-    return Vector((0.0, 1.0, 0.0))
+    return MOVE_DIR.copy()
 
 
 def _path_xy(frame: int) -> Tuple[float, float]:
@@ -119,9 +121,9 @@ def _ball_at_air_feet(
     """体の前方・両足の最前点より前に置く（空中でも同じ）。"""
     phase = frame * 0.72
     # ルート基準の前方量（大きめ）＋足の先よりさらに前
-    ahead = 1.35 + 0.12 * math.sin(phase * 2.3)
-    side = 0.08 * math.sin(phase * 3.4)
-    bounce = 0.1 * abs(math.sin(phase * 4.4))
+    ahead = 2.4 + 0.1 * math.sin(phase * 2.3)
+    side = 0.05 * math.sin(phase * 3.4)
+    bounce = 0.08 * abs(math.sin(phase * 4.4))
     fd = move_dir.normalized()
     right = _right_of(fd)
     foot_z: float | None = None
@@ -133,16 +135,17 @@ def _ball_at_air_feet(
             fl = arm.matrix_world @ bl.head
             fr = arm.matrix_world @ br.head
             foot_ahead = max((fl - player).dot(fd), (fr - player).dot(fd))
-            ahead = max(ahead, foot_ahead + 0.7)
+            # 前足トゥより十分先（体の影の真下に見えない距離）
+            ahead = max(ahead, foot_ahead + 1.6)
             foot_z = min(fl.z, fr.z)
 
     p = player + fd * ahead + right * side
     if player.z < 0.35:
         p.z = BALL_GROUND_Z + bounce * 0.35
     else:
-        # つま先高さ前後で上下タッチ（足の下に潜り込まない）
-        base_z = foot_z if foot_z is not None else player.z + 0.55
-        p.z = base_z + 0.15 + bounce
+        # つま先高さで前に置く（胴の真下に見えないよう少し低め）
+        base_z = foot_z if foot_z is not None else player.z + 0.45
+        p.z = base_z + 0.05 + bounce
     return p
 
 
