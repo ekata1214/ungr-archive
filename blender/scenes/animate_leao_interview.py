@@ -40,15 +40,21 @@ TALK_BONES = [
     "spine_02",
     "neck_01",
     "head",
-    "clavicle.r",
-    "upperarm.r",
-    "lowerarm.r",
-    "hand.r",
-    "clavicle.l",
-    "upperarm.l",
-    "lowerarm.l",
-    "hand.l",
 ]
+
+
+def _talk_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
+    """話している風の頷き・首振り（腕は idle のまま左右に開いた状態を維持）。"""
+    t = frame / FPS
+    nod = 0.08 * math.sin(t * 6.8) + 0.045 * math.sin(t * 10.5)
+    turn = 0.12 * math.sin(t * 2.2 + 0.3) + 0.055 * math.sin(t * 4.7)
+    lean = 0.055 * math.sin(t * 1.6)
+    return {
+        "spine_01": (0.03 + lean * 0.4, 0.0, turn * 0.25),
+        "spine_02": (0.055 + lean, 0.0, turn * 0.4),
+        "neck_01": (0.05 + nod * 0.65, 0.0, turn * 0.75),
+        "head": (0.06 + nod, 0.0, turn),
+    }
 
 
 def _resolve_action_name(name: str) -> str:
@@ -306,31 +312,6 @@ def _capture_idle_base(arm: bpy.types.Object) -> PoseDict:
         ad.action = prev
         return base
     return _snapshot_pose(arm)
-
-
-def _talk_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    """話している風の頭・胴・手ぶり（腕は左右でクロスさせない）。"""
-    t = frame / FPS
-    nod = 0.07 * math.sin(t * 7.2) + 0.04 * math.sin(t * 11.0)
-    turn = 0.11 * math.sin(t * 2.4 + 0.3) + 0.05 * math.sin(t * 5.1)
-    lean = 0.05 * math.sin(t * 1.7)
-    # 右手は脇の前で小さく説明する。左右の腕は外側（R:Y-, L:Y+）を維持
-    gest = 0.55 + 0.45 * math.sin(t * 2.6)
-    gest2 = 0.55 + 0.45 * math.sin(t * 1.9 + 1.1)
-    return {
-        "spine_01": (0.03 + lean * 0.4, 0.0, turn * 0.25),
-        "spine_02": (0.06 + lean, 0.0, turn * 0.45),
-        "neck_01": (0.04 + nod * 0.6, 0.0, turn * 0.7),
-        "head": (0.05 + nod, 0.0, turn),
-        "clavicle.r": (0.04, -0.06, 0.05),
-        "upperarm.r": (0.28 + 0.12 * gest, -0.7 - 0.08 * gest2, 0.2 + 0.08 * gest),
-        "lowerarm.r": (-0.75 - 0.2 * gest, 0.12, 0.08),
-        "hand.r": (0.15, 0.25, -0.35),
-        "clavicle.l": (0.03, 0.05, -0.04),
-        "upperarm.l": (0.18 + 0.05 * gest2, 0.65 + 0.05 * gest, -0.15),
-        "lowerarm.l": (-0.35 - 0.08 * gest2, -0.08, -0.05),
-        "hand.l": (0.05, -0.1, 0.1),
-    }
 
 
 def _add_bone_pose_replace_strip(
