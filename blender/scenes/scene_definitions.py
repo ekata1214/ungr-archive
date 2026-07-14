@@ -217,3 +217,9 @@ SCENE_05_SCRIPT = (
     "予選第1戦、相手はポルトガル代表。シンがレオンのミュージシャンとしての活動、"
     "通称WAY45の大ファンだったため、試合開始早々ロナウドそっちのけで握手を求めに行ってしまう。"
 )
+
+# シーン06 — 台本は scripts/scene_portugal_ronaldo_header.md
+# 実行: build_part_field.py -- --animate-portugal-header --render-portugal-header-video
+SCENE_06_SCRIPT = (
+    "キレたロナウドが単独でジャンプヘディング。スローモーションでボールを頭に合わせる。"
+)

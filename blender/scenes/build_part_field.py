@@ -700,6 +700,8 @@ def main() -> None:
     portugal_mode = (
         "--animate-portugal-handshake" in sys.argv
         or "--render-portugal-handshake-video" in sys.argv
+        or "--animate-portugal-header" in sys.argv
+        or "--render-portugal-header-video" in sys.argv
     )
     vignette_mode = kubo_mode or endo_mode or portugal_mode
     build_field_only(include_teams=not vignette_mode)
@@ -727,6 +729,14 @@ def main() -> None:
         from animate_portugal_shin_handshake import render_portugal_handshake_video  # noqa: E402
 
         render_portugal_handshake_video()
+    if "--animate-portugal-header" in sys.argv:
+        from animate_portugal_ronaldo_header import animate_portugal_ronaldo_header  # noqa: E402
+
+        animate_portugal_ronaldo_header()
+    if "--render-portugal-header-video" in sys.argv:
+        from animate_portugal_ronaldo_header import render_portugal_header_video  # noqa: E402
+
+        render_portugal_header_video()
     if "--animate-match" in sys.argv:
         from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
 
