@@ -277,3 +277,9 @@ SCENE_14_SCRIPT = (
 SCENE_15_SCRIPT = (
     "少林選手が空中からゴールへシュート。ポルトガルGKが横飛びするが止めきれずゴールイン。"
 )
+
+# シーン16 — 台本は scripts/scene_netherlands_sad_interview.md
+# 実行: build_part_field.py -- --animate-netherlands-sad-interview --render-netherlands-sad-interview-video
+SCENE_16_SCRIPT = (
+    "オランダ選手一人がお立ち台で、悲しげにゆっくりと話している。"
+)

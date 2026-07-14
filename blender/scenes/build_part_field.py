@@ -720,6 +720,8 @@ def main() -> None:
         or "--render-shaolin-aerial-dribble-video" in sys.argv
         or "--animate-shaolin-aerial-shot" in sys.argv
         or "--render-shaolin-aerial-shot-video" in sys.argv
+        or "--animate-netherlands-sad-interview" in sys.argv
+        or "--render-netherlands-sad-interview-video" in sys.argv
     )
     vignette_mode = kubo_mode or endo_mode or portugal_mode
     build_field_only(include_teams=not vignette_mode)
@@ -833,6 +835,18 @@ def main() -> None:
         )
 
         render_shaolin_aerial_shot_video()
+    if "--animate-netherlands-sad-interview" in sys.argv:
+        from animate_netherlands_sad_interview import (  # noqa: E402
+            animate_netherlands_sad_interview,
+        )
+
+        animate_netherlands_sad_interview()
+    if "--render-netherlands-sad-interview-video" in sys.argv:
+        from animate_netherlands_sad_interview import (  # noqa: E402
+            render_netherlands_sad_interview_video,
+        )
+
+        render_netherlands_sad_interview_video()
     if "--animate-match" in sys.argv:
         from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
 
