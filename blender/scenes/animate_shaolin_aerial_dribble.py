@@ -110,19 +110,39 @@ def _shaolin_path(frame: int) -> Vector:
     return Vector((x, y, _altitude(frame)))
 
 
-def _ball_at_air_feet(player: Vector, frame: int, move_dir: Vector) -> Vector:
-    """空中でも足元に接着するドリブル。地面では BALL_GROUND_Z。"""
+def _ball_at_air_feet(
+    player: Vector,
+    frame: int,
+    move_dir: Vector,
+    arm: bpy.types.Object | None = None,
+) -> Vector:
+    """体の前方・両足の最前点より前に置く（空中でも同じ）。"""
     phase = frame * 0.72
-    ahead = 0.42 + 0.1 * math.sin(phase * 2.3)
-    side = 0.2 * math.sin(phase * 3.8) + 0.1 * math.sin(phase * 6.1)
-    bounce = 0.12 * abs(math.sin(phase * 4.4))
-    right = _right_of(move_dir)
-    p = player + move_dir * ahead + right * side
+    # ルート基準の前方量（大きめ）＋足の先よりさらに前
+    ahead = 1.35 + 0.12 * math.sin(phase * 2.3)
+    side = 0.08 * math.sin(phase * 3.4)
+    bounce = 0.1 * abs(math.sin(phase * 4.4))
+    fd = move_dir.normalized()
+    right = _right_of(fd)
+    foot_z: float | None = None
+
+    if arm is not None and arm.pose is not None:
+        bl = arm.pose.bones.get("ball.l") or arm.pose.bones.get("foot.l")
+        br = arm.pose.bones.get("ball.r") or arm.pose.bones.get("foot.r")
+        if bl is not None and br is not None:
+            fl = arm.matrix_world @ bl.head
+            fr = arm.matrix_world @ br.head
+            foot_ahead = max((fl - player).dot(fd), (fr - player).dot(fd))
+            ahead = max(ahead, foot_ahead + 0.7)
+            foot_z = min(fl.z, fr.z)
+
+    p = player + fd * ahead + right * side
     if player.z < 0.35:
         p.z = BALL_GROUND_Z + bounce * 0.35
     else:
-        # ルート足元付近で上下タッチ
-        p.z = player.z + 0.45 + bounce
+        # つま先高さ前後で上下タッチ（足の下に潜り込まない）
+        base_z = foot_z if foot_z is not None else player.z + 0.55
+        p.z = base_z + 0.15 + bounce
     return p
 
 
@@ -227,9 +247,13 @@ def animate_shaolin_aerial_dribble() -> None:
     # 空中でも脚のキックスイングが出るよう run をループ
     _add_nla_strip(arm, "run", 1, TOTAL_FRAMES)
 
+    # NLA 評価後に両足の最前点を見て、常に体・足の前へ
+    depsgraph = bpy.context.evaluated_depsgraph_get()
     for f in range(1, TOTAL_FRAMES + 1):
-        p = _shaolin_path(f)
-        _kf_loc(ball, f, _ball_at_air_feet(p, f, _move_dir(f)))
+        scene.frame_set(f)
+        depsgraph.update()
+        p = root.matrix_world.translation.copy()
+        _kf_loc(ball, f, _ball_at_air_feet(p, f, _move_dir(f), arm=arm))
     _ease_all_ball_keyframes(ball)
 
     setup_camera()
