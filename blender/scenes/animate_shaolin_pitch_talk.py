@@ -288,8 +288,9 @@ def setup_camera() -> bpy.types.Object:
 
     for f in (1, F_TALK_END, TOTAL_FRAMES):
         t = (f - 1) / max(1, TOTAL_FRAMES - 1)
-        pos = Vector((-0.4 + 0.15 * t, -7.2 + 0.6 * t, 2.9 - 0.15 * t))
-        tgt = Vector((0.0, 0.05, 2.15))
+        # 全身〜胸上が入る正面ミディアム
+        pos = Vector((-0.35 + 0.1 * t, -8.6 + 0.5 * t, 2.55 - 0.1 * t))
+        tgt = Vector((0.0, 0.05, 1.55))
         _kf_cam(cam, f, pos, tgt)
 
     if cam.animation_data and cam.animation_data.action:
