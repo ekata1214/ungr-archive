@@ -29,7 +29,7 @@ SHOT_FRAMES = 288  # 約12秒
 F_APPROACH_END = 96
 F_PLANT = 108
 F_KICK = 128  # 足が当たる＝ボールリリース
-F_GK_DIVE = 138
+F_GK_DIVE = 134  # 少し早く飛び出すが、届かない
 F_GOAL = 156
 F_SETTLE = 220
 
@@ -42,12 +42,12 @@ GOAL_H = 2.44 * _SCALE
 # 少林は +X ゴールへミドル（約24m相当）
 SHAOLIN_YAW = math.pi / 2
 GK_YAW = -math.pi / 2  # ボールを見る
-SHAOLIN_START = Vector((18.0, 1.2, 0.0))
-SHAOLIN_KICK_POS = Vector((GOAL_X - 58.0, 0.8, 0.0))  # ゴール前 ~23m
+SHAOLIN_START = Vector((18.0, -0.6, 0.0))
+SHAOLIN_KICK_POS = Vector((GOAL_X - 58.0, -0.4, 0.0))  # ゴール前 ~23m、右気味
 GK_HOME = Vector((GOAL_X - 3.2, 0.0, 0.0))
 
-# ゴール右上付近へ突き刺さる
-BALL_GOAL = Vector((GOAL_X + 1.4, GOAL_INNER_HALF_W * 0.55, GOAL_H * 0.72))
+# ゴール右隅（攻撃向き＋Xから見て右側＝-Y）へ突き刺さる
+BALL_GOAL = Vector((GOAL_X + 1.6, -GOAL_INNER_HALF_W * 0.78, GOAL_H * 0.70))
 
 SHAOLIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 PORTUGAL_RED = (0.88, 0.12, 0.12, 1.0)
@@ -191,24 +191,24 @@ def _shaolin_path(frame: int) -> Vector:
 
 
 def _gk_path(frame: int) -> Vector:
-    # ボールの狙い（＋Y寄り）へ遅れて飛び出す
-    dive_target = Vector((GOAL_X - 1.6, BALL_GOAL.y * 0.75, 0.0))
+    # ゴール右（-Y）へ横っ飛び。届きそうで届かない
+    dive_target = Vector((GOAL_X - 1.2, BALL_GOAL.y * 0.82, 0.0))
     if frame < F_GK_DIVE:
         t = (frame - 1) / max(1, F_GK_DIVE - 1)
-        # 小さく位置を合わせる（反応遅れ）
-        sway = Vector((0.0, BALL_GOAL.y * 0.15 * _ease_in_out(t), 0.0))
+        # わずかに右へ寄りつつ反応待機
+        sway = Vector((0.0, BALL_GOAL.y * 0.12 * _ease_in_out(t), 0.0))
         return GK_HOME + sway
-    if frame <= F_GOAL + 8:
-        t = (frame - F_GK_DIVE) / max(1, (F_GOAL + 8) - F_GK_DIVE)
+    if frame <= F_GOAL + 6:
+        t = (frame - F_GK_DIVE) / max(1, (F_GOAL + 6) - F_GK_DIVE)
+        # サイドに長く飛ぶ（横っ飛び）
         p = GK_HOME.lerp(dive_target, _ease_in_out(t))
-        # 飛び出しの浮き
-        p.z = 1.35 * math.sin(min(1.0, t) * math.pi)
+        p.z = 1.55 * math.sin(min(1.0, t) * math.pi)
         return p
-    # 着地して戻る（ボールはすでに入っている）
-    t = (frame - (F_GOAL + 8)) / max(1, SHOT_FRAMES - (F_GOAL + 8))
-    land = dive_target + Vector((-0.4, 0.3, 0.0))
+    # 着地（ボールはすでに右隅で決まっている）
+    t = (frame - (F_GOAL + 6)) / max(1, SHOT_FRAMES - (F_GOAL + 6))
+    land = dive_target + Vector((-0.3, -0.35, 0.0))
     p = dive_target.lerp(land, _ease_in_out(min(1.0, t)))
-    p.z = max(0.0, 0.4 * (1.0 - _ease_in_out(min(1.0, t * 1.5))))
+    p.z = max(0.0, 0.35 * (1.0 - _ease_in_out(min(1.0, t * 1.5))))
     return p
 
 
@@ -231,17 +231,17 @@ def _ball_path(frame: int) -> Vector:
     # 高速シュート：短尺でゴールへ直线＋わずかな浮き
     t = (frame - F_KICK) / max(1, F_GOAL - F_KICK)
     t = min(1.0, t)
-    # 加速感 — 序盤を速く見せる
-    u = 1.0 - (1.0 - t) ** 2.2
+    # 加速感 — ほぼ直線＋わずかに加速
+    u = 1.0 - (1.0 - t) ** 2.6
     start = shin + move * 0.55
     start.z = BALL_GROUND_Z
     p = start.lerp(BALL_GOAL, u)
-    # 低め〜中軌道（ミドル）
-    p.z = BALL_GROUND_Z + (BALL_GOAL.z - BALL_GROUND_Z) * u + 1.6 * math.sin(u * math.pi) * (1.0 - 0.35 * u)
+    # 低い〜中弾道（高速ミドル）
+    p.z = BALL_GROUND_Z + (BALL_GOAL.z - BALL_GROUND_Z) * u + 1.15 * math.sin(u * math.pi) * (1.0 - 0.4 * u)
     if frame > F_GOAL:
         # ネット内で少し沈む
         t2 = (frame - F_GOAL) / max(1, SHOT_FRAMES - F_GOAL)
-        p = BALL_GOAL + Vector((0.8 * _ease_in_out(min(1.0, t2)), -0.15 * t2, -0.55 * _ease_in_out(min(1.0, t2))))
+        p = BALL_GOAL + Vector((0.8 * _ease_in_out(min(1.0, t2)), 0.12 * t2, -0.55 * _ease_in_out(min(1.0, t2))))
         p.z = max(BALL_GROUND_Z + 0.35, p.z)
     return p
 
