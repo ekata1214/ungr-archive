@@ -376,9 +376,19 @@ def set_frame_range(end: int) -> None:
     sc.frame_set(1)
 
 
+def simplify_for_render() -> None:
+    """毎フレーム同期が重いライン類を隠してレンダー高速化（芝生・ゴール本体は残す）。"""
+    for obj in list(bpy.data.objects):
+        n = obj.name
+        if n.startswith(("Line_", "Pen", "Corner_")):
+            obj.hide_render = True
+            obj.hide_viewport = True
+
+
 def render_cut_video(slug: str, frames: int) -> Path:
     from build_part_field import setup_black_world, setup_lights  # noqa: E402
 
+    simplify_for_render()
     setup_black_world()
     setup_lights()
     sc = bpy.context.scene
@@ -398,11 +408,11 @@ def render_cut_video(slug: str, frames: int) -> Path:
     ART_DIR.mkdir(parents=True, exist_ok=True)
     out = RENDER_DIR / f"{slug}.mp4"
     sc.render.filepath = str(out)
-    print(f"Rendering {slug}: {out} ({frames}f)")
+    print(f"Rendering {slug}: {out} ({frames}f)", flush=True)
     bpy.ops.render.render(animation=True)
     art = ART_DIR / f"{slug}.mp4"
     art.write_bytes(out.read_bytes())
-    print(f"Artifact: {art}")
+    print(f"Artifact: {art}", flush=True)
     return art
 
 
