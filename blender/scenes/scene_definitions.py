@@ -241,3 +241,9 @@ SCENE_08_SCRIPT = (
 SCENE_09_SCRIPT = (
     "少林選手がミドルシュート。GKが止めようとするが高速でゴールイン。"
 )
+
+# シーン10 — 台本は scripts/scene_leao_interview.md
+# 実行: build_part_field.py -- --animate-leao-interview --render-leao-interview-video
+SCENE_10_SCRIPT = (
+    "レオンがインタビューのお立ち台で一人で約4秒話している。"
+)

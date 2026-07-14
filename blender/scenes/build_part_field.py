@@ -708,6 +708,8 @@ def main() -> None:
         or "--render-portugal-fernandes-slide-video" in sys.argv
         or "--animate-shaolin-middle-shot" in sys.argv
         or "--render-shaolin-middle-shot-video" in sys.argv
+        or "--animate-leao-interview" in sys.argv
+        or "--render-leao-interview-video" in sys.argv
     )
     vignette_mode = kubo_mode or endo_mode or portugal_mode
     build_field_only(include_teams=not vignette_mode)
@@ -763,6 +765,24 @@ def main() -> None:
         )
 
         render_portugal_fernandes_head_slide_video()
+    if "--animate-shaolin-middle-shot" in sys.argv:
+        from animate_shaolin_middle_shot import animate_shaolin_middle_shot  # noqa: E402
+
+        animate_shaolin_middle_shot()
+    if "--render-shaolin-middle-shot-video" in sys.argv:
+        from animate_shaolin_middle_shot import (  # noqa: E402
+            render_shaolin_middle_shot_video,
+        )
+
+        render_shaolin_middle_shot_video()
+    if "--animate-leao-interview" in sys.argv:
+        from animate_leao_interview import animate_leao_interview  # noqa: E402
+
+        animate_leao_interview()
+    if "--render-leao-interview-video" in sys.argv:
+        from animate_leao_interview import render_leao_interview_video  # noqa: E402
+
+        render_leao_interview_video()
     if "--animate-match" in sys.argv:
         from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
 
