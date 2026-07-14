@@ -31,8 +31,8 @@ F_CRUISE = 44
 F_HOLD = 120
 
 # 巡航高度（ルート z）。足元がはっきり空中に見える高さ
-CRUISE_Z = 5.2
-HOVER_AMP = 0.28
+CRUISE_Z = 6.5
+HOVER_AMP = 0.32
 
 SHAOLIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 SHAOLIN_WHITE = (0.96, 0.96, 0.98, 1.0)
@@ -177,9 +177,9 @@ def setup_camera() -> bpy.types.Object:
     cam = bpy.data.objects.new("CamShaolinAirDribble", cam_data)
     bpy.context.collection.objects.link(cam)
     bpy.context.scene.camera = cam
-    cam_data.lens = 32
+    cam_data.lens = 30
 
-    key_frames = list(range(1, TOTAL_FRAMES + 1, 12))
+    key_frames = list(range(1, TOTAL_FRAMES + 1, 8))
     if TOTAL_FRAMES not in key_frames:
         key_frames.append(TOTAL_FRAMES)
 
@@ -188,10 +188,12 @@ def setup_camera() -> bpy.types.Object:
         md = _move_dir(f)
         ball = _ball_at_air_feet(p, f, md)
         right = _right_of(md)
-        body_z = max(1.4, p.z + 2.0)
-        # 斜め後方から空中の選手＋ボールを追う
-        pos = p - md * 5.5 + right * 7.2 + Vector((0.0, 0.0, 2.4 + p.z * 0.35))
-        tgt = Vector((ball.x, ball.y, body_z * 0.55 + ball.z * 0.45)) + md * 1.2
+        # ほぼ水平の横アングルで、足元とピッチの隙間が見えるようにする
+        mid = Vector((p.x, p.y, max(1.2, p.z + 1.65)))
+        pos = mid - md * 2.2 + right * 11.5 + Vector((0.0, 0.0, 0.4))
+        tgt = mid + md * 1.0 + Vector((0.0, 0.0, -0.15))
+        # ボールもフレーミングに少し寄せる
+        tgt = tgt.lerp(Vector((ball.x, ball.y, ball.z + 0.3)), 0.25)
         _kf_cam(cam, f, pos, tgt)
 
     if cam.animation_data and cam.animation_data.action:
@@ -218,15 +220,8 @@ def animate_shaolin_aerial_dribble() -> None:
     if ball.animation_data:
         ball.animation_data_clear()
 
-    # 疎キーで滑らかな空中弧
-    sparse = sorted(
-        set(
-            [1, F_CROUCH, F_TAKEOFF, F_CRUISE]
-            + list(range(F_CRUISE, TOTAL_FRAMES + 1, 8))
-            + [TOTAL_FRAMES]
-        )
-    )
-    root_keys = [(f, _shaolin_path(f)) for f in sparse]
+    # 毎フレームキーでボールと高度を同期（疎キーの Bezier ずれ防止）
+    root_keys = [(f, _shaolin_path(f)) for f in range(1, TOTAL_FRAMES + 1)]
     _animate_root_fixed(root, root_keys, MOVE_YAW)
 
     # 空中でも脚のキックスイングが出るよう run をループ
