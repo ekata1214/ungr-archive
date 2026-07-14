@@ -248,24 +248,21 @@ def _fernandes_path(frame: int) -> Vector:
 def _shaolin_contact() -> Vector:
     """接触時ルート。ボール前方を頭で通し、胴体はフェルンを避ける。"""
     fern_at_contact = _fernandes_path(F_SLIDE_CONTACT)
-    return fern_at_contact + Vector((2.4, 5.7, 0.55))
+    return fern_at_contact + Vector((1.3, 6.15, 0.55))
 
 
 def _shaolin_pitch(frame: int) -> float:
     """スライディング中にルートを前傾させて水平に近い姿勢にする。"""
     dive = -1.48  # ~-85°
-    if frame < F_SLIDE_START:
+    if frame < F_SLIDE_CONTACT - 26:
         return 0.0
     if frame <= F_SLIDE_CONTACT:
-        t = (frame - F_SLIDE_START) / max(1, F_SLIDE_CONTACT - F_SLIDE_START)
+        t = (frame - (F_SLIDE_CONTACT - 26)) / 26.0
         return dive * _ease_in_out(t)
-    if frame <= F_SLIDE_CONTACT + 22:
-        return dive
     if frame <= F_SLIDE_END:
-        t = (frame - (F_SLIDE_CONTACT + 22)) / max(1, F_SLIDE_END - (F_SLIDE_CONTACT + 22))
-        return dive * (1.0 - 0.4 * _ease_in_out(t))
+        return dive
     t = (frame - F_SLIDE_END) / max(1, F_SETTLE - F_SLIDE_END)
-    return min(0.0, dive * 0.5 * (1.0 - _ease_in_out(min(1.0, t))))
+    return min(0.0, dive * 0.45 * (1.0 - _ease_in_out(min(1.0, t))))
 
 
 def _shaolin_path(frame: int) -> Vector:
@@ -280,22 +277,24 @@ def _shaolin_path(frame: int) -> Vector:
 
     if frame <= F_SLIDE_CONTACT:
         t = (frame - F_SLIDE_START) / max(1, F_SLIDE_CONTACT - F_SLIDE_START)
-        start = Vector((contact.x, contact.y + 5.0, 0.0))
-        p = start.lerp(contact, _ease_in_out(t))
-        p.z = contact.z * _ease_in_out(t)
+        # 後半に加速接近：途中でフェルン空間をゆっくり横切らない
+        t_ease = _ease_in_out(t) ** 1.55
+        start = Vector((contact.x + 1.2, contact.y + 5.5, 0.0))
+        p = start.lerp(contact, t_ease)
+        p.z = contact.z * t_ease
         return p
 
     if frame <= F_SLIDE_END:
         t = (frame - F_SLIDE_CONTACT) / max(1, F_SLIDE_END - F_SLIDE_CONTACT)
         # 奪球後は -Y に潜らず、進行前方へ流す
-        end = contact + Vector((4.2, 0.25, 0.15))
+        end = contact + Vector((4.5, 0.6, 0.15))
         p = contact.lerp(end, _ease_in_out(t))
-        p.z = contact.z * (1.0 - 0.65 * t)
+        p.z = contact.z * (1.0 - 0.55 * t)
         return p
 
-    end = contact + Vector((4.2, 0.25, 0.15))
+    end = contact + Vector((4.5, 0.6, 0.15))
     t = (frame - F_SLIDE_END) / max(1, SLIDE_FRAMES - F_SLIDE_END)
-    p = end + Vector((1.8 * _ease_in_out(t), 0.1 * t, 0.0))
+    p = end + Vector((2.0 * _ease_in_out(t), 0.2 * t, 0.0))
     p.z = max(0.0, end.z * (1.0 - _ease_in_out(min(1.0, t * 1.4))))
     return p
 
@@ -303,8 +302,14 @@ def _shaolin_path(frame: int) -> Vector:
 def _ball_path(frame: int, fern: Vector, shaolin: Vector) -> Vector:
     move = Vector((1.0, 0.0, 0.0))
     right = _right_of(move)
-    # 脚の間ではなく少林側（+Y）へ先に押し出してから奪う
-    steal_start = F_SLIDE_CONTACT - 8
+    # 接触までに少林側へ寄せ、その後押し出す
+    steal_start = F_SLIDE_CONTACT - 18
+    start = fern + move * 0.55
+    start.z = BALL_GROUND_Z
+    meet = fern + Vector((1.2, 2.7, max(0.55, shaolin.z + 0.08)))
+    end = shaolin + Vector((3.2, -0.4, 0.0))
+    end.z = BALL_GROUND_Z
+
     if frame < steal_start:
         phase = frame * 0.55
         ahead = 0.42 + 0.08 * math.sin(phase * 2.2)
@@ -312,26 +317,20 @@ def _ball_path(frame: int, fern: Vector, shaolin: Vector) -> Vector:
         p = fern + move * ahead + right * side
         p.z = BALL_GROUND_Z
         return p
-    t = (frame - steal_start) / max(1, SLIDE_FRAMES - steal_start)
+
+    if frame <= F_SLIDE_CONTACT:
+        u = (frame - steal_start) / max(1, F_SLIDE_CONTACT - steal_start)
+        return start.lerp(meet, _ease_in_out(u))
+
+    t = (frame - F_SLIDE_CONTACT) / max(1, SLIDE_FRAMES - F_SLIDE_CONTACT)
     t = min(1.0, t)
-    start = fern + move * 0.55
-    start.z = BALL_GROUND_Z
-    # フェルン足元の外側（少林側）で頭と出会う
-    meet = fern + Vector((1.05, 1.25, max(0.55, shaolin.z + 0.1)))
-    end = shaolin + Vector((2.6, -1.2, 0.0))
-    end.z = BALL_GROUND_Z
-    if t < 0.18:
-        u = t / 0.18
-        p = start.lerp(meet, _ease_in_out(u))
-    else:
-        u = (t - 0.18) / 0.82
-        p = meet.lerp(end, _ease_in_out(u))
-        p.z = BALL_GROUND_Z + 0.95 * math.sin(min(1.0, u * 1.1) * math.pi)
-        if u > 0.5:
-            p.z = max(
-                BALL_GROUND_Z,
-                p.z * (1.0 - (u - 0.5) / 0.5) + BALL_GROUND_Z * ((u - 0.5) / 0.5),
-            )
+    p = meet.lerp(end, _ease_in_out(t))
+    p.z = BALL_GROUND_Z + 0.95 * math.sin(min(1.0, t * 1.15) * math.pi)
+    if t > 0.55:
+        p.z = max(
+            BALL_GROUND_Z,
+            p.z * (1.0 - (t - 0.55) / 0.45) + BALL_GROUND_Z * ((t - 0.55) / 0.45),
+        )
     return p
 
 
@@ -483,12 +482,13 @@ def _solo_dribble_hide_shaolin(shin_arm: bpy.types.Object) -> None:
     from import_mannequiny import _mesh_child  # noqa: E402
 
     objs = [shin_arm, _mesh_child(shin_arm), bpy.data.objects.get("Shaolin_01_Root")]
+    reveal = F_SLIDE_CONTACT - 10
     for obj in objs:
         if not obj:
             continue
         _set_hide_keyed(obj, 1, True)
-        _set_hide_keyed(obj, F_SLIDE_START - 12, True)
-        _set_hide_keyed(obj, F_SLIDE_START - 11, False)
+        _set_hide_keyed(obj, reveal - 1, True)
+        _set_hide_keyed(obj, reveal, False)
         _set_hide_keyed(obj, SLIDE_FRAMES, False)
 
 
@@ -549,10 +549,10 @@ def setup_camera() -> bpy.types.Object:
             cam.data.lens = 28
         else:
             mid = (fern + shin) * 0.5
-            # サイド寄り：頭スライドのシルエットと間隔が読める
-            pos = Vector((mid.x + 2.0, mid.y - 10.5, 3.8))
-            tgt = Vector((mid.x + 0.2, mid.y + 0.6, 1.1))
-            cam.data.lens = 30
+            # 横からのシルエットで頭スライドが読める
+            pos = Vector((mid.x - 5.5, mid.y - 8.2, 3.5))
+            tgt = Vector((mid.x + 0.4, mid.y + 0.5, 1.05))
+            cam.data.lens = 28
         cam.data.keyframe_insert(data_path="lens", frame=f)
         _kf_cam(cam, f, pos, tgt)
 
