@@ -32,14 +32,14 @@ CONTEST_FRAMES = 216  # 約9秒
 MOVE_YAW = math.pi * 1.5
 
 # 横の最小離隔（体を重ねない・カメラでも重ならない）
-SIDE_GAP = 2.8
+SIDE_GAP = 3.4
 # 少し前後ずらしつつ並走
-NED_LAG = -0.2
-SHAOLIN_LAG = 0.35
+NED_LAG = -0.25
+SHAOLIN_LAG = 0.4
 
-# オランダ：濃いオレンジ一色 / 少林：明るいオレンジ一色
-NETHERLANDS_ORANGE = (0.62, 0.16, 0.0, 1.0)
-SHAOLIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
+# オランダ：濃いオレンジ一色（はっきり区別） / 少林：明るいオレンジ
+NETHERLANDS_ORANGE = (0.55, 0.12, 0.0, 1.0)
+SHAOLIN_ORANGE = (0.98, 0.52, 0.08, 1.0)
 
 
 def _remove_all_players() -> None:
@@ -212,9 +212,8 @@ def setup_camera() -> bpy.types.Object:
         md = _move_dir(f)
         right = _right_of(md)
         ball = _ball_path(f)
-        # 横寄り後方から二人を並べて見せる（重なりにくい）
-        pos = ball - md * 5.5 + right * 6.8 + Vector((0.0, 0.0, 2.6))
-        tgt = mid + md * 1.5 + Vector((0.0, 0.0, 1.1))
+        pos = ball - md * 4.8 + right * 8.0 + Vector((0.0, 0.0, 3.2))
+        tgt = mid + md * 1.8 + Vector((0.0, 0.0, 1.05))
         _kf_cam(cam, f, pos, tgt)
 
     if cam.animation_data and cam.animation_data.action:
