@@ -27,11 +27,11 @@ FPS = 24
 SHOT_FRAMES = 288  # 約12秒
 
 F_APPROACH_END = 96
-F_PLANT = 112
-F_KICK = 132  # 足が当たる＝ボールリリース
-F_GK_DIVE = 142
-F_GOAL = 168
-F_SETTLE = 230
+F_PLANT = 108
+F_KICK = 128  # 足が当たる＝ボールリリース
+F_GK_DIVE = 138
+F_GOAL = 156
+F_SETTLE = 220
 
 _SCALE = 2.5
 PITCH_HALF = 105.0 * _SCALE / 2  # 右ゴールライン x
@@ -377,13 +377,14 @@ def animate_shaolin_middle_shot() -> None:
     _animate_root_sparse(shin_root, _shaolin_path, sparse_s, SHAOLIN_YAW)
     _animate_root_sparse(gk_root, _gk_path, sparse_g, GK_YAW)
 
-    # 少林：接近 run → キック → idle
-    _add_nla_loop(shin_arm, "run", 1, F_PLANT - 1)
+    # 少林：接近 run → キック（ほぼ等速でコンタクトを F_KICK に合わせる）→ idle
+    _add_nla_loop(shin_arm, "run", 1, F_KICK - 22)
     try:
-        _add_nla_once_stretched(shin_arm, "fight_kick", F_PLANT, F_KICK + 18)
+        # fight_kick の接触は先頭から約20f — ストリップ先頭をそこへ合わせる
+        _add_nla_once_stretched(shin_arm, "fight_kick", F_KICK - 20, F_KICK + 22)
     except KeyError:
-        _add_nla_once_stretched(shin_arm, "dash", F_PLANT, F_KICK + 18)
-    _add_nla_hold_pose(shin_arm, "idle", F_KICK + 19, SHOT_FRAMES)
+        _add_nla_once_stretched(shin_arm, "dash", F_KICK - 16, F_KICK + 16)
+    _add_nla_hold_pose(shin_arm, "idle", F_KICK + 23, SHOT_FRAMES)
 
     # GK：待機 → 遅れて横っ飛び → 着地
     try:
