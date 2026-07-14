@@ -44,7 +44,7 @@ F_HANDSHAKE_HOLD = 432
 F_RONALDO_NOTICE = F_ARRIVE_HOLD      # 「ぉぉ？」と気づく
 F_RONALDO_TANTRUM = F_HAND_OFFER - 6  # 握手要求で本格的にキレる
 RONALDO_HOP_PERIOD = 12
-RONALDO_HOP_HEIGHT = 0.95
+RONALDO_HOP_HEIGHT = 1.85
 
 SHIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 PORTUGAL_RED = (0.88, 0.12, 0.12, 1.0)
@@ -102,17 +102,17 @@ LEAO_REPLY_DELTA = {
     **_finger_handshake_deltas("l"),
 }
 
-# キレたロナウド — 両手を上げて怒りのジェスチャー
+# キレたロナウド — 両手を頭上に振り上げる（背中カメラでも分かる上げ方）
 RONALDO_ANGRY_DELTA = {
-    "upperarm.r": (-0.35, -1.35, 0.45),
-    "lowerarm.r": (-1.15, 0.2, 0.15),
-    "hand.r": (0.2, 0.0, -0.35),
-    "upperarm.l": (-0.35, 1.35, -0.45),
-    "lowerarm.l": (-1.15, -0.2, -0.15),
-    "hand.l": (0.2, 0.0, 0.35),
-    "spine_02": (-0.18, 0.0, 0.0),
-    "neck_01": (0.25, 0.0, 0.0),
-    "head": (0.2, 0.0, 0.08),
+    "upperarm.r": (-1.35, -0.25, 0.35),
+    "lowerarm.r": (-0.35, 0.05, 0.25),
+    "hand.r": (0.15, 0.0, -0.2),
+    "upperarm.l": (-1.35, 0.25, -0.35),
+    "lowerarm.l": (-0.35, -0.05, -0.25),
+    "hand.l": (0.15, 0.0, 0.2),
+    "spine_02": (-0.28, 0.0, 0.0),
+    "neck_01": (0.32, 0.0, 0.0),
+    "head": (0.22, 0.0, 0.1),
 }
 
 PoseDict = Dict[str, Quaternion]
@@ -508,16 +508,12 @@ def animate_portugal_shin_handshake() -> None:
     # レオン：ずっと idle（握手は REPLACE オーバーレイで応答）
     _add_nla_strip(leao_arm, "idle", 1, HANDSHAKE_FRAMES)
 
-    # ロナウド：idle → 気づき → キレてジャンプ連打
+    # ロナウド：idle → 気づき → キレて飛び跳ね（ジャンプはルートZ、腕は怒りポーズ）
     _add_nla_strip(ronaldo_arm, "idle", 1, F_RONALDO_NOTICE - 1)
     try:
-        _add_nla_strip(ronaldo_arm, "fight_idle", F_RONALDO_NOTICE, F_RONALDO_TANTRUM - 1)
+        _add_nla_strip(ronaldo_arm, "fight_idle", F_RONALDO_NOTICE, HANDSHAKE_FRAMES)
     except KeyError:
-        _add_nla_strip(ronaldo_arm, "idle", F_RONALDO_NOTICE, F_RONALDO_TANTRUM - 1)
-    try:
-        _add_nla_strip(ronaldo_arm, "air_jump", F_RONALDO_TANTRUM, HANDSHAKE_FRAMES)
-    except KeyError:
-        _add_nla_strip(ronaldo_arm, "idle", F_RONALDO_TANTRUM, HANDSHAKE_FRAMES)
+        _add_nla_strip(ronaldo_arm, "idle", F_RONALDO_NOTICE, HANDSHAKE_FRAMES)
 
     _animate_handshake_poses(shin_arm, leao_arm)
     _animate_ronaldo_anger(ronaldo_arm)
