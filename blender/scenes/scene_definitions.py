@@ -265,3 +265,9 @@ SCENE_12_SCRIPT = (
 SCENE_13_SCRIPT = (
     "少林チームの選手一人がピッチ上で約3秒話し、その後軽く頷く。"
 )
+
+# シーン14 — 台本は scripts/scene_shaolin_aerial_dribble.md
+# 実行: build_part_field.py -- --animate-shaolin-aerial-dribble --render-shaolin-aerial-dribble-video
+SCENE_14_SCRIPT = (
+    "少林選手がピッチから跳び上がり、空中を進みながら足元でボールをドリブルする。"
+)

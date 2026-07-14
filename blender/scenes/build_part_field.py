@@ -716,6 +716,8 @@ def main() -> None:
         or "--render-netherlands-contest-video" in sys.argv
         or "--animate-shaolin-pitch-talk" in sys.argv
         or "--render-shaolin-pitch-talk-video" in sys.argv
+        or "--animate-shaolin-aerial-dribble" in sys.argv
+        or "--render-shaolin-aerial-dribble-video" in sys.argv
     )
     vignette_mode = kubo_mode or endo_mode or portugal_mode
     build_field_only(include_teams=not vignette_mode)
@@ -809,6 +811,16 @@ def main() -> None:
         from animate_shaolin_pitch_talk import render_shaolin_pitch_talk_video  # noqa: E402
 
         render_shaolin_pitch_talk_video()
+    if "--animate-shaolin-aerial-dribble" in sys.argv:
+        from animate_shaolin_aerial_dribble import animate_shaolin_aerial_dribble  # noqa: E402
+
+        animate_shaolin_aerial_dribble()
+    if "--render-shaolin-aerial-dribble-video" in sys.argv:
+        from animate_shaolin_aerial_dribble import (  # noqa: E402
+            render_shaolin_aerial_dribble_video,
+        )
+
+        render_shaolin_aerial_dribble_video()
     if "--animate-match" in sys.argv:
         from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
 
