@@ -44,27 +44,28 @@ SHIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 PORTUGAL_RED = (0.88, 0.12, 0.12, 1.0)
 PORTUGAL_GREEN = (0.12, 0.55, 0.28, 1.0)
 
-SHIN_YAW = math.pi * 1.5
-LEAO_YAW = math.pi / 2
+# カメラは -Y 側から見るので、握手ペアは Y 方向に対面させる
+# （X 対面だと腕の伸びがカメラから T-pose に見える）
+SHIN_YAW = math.pi          # -Y 向き（レオン＆カメラ側へ）
+LEAO_YAW = 0.0              # +Y 向き（シンへ）
 # 手前ロナウド — 奥の2人の方を向く
 RONALDO_YAW = math.pi
 
 # 奥：シン＋レオン / 手前：ロナウド
-# 握手が届く距離（スケール2.5の腕の長さを考慮）
-LEAO_POS = Vector((2.15, 5.0, 0.0))
-SHIN_START = Vector((20.0, 5.0, 0.0))
-SHIN_END = Vector((3.85, 5.0, 0.0))
+LEAO_POS = Vector((3.0, 4.05, 0.0))
+SHIN_START = Vector((3.0, 18.0, 0.0))
+SHIN_END = Vector((3.0, 5.25, 0.0))
 RONALDO_POS = Vector((1.0, -5.5, 0.0))
 
-# idle 上に掛ける腕のオイラー差分（親ローカル）。対面で手が合う組み合わせ。
-# シン=右手 / レオン=左手（同じワールド側へ伸ばす）
+# idle 上に掛ける腕のオイラー差分（親ローカル）。両手とも右手で前へ。
+# upperarm.r の -X が、対面どちらでも相手方向へ腕が伸びる。
 SHIN_OFFER_DELTA = {
-    "upperarm.r": (0.35, -1.45, 0.95),
-    "lowerarm.r": (-1.15, 0.15, 0.1),
+    "upperarm.r": (-1.2, 0.0, 0.15),
+    "lowerarm.r": (-0.85, 0.1, 0.15),
 }
 LEAO_REPLY_DELTA = {
-    "upperarm.l": (0.35, 1.45, -0.95),
-    "lowerarm.l": (-1.15, -0.15, -0.1),
+    "upperarm.r": (-1.2, 0.0, 0.15),
+    "lowerarm.r": (-0.85, 0.1, 0.15),
 }
 
 PoseDict = Dict[str, Quaternion]
@@ -391,7 +392,7 @@ def setup_portugal_handshake_camera() -> bpy.types.Object:
     bpy.context.scene.camera = cam
     cam.data.lens = 20
 
-    bg_target = (SHIN_END + LEAO_POS) * 0.5 + Vector((0.0, 0.0, 2.2))
+    bg_target = (SHIN_END + LEAO_POS) * 0.5 + Vector((0.0, 0.0, 2.1))
 
     key_frames = [
         F_INTRO,
@@ -403,7 +404,8 @@ def setup_portugal_handshake_camera() -> bpy.types.Object:
         HANDSHAKE_FRAMES,
     ]
     for f in key_frames:
-        cam_pos = RONALDO_POS + Vector((2.5, -5.5, 4.8))
+        # ロナウド肩越し・やや寄って握手の腕が見える位置
+        cam_pos = RONALDO_POS + Vector((2.2, -4.2, 4.2))
         cam_tgt = bg_target
         _kf_cam(cam, f, cam_pos, cam_tgt)
 
