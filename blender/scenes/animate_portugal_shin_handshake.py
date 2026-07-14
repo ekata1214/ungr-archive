@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: MIT
-"""ポルトガル戦 — シンがレオンに握手を求める（手前ロナウド idle、奥で握手）
+"""ポルトガル戦 — シンがレオンに握手を求める（手前ロナウド → 単独ヘディング）
 
 流れ:
   シン: idle → 楽しそうに走っていく → 到着ホップ → 右手を差し出す
   レオン: idle のまま待つ → 左手で握手に応じる
-  ロナウド: 手前で気づく → 握手を見てキレて飛び跳ねる
+  ロナウド: 握手を見てキレる → カットで一人映し → ヘディング
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ import bpy
 from mathutils import Euler, Quaternion, Vector
 
 from animate_soccer_match import (
+    BALL_GROUND_Z,
     _add_nla_strip as _add_nla_strip_raw,
     _clear_all_nla,
     _clear_anim,
@@ -27,24 +28,27 @@ from animate_soccer_match import (
 
 FPS = 24
 
-# 尺は長め — 各アクションが全部見えるまで余裕を持たせる（約18秒）
-HANDSHAKE_FRAMES = 432
+# 尺 — 握手＋ロナウド単独ヘディング（約20秒）
+HANDSHAKE_FRAMES = 480
 
 # タイムライン
 F_INTRO = 1
 F_RUN_START = 48
-F_RUN_END = 216
-F_ARRIVE_HOLD = 252
-F_HAND_OFFER = 288
-F_OFFER_HOLD = 330
-F_LEAO_REPLY = 360
-F_HANDSHAKE_HOLD = 432
+F_RUN_END = 200
+F_ARRIVE_HOLD = 236
+F_HAND_OFFER = 268
+F_OFFER_HOLD = 300
+F_LEAO_REPLY = 330
+F_HANDSHAKE_HOLD = 360
 
-# ロナウド — 握手を見てキレて飛び跳ねる
-F_RONALDO_NOTICE = F_ARRIVE_HOLD      # 「ぉぉ？」と気づく
-F_RONALDO_TANTRUM = F_HAND_OFFER - 6  # 握手要求で本格的にキレる
-RONALDO_HOP_PERIOD = 12
-RONALDO_HOP_HEIGHT = 1.85
+# ロナウド — 気づき → 単独カットでヘディング
+F_RONALDO_NOTICE = F_ARRIVE_HOLD
+F_HEADER_SOLO = 372
+F_HEADER_PREP = 392
+F_HEADER_TAKEOFF = 408
+F_HEADER_CONTACT = 422
+F_HEADER_LAND = 448
+RONALDO_HEADER_HEIGHT = 2.15
 
 SHIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 PORTUGAL_RED = (0.88, 0.12, 0.12, 1.0)
@@ -53,15 +57,19 @@ PORTUGAL_GREEN = (0.12, 0.55, 0.28, 1.0)
 # 左右に対面（カメラから両方見える）。シンは +X から走ってくる。
 SHIN_YAW = math.pi * 1.5  # -X 向き（レオンへ）
 LEAO_YAW = math.pi / 2    # +X 向き（シンへ）
-# 手前ロナウド — 奥の2人の方を向く
-RONALDO_YAW = math.pi
+# 握手フェーズ：奥を向く / ヘディング：横顔が見える向き
+RONALDO_WATCH_YAW = math.pi
+RONALDO_HEADER_YAW = math.pi / 2
 
 # 奥：シン＋レオン / 手前：ロナウド
-# ルート間隔 ~2.7（胴体クリアしつつ手が自然に重なる）
 LEAO_POS = Vector((1.85, 5.0, 0.0))
 SHIN_START = Vector((18.0, 5.0, 0.0))
 SHIN_END = Vector((4.55, 5.0, 0.0))
 RONALDO_POS = Vector((1.0, -5.5, 0.0))
+# スケール×2.5時の頭高さを基準（ジャンプ頂点の頭部 ≈ z 5.7）
+HEADER_BALL_START = RONALDO_POS + Vector((6.5, 0.2, 5.5))
+HEADER_BALL_CONTACT = RONALDO_POS + Vector((0.45, 0.03, 5.9))
+HEADER_BALL_END = RONALDO_POS + Vector((-3.8, -0.8, 7.2))
 
 
 def _finger_handshake_deltas(side: str) -> Dict[str, Tuple[float, float, float]]:
@@ -102,17 +110,33 @@ LEAO_REPLY_DELTA = {
     **_finger_handshake_deltas("l"),
 }
 
-# キレたロナウド — 背中カメラで頭上に手が来る上げ方
-RONALDO_ANGRY_DELTA = {
-    "upperarm.r": (-1.2, -1.6, -1.6),
-    "lowerarm.r": (-0.5, 0.1, 0.1),
-    "hand.r": (0.1, 0.0, -0.15),
-    "upperarm.l": (-1.2, 1.6, 1.6),
-    "lowerarm.l": (-0.5, -0.1, -0.1),
-    "hand.l": (0.1, 0.0, 0.15),
-    "spine_02": (-0.25, 0.0, 0.0),
-    "neck_01": (0.3, 0.0, 0.0),
-    "head": (0.18, 0.0, 0.08),
+# ヘディング — 溜めは後ろへ、着弾で頭をボールへ振り出す
+RONALDO_HEADER_WINDUP = {
+    "spine_02": (0.45, 0.0, 0.0),
+    "neck_01": (-0.2, 0.0, 0.0),
+    "head": (-0.1, 0.0, 0.0),
+    "upperarm.r": (0.15, -0.9, 0.35),
+    "lowerarm.r": (-0.7, 0.1, 0.0),
+    "upperarm.l": (0.15, 0.9, -0.35),
+    "lowerarm.l": (-0.7, -0.1, 0.0),
+}
+RONALDO_HEADER_CONTACT = {
+    "spine_02": (-0.7, 0.0, 0.05),
+    "neck_01": (-0.9, 0.0, 0.0),
+    "head": (-0.55, 0.0, 0.0),
+    "upperarm.r": (-0.25, -1.15, 0.55),
+    "lowerarm.r": (-0.95, 0.2, 0.1),
+    "upperarm.l": (-0.25, 1.15, -0.55),
+    "lowerarm.l": (-0.95, -0.2, -0.1),
+}
+RONALDO_HEADER_FOLLOW = {
+    "spine_02": (-0.35, 0.0, 0.0),
+    "neck_01": (-0.4, 0.0, 0.0),
+    "head": (-0.2, 0.0, 0.0),
+    "upperarm.r": (0.1, -0.7, 0.25),
+    "lowerarm.r": (-0.5, 0.0, 0.0),
+    "upperarm.l": (0.1, 0.7, -0.25),
+    "lowerarm.l": (-0.5, 0.0, 0.0),
 }
 
 PoseDict = Dict[str, Quaternion]
@@ -183,6 +207,23 @@ def _animate_root_fixed(
                 kp.handle_right_type = "AUTO_CLAMPED"
 
 
+def _animate_root_keys(
+    root: bpy.types.Object,
+    keys: List[Tuple[int, Vector, float]],
+) -> None:
+    """位置＋Yawをキーする（ヘディングで向きを変える用）。"""
+    _clear_anim(root)
+    for f, loc, yaw in keys:
+        _kf_loc(root, f, loc)
+        _kf_rot_z(root, f, yaw)
+    if root.animation_data and root.animation_data.action:
+        for fc in root.animation_data.action.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation = "BEZIER"
+                kp.handle_left_type = "AUTO_CLAMPED"
+                kp.handle_right_type = "AUTO_CLAMPED"
+
+
 def _shin_path(frame: int) -> Vector:
     """シン — 奥でレオンの方へ走る → 到着 → 喜びのホップ"""
     if frame < F_RUN_START:
@@ -194,27 +235,66 @@ def _shin_path(frame: int) -> Vector:
     p = SHIN_END.copy()
     if F_RUN_END < frame <= F_ARRIVE_HOLD:
         hop = (frame - F_RUN_END) / (F_ARRIVE_HOLD - F_RUN_END)
-        # 嬉しそうなジャンプ — 高め＋二連跳ね
         p.z = 0.55 * math.sin(hop * math.pi) + 0.18 * math.sin(hop * math.pi * 2.0)
     return p
 
 
-def _ronaldo_path(frame: int) -> Vector:
-    """ロナウド — 手前でキレて上下に飛び跳ねる（軽い左右も）"""
+def _ronaldo_path(frame: int) -> Tuple[Vector, float]:
+    """ロナウド — 握手を見たあと単独で跳びヘディング。"""
     p = RONALDO_POS.copy()
-    if frame < F_RONALDO_TANTRUM:
-        # 気づき始め — 小さな足踏み
+    yaw = RONALDO_WATCH_YAW
+
+    if frame < F_HEADER_SOLO:
         if frame >= F_RONALDO_NOTICE:
             t = frame - F_RONALDO_NOTICE
-            p.z = 0.12 * abs(math.sin(t * 0.55))
-            p.x += 0.06 * math.sin(t * 0.35)
-        return p
-    t = frame - F_RONALDO_TANTRUM
-    phase = (t % RONALDO_HOP_PERIOD) / float(RONALDO_HOP_PERIOD)
-    # キレたジャンプ — 鋭く跳び上がる
-    p.z = RONALDO_HOP_HEIGHT * (math.sin(phase * math.pi) ** 0.85)
-    p.x += 0.22 * math.sin(t * 0.42)
-    p.y += 0.08 * math.sin(t * 0.61)
+            p.z = 0.1 * abs(math.sin(t * 0.45))
+            p.x += 0.05 * math.sin(t * 0.3)
+        return p, yaw
+
+    yaw = RONALDO_HEADER_YAW
+    if frame < F_HEADER_PREP:
+        # 向き変え・構える
+        t = (frame - F_HEADER_SOLO) / max(1, F_HEADER_PREP - F_HEADER_SOLO)
+        p.z = 0.08 * t
+        return p, yaw
+
+    if frame < F_HEADER_TAKEOFF:
+        # 溜め：少し沈み込み
+        t = (frame - F_HEADER_PREP) / max(1, F_HEADER_TAKEOFF - F_HEADER_PREP)
+        p.z = 0.08 - 0.22 * t
+        return p, yaw
+
+    if frame <= F_HEADER_CONTACT:
+        t = (frame - F_HEADER_TAKEOFF) / max(1, F_HEADER_CONTACT - F_HEADER_TAKEOFF)
+        ease = math.sin(t * math.pi * 0.5)
+        p.z = -0.14 + (RONALDO_HEADER_HEIGHT + 0.14) * ease
+        p.x += 0.35 * t
+        return p, yaw
+
+    if frame <= F_HEADER_LAND:
+        t = (frame - F_HEADER_CONTACT) / max(1, F_HEADER_LAND - F_HEADER_CONTACT)
+        p.z = RONALDO_HEADER_HEIGHT * max(0.0, math.cos(t * math.pi * 0.5))
+        p.x += 0.35 + 0.25 * t
+        return p, yaw
+
+    # 着地後少し余韻
+    p.x += 0.6
+    return p, yaw
+
+
+def _header_ball_path(frame: int) -> Vector:
+    if frame < F_HEADER_SOLO:
+        return HEADER_BALL_START.copy()
+    if frame < F_HEADER_CONTACT:
+        t = (frame - F_HEADER_SOLO) / max(1, F_HEADER_CONTACT - F_HEADER_SOLO)
+        t = t * t * (3.0 - 2.0 * t)
+        return HEADER_BALL_START.lerp(HEADER_BALL_CONTACT, t)
+    t = (frame - F_HEADER_CONTACT) / max(1, HANDSHAKE_FRAMES - F_HEADER_CONTACT)
+    t = min(1.0, t)
+    # 当たって吹き飛ぶ
+    ease = 1.0 - (1.0 - t) ** 2
+    p = HEADER_BALL_CONTACT.lerp(HEADER_BALL_END, ease)
+    p.z += 0.9 * math.sin(min(1.0, t * 1.35) * math.pi)
     return p
 
 
@@ -348,7 +428,7 @@ LEAO_HANDSHAKE_BONES = [
     "head",
 ]
 
-RONALDO_ANGRY_BONES = [
+RONALDO_HEADER_BONES = [
     "clavicle.r",
     "upperarm.r",
     "lowerarm.r",
@@ -400,8 +480,8 @@ def _animate_handshake_poses(shin_arm: bpy.types.Object, leao_arm: bpy.types.Obj
     )
 
 
-def _animate_ronaldo_anger(ronaldo_arm: bpy.types.Object) -> None:
-    """握手を見て両手を頭上に振り上げる。idle 基準で強く焼く。"""
+def _animate_ronaldo_header(ronaldo_arm: bpy.types.Object) -> None:
+    """単独ヘディングの溜め→ヒット→フォロー。idle 基準で焼く。"""
     ad = ronaldo_arm.animation_data
     if not ad:
         ronaldo_arm.animation_data_create()
@@ -417,26 +497,84 @@ def _animate_ronaldo_anger(ronaldo_arm: bpy.types.Object) -> None:
     bpy.context.scene.frame_set(10)
     bpy.context.view_layer.update()
     idle_base = _snapshot_pose(ronaldo_arm)
-    angry = _pose_with_deltas(idle_base, RONALDO_ANGRY_DELTA, 1.0)
     ad.action = prev
     for t, was_muted in muted:
         t.mute = was_muted
 
+    wind = _pose_with_deltas(idle_base, RONALDO_HEADER_WINDUP, 1.0)
+    hit = _pose_with_deltas(idle_base, RONALDO_HEADER_CONTACT, 1.0)
+    follow = _pose_with_deltas(idle_base, RONALDO_HEADER_FOLLOW, 1.0)
+
     keys = [
-        (F_RONALDO_NOTICE, idle_base),
-        (F_RONALDO_TANTRUM - 10, _pose_with_deltas(idle_base, RONALDO_ANGRY_DELTA, 0.35)),
-        (F_RONALDO_TANTRUM + 2, angry),
-        (F_LEAO_REPLY, angry),
-        (HANDSHAKE_FRAMES, angry),
+        (F_HEADER_SOLO, idle_base),
+        (F_HEADER_PREP, wind),
+        (F_HEADER_TAKEOFF, wind),
+        (F_HEADER_CONTACT - 2, _pose_with_deltas(idle_base, RONALDO_HEADER_CONTACT, 0.55)),
+        (F_HEADER_CONTACT, hit),
+        (F_HEADER_CONTACT + 8, hit),
+        (F_HEADER_LAND, follow),
+        (HANDSHAKE_FRAMES, follow),
     ]
     _add_bone_pose_replace_strip(
         ronaldo_arm,
-        "Ronaldo_AngryTantrum",
-        F_RONALDO_NOTICE,
+        "Ronaldo_Header",
+        F_HEADER_SOLO,
         HANDSHAKE_FRAMES,
         keys,
-        RONALDO_ANGRY_BONES,
+        RONALDO_HEADER_BONES,
     )
+
+
+def _set_hide_keyed(obj: bpy.types.Object, frame: int, hide: bool) -> None:
+    obj.hide_render = hide
+    obj.hide_viewport = hide
+    obj.keyframe_insert(data_path="hide_render", frame=frame)
+    obj.keyframe_insert(data_path="hide_viewport", frame=frame)
+
+
+def _solo_hide_other_players(shin_arm: bpy.types.Object, leao_arm: bpy.types.Object) -> None:
+    """ヘディング単独カット以降、シン/レオンを映さない。"""
+    from import_mannequiny import _mesh_child  # noqa: E402
+
+    objs = [
+        shin_arm,
+        leao_arm,
+        _mesh_child(shin_arm),
+        _mesh_child(leao_arm),
+        bpy.data.objects.get("Shin_01_Root"),
+        bpy.data.objects.get("Leao_01_Root"),
+    ]
+    for obj in objs:
+        if not obj:
+            continue
+        _set_hide_keyed(obj, F_HEADER_SOLO - 1, False)
+        _set_hide_keyed(obj, F_HEADER_SOLO, True)
+        _set_hide_keyed(obj, HANDSHAKE_FRAMES, True)
+
+
+def _animate_header_ball(ball: bpy.types.Object) -> None:
+    _clear_anim(ball)
+    ball.hide_render = True
+    ball.hide_viewport = True
+    ball.keyframe_insert(data_path="hide_render", frame=1)
+    ball.keyframe_insert(data_path="hide_viewport", frame=1)
+
+    ball.hide_render = False
+    ball.hide_viewport = False
+    ball.keyframe_insert(data_path="hide_render", frame=F_HEADER_SOLO)
+    ball.keyframe_insert(data_path="hide_viewport", frame=F_HEADER_SOLO)
+
+    for f in range(F_HEADER_SOLO, HANDSHAKE_FRAMES + 1):
+        _kf_loc(ball, f, _header_ball_path(f))
+    if ball.animation_data and ball.animation_data.action:
+        for fc in ball.animation_data.action.fcurves:
+            if not fc.data_path.startswith("location"):
+                continue
+            for kp in fc.keyframe_points:
+                kp.interpolation = "BEZIER"
+                kp.handle_left_type = "AUTO_CLAMPED"
+                kp.handle_right_type = "AUTO_CLAMPED"
+
 
 
 def setup_portugal_handshake_characters() -> Tuple[
@@ -470,7 +608,7 @@ def setup_portugal_handshake_characters() -> Tuple[
         PORTUGAL_RED,
         [RONALDO_POS],
         actions=["idle"],
-        facing_yaw=RONALDO_YAW,
+        facing_yaw=RONALDO_WATCH_YAW,
     )[0]
 
     set_mesh_split_vertical(_mesh_child(leao_arm), PORTUGAL_RED, PORTUGAL_GREEN, z_cut=0.42)
@@ -509,39 +647,45 @@ def animate_portugal_shin_handshake() -> None:
     ball = bpy.data.objects.get("Ball")
     if ball and ball.animation_data:
         ball.animation_data_clear()
-    _hide_ball()
 
     shin_keys = [(f, _shin_path(f)) for f in range(1, HANDSHAKE_FRAMES + 1)]
     leao_keys = [(f, LEAO_POS) for f in range(1, HANDSHAKE_FRAMES + 1)]
-    ronaldo_keys = [(f, _ronaldo_path(f)) for f in range(1, HANDSHAKE_FRAMES + 1)]
+    ronaldo_pose_keys = [(f, *_ronaldo_path(f)) for f in range(1, HANDSHAKE_FRAMES + 1)]
 
     _animate_root_fixed(shin_root, shin_keys, SHIN_YAW)
     _animate_root_fixed(leao_root, leao_keys, LEAO_YAW)
-    _animate_root_fixed(ronaldo_root, ronaldo_keys, RONALDO_YAW)
+    _animate_root_keys(ronaldo_root, ronaldo_pose_keys)
 
     # シン：待機 → 走る → 到着後 idle
     _add_nla_strip(shin_arm, "idle", 1, F_RUN_START - 1)
     _add_nla_strip(shin_arm, "run", F_RUN_START, F_RUN_END)
     _add_nla_strip(shin_arm, "idle", F_RUN_END + 1, HANDSHAKE_FRAMES)
 
-    # レオン：ずっと idle（握手は REPLACE オーバーレイで応答）
+    # レオン：ずっと idle
     _add_nla_strip(leao_arm, "idle", 1, HANDSHAKE_FRAMES)
 
-    # ロナウド：idle → 気づき → キレて飛び跳ね（ジャンプはルートZ、腕は怒りポーズ）
-    _add_nla_strip(ronaldo_arm, "idle", 1, F_RONALDO_NOTICE - 1)
+    # ロナウド：idle → 気づき → ヘディングはルート＋ポーズ
+    _add_nla_strip(ronaldo_arm, "idle", 1, F_HEADER_SOLO - 1)
     try:
-        _add_nla_strip(ronaldo_arm, "fight_idle", F_RONALDO_NOTICE, HANDSHAKE_FRAMES)
+        _add_nla_strip(ronaldo_arm, "air_jump", F_HEADER_TAKEOFF, F_HEADER_LAND)
     except KeyError:
-        _add_nla_strip(ronaldo_arm, "idle", F_RONALDO_NOTICE, HANDSHAKE_FRAMES)
+        _add_nla_strip(ronaldo_arm, "idle", F_HEADER_TAKEOFF, F_HEADER_LAND)
+    _add_nla_strip(ronaldo_arm, "idle", F_HEADER_LAND + 1, HANDSHAKE_FRAMES)
 
     _animate_handshake_poses(shin_arm, leao_arm)
-    _animate_ronaldo_anger(ronaldo_arm)
+    _animate_ronaldo_header(ronaldo_arm)
+    _solo_hide_other_players(shin_arm, leao_arm)
+
+    if ball:
+        _animate_header_ball(ball)
+    else:
+        print("WARN: Ball not found — header without ball")
 
     setup_portugal_handshake_camera()
     scene.frame_set(1)
     print(
         f"Portugal handshake: {HANDSHAKE_FRAMES}f @ {FPS}fps — "
-        "Shin run→offer, Leao idle→reply, Ronaldo angry hop"
+        "Shin-Leao handshake, then solo Ronaldo header"
     )
 
 
@@ -559,30 +703,31 @@ def _kf_cam(cam: bpy.types.Object, frame: int, pos: Vector, target: Vector) -> N
 
 
 def setup_portugal_handshake_camera() -> bpy.types.Object:
-    """手前ロナウド＋奥の握手が同時に見える構図"""
+    """前半はロナウド肩越し握手、後半はロナウド単独ヘディング。"""
     _remove_cameras()
     cam_data = bpy.data.cameras.new("CamPortugalHandshake")
     cam = bpy.data.objects.new("CamPortugalHandshake", cam_data)
     bpy.context.collection.objects.link(cam)
     bpy.context.scene.camera = cam
-    cam.data.lens = 20
 
     bg_target = (SHIN_END + LEAO_POS) * 0.5 + Vector((0.0, 0.0, 2.1))
+    over_shoulder = RONALDO_POS + Vector((2.2, -4.2, 4.2))
 
-    key_frames = [
-        F_INTRO,
-        F_RUN_START,
-        F_RUN_END,
-        F_HAND_OFFER,
-        F_OFFER_HOLD,
-        F_LEAO_REPLY,
-        HANDSHAKE_FRAMES,
-    ]
-    for f in key_frames:
-        # ロナウド肩越し・やや寄って握手の腕が見える位置
-        cam_pos = RONALDO_POS + Vector((2.2, -4.2, 4.2))
-        cam_tgt = bg_target
-        _kf_cam(cam, f, cam_pos, cam_tgt)
+    # 前半：握手ワイド
+    for f in (F_INTRO, F_RUN_START, F_RUN_END, F_HAND_OFFER, F_LEAO_REPLY, F_HEADER_SOLO - 1):
+        cam.data.lens = 20
+        cam.data.keyframe_insert(data_path="lens", frame=f)
+        _kf_cam(cam, f, over_shoulder, bg_target)
+
+    # 後半：ロナウド一人・横から。頭＋ボールが切れない高さで追う
+    for f in (F_HEADER_SOLO, F_HEADER_PREP, F_HEADER_TAKEOFF, F_HEADER_CONTACT, F_HEADER_LAND, HANDSHAKE_FRAMES):
+        cam.data.lens = 28
+        cam.data.keyframe_insert(data_path="lens", frame=f)
+        loc, _yaw = _ronaldo_path(f)
+        head_z = 3.9 + max(0.0, loc.z)
+        tgt = Vector((loc.x + 0.35, loc.y, head_z * 0.9))
+        pos = Vector((loc.x + 4.5, loc.y - 6.4, 3.4 + max(0.0, loc.z) * 0.55))
+        _kf_cam(cam, f, pos, tgt)
 
     if cam.animation_data and cam.animation_data.action:
         for fc in cam.animation_data.action.fcurves:
