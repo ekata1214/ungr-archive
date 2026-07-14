@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
-"""レオン単独インタビュー — お立ち台＋背景パネルで約4秒話す
+"""レオン単独インタビュー — お立ち台＋背景パネルで約16秒話す
 
 ポルトガルのレオン（WAY45）が、インタビュー受ける場所っぽい平面の前で
-一人で話す短カット。
+一人で話すカット。
 """
 
 from __future__ import annotations
@@ -23,8 +23,8 @@ from animate_soccer_match import (
 )
 
 FPS = 24
-# 約4秒
-INTERVIEW_FRAMES = 96
+# 約16秒（以前4秒の4倍）
+INTERVIEW_FRAMES = 384
 
 PORTUGAL_RED = (0.88, 0.12, 0.12, 1.0)
 PORTUGAL_GREEN = (0.12, 0.55, 0.28, 1.0)
@@ -205,7 +205,6 @@ def setup_interview_set() -> None:
     stripe_mat = _mat_rgba("Interview_StripeMat", PORTUGAL_RED, 0.45)
     accent_mat = _mat_rgba("Interview_AccentMat", PORTUGAL_GREEN, 0.45)
     panel_mat = _mat_rgba("Interview_PanelMat", (0.16, 0.18, 0.24, 1.0), 0.7)
-    mic_mat = _mat_rgba("Interview_MicMat", (0.05, 0.05, 0.06, 1.0), 0.35)
 
     # 床（足元周り）
     _add_box(
@@ -262,21 +261,6 @@ def setup_interview_set() -> None:
         None,
         panel_mat,
     )
-    # マイクスタンド（手前・カメラ側）
-    _add_box(
-        "Interview_MicPole",
-        (0.05, 0.05, 1.6),
-        Vector((0.85, -1.05, 1.15)),
-        None,
-        mic_mat,
-    )
-    _add_box(
-        "Interview_MicHead",
-        (0.16, 0.1, 0.1),
-        Vector((0.62, -1.05, 2.0)),
-        Euler((0.0, 0.45, 0.0)),
-        mic_mat,
-    )
 
 
 def _snapshot_pose(arm: bpy.types.Object) -> PoseDict:
@@ -325,27 +309,27 @@ def _capture_idle_base(arm: bpy.types.Object) -> PoseDict:
 
 
 def _talk_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    """話している風の頭・胴・手ぶり。"""
+    """話している風の頭・胴・手ぶり（腕は左右でクロスさせない）。"""
     t = frame / FPS
     nod = 0.07 * math.sin(t * 7.2) + 0.04 * math.sin(t * 11.0)
     turn = 0.11 * math.sin(t * 2.4 + 0.3) + 0.05 * math.sin(t * 5.1)
     lean = 0.05 * math.sin(t * 1.7)
-    # 右手で説明している感じ（常に前に出して後ろ手にならない）
-    gest = 0.55 + 0.45 * math.sin(t * 3.3)
-    gest2 = 0.55 + 0.45 * math.sin(t * 2.1 + 1.2)
+    # 右手は脇の前で小さく説明する。左右の腕は外側（R:Y-, L:Y+）を維持
+    gest = 0.55 + 0.45 * math.sin(t * 2.6)
+    gest2 = 0.55 + 0.45 * math.sin(t * 1.9 + 1.1)
     return {
         "spine_01": (0.03 + lean * 0.4, 0.0, turn * 0.25),
         "spine_02": (0.06 + lean, 0.0, turn * 0.45),
         "neck_01": (0.04 + nod * 0.6, 0.0, turn * 0.7),
         "head": (0.05 + nod, 0.0, turn),
-        "clavicle.r": (0.06, -0.08 - 0.04 * gest, 0.1),
-        "upperarm.r": (0.55 + 0.2 * gest, -0.75 - 0.15 * gest2, 0.85 + 0.2 * gest),
-        "lowerarm.r": (-1.05 - 0.15 * gest2, 0.25, 0.2),
-        "hand.r": (0.3, 0.4 + 0.12 * gest, -0.65),
-        "clavicle.l": (0.03, 0.05, -0.05),
-        "upperarm.l": (0.22, 0.45, -0.28),
-        "lowerarm.l": (-0.45, -0.12, -0.08),
-        "hand.l": (0.08, -0.12, 0.18),
+        "clavicle.r": (0.04, -0.06, 0.05),
+        "upperarm.r": (0.28 + 0.12 * gest, -0.7 - 0.08 * gest2, 0.2 + 0.08 * gest),
+        "lowerarm.r": (-0.75 - 0.2 * gest, 0.12, 0.08),
+        "hand.r": (0.15, 0.25, -0.35),
+        "clavicle.l": (0.03, 0.05, -0.04),
+        "upperarm.l": (0.18 + 0.05 * gest2, 0.65 + 0.05 * gest, -0.15),
+        "lowerarm.l": (-0.35 - 0.08 * gest2, -0.08, -0.05),
+        "hand.l": (0.05, -0.1, 0.1),
     }
 
 
@@ -474,8 +458,8 @@ def setup_camera() -> bpy.types.Object:
     bpy.context.scene.camera = cam
     cam_data.lens = 35
 
-    # 正面寄りミディアム（頭〜お立ち台が見える）
-    for f in (1, 36, 64, INTERVIEW_FRAMES):
+    # 正面寄りミディアム（頭〜お立ち台が見える）、ゆっくり寄る
+    for f in (1, 96, 192, 288, INTERVIEW_FRAMES):
         t = (f - 1) / max(1, INTERVIEW_FRAMES - 1)
         pos = Vector((-0.7 + 0.15 * t, -8.4 + 0.4 * t, 3.45))
         tgt = Vector((0.05 * math.sin(t * math.pi), 0.1, 3.15 + 0.1 * t))
@@ -524,7 +508,7 @@ def animate_leao_interview() -> None:
     _animate_talking(leao_arm)
     setup_camera()
     scene.frame_set(1)
-    print(f"Leao interview: {INTERVIEW_FRAMES}f @ {FPS}fps — solo talk on podium (~4s)")
+    print(f"Leao interview: {INTERVIEW_FRAMES}f @ {FPS}fps — solo talk on podium (~16s)")
 
 
 def render_leao_interview_video() -> Path:

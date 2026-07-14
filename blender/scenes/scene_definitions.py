@@ -245,5 +245,5 @@ SCENE_09_SCRIPT = (
 # シーン10 — 台本は scripts/scene_leao_interview.md
 # 実行: build_part_field.py -- --animate-leao-interview --render-leao-interview-video
 SCENE_10_SCRIPT = (
-    "レオンがインタビューのお立ち台で一人で約4秒話している。"
+    "レオンがインタビューのお立ち台で一人で約16秒話している。"
 )
