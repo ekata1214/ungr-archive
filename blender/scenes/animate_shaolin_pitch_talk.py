@@ -284,16 +284,14 @@ def setup_camera() -> bpy.types.Object:
     cam = bpy.data.objects.new("CamShaolinTalk", cam_data)
     bpy.context.collection.objects.link(cam)
     bpy.context.scene.camera = cam
-    cam_data.lens = 35
+    cam_data.lens = 55
 
     for f in (1, F_TALK_END, TOTAL_FRAMES):
         t = (f - 1) / max(1, TOTAL_FRAMES - 1)
-        # バストショット：低い位置から胸〜頭を枠に入れる
-        pos = Vector((-0.2 + 0.08 * t, -4.6 + 0.35 * t, 1.85 - 0.05 * t))
-        tgt = Vector((0.0, 0.05, 2.05))
+        # バストショット：やや低い位置から胸〜頭を収める
+        pos = Vector((-0.12 + 0.05 * t, -3.9 + 0.25 * t, 2.05 - 0.04 * t))
+        tgt = Vector((0.0, 0.04, 2.42))
         _kf_cam(cam, f, pos, tgt)
-    cam_data.lens = 50  # バスト寄り
-
 
     if cam.animation_data and cam.animation_data.action:
         for fc in cam.animation_data.action.fcurves:
