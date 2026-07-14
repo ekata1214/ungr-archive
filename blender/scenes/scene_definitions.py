@@ -247,3 +247,9 @@ SCENE_09_SCRIPT = (
 SCENE_10_SCRIPT = (
     "レオンがインタビューのお立ち台で一人で約16秒話している。"
 )
+
+# シーン11 — 台本は scripts/scene_portugal_ronaldo_trauma.md
+# 実行: build_part_field.py -- --animate-portugal-ronaldo-trauma --render-portugal-ronaldo-trauma-video
+SCENE_11_SCRIPT = (
+    "ヘディングのトラウマで、ロナウドが頭を両手で抱えてしゃがみ込む。"
+)

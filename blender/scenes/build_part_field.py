@@ -710,6 +710,8 @@ def main() -> None:
         or "--render-shaolin-middle-shot-video" in sys.argv
         or "--animate-leao-interview" in sys.argv
         or "--render-leao-interview-video" in sys.argv
+        or "--animate-portugal-ronaldo-trauma" in sys.argv
+        or "--render-portugal-ronaldo-trauma-video" in sys.argv
     )
     vignette_mode = kubo_mode or endo_mode or portugal_mode
     build_field_only(include_teams=not vignette_mode)
