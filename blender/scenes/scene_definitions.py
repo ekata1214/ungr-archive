@@ -271,3 +271,9 @@ SCENE_13_SCRIPT = (
 SCENE_14_SCRIPT = (
     "少林選手がピッチから跳び上がり、ゴール方向へ空中ドリブルで進む。"
 )
+
+# シーン15 — 台本は scripts/scene_shaolin_aerial_shot.md
+# 実行: build_part_field.py -- --animate-shaolin-aerial-shot --render-shaolin-aerial-shot-video
+SCENE_15_SCRIPT = (
+    "少林選手が空中からゴールへシュート。ポルトガルGKが横飛びするが止めきれずゴールイン。"
+)
