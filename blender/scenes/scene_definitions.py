@@ -223,3 +223,9 @@ SCENE_05_SCRIPT = (
 SCENE_06_SCRIPT = (
     "キレたロナウドが一人でゆっくりジャンプする（ボールなし・スロー）。"
 )
+
+# シーン07 — 台本は scripts/scene_portugal_header_clash.md
+# 実行: build_part_field.py -- --animate-portugal-header-clash --render-portugal-header-clash-video
+SCENE_07_SCRIPT = (
+    "ロナウドと少林選手が同時にヘディングし、空中で頭がぶつかるスローモーション。"
+)
