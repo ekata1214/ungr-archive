@@ -37,10 +37,11 @@ HOVER_AMP = 0.32
 SHAOLIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 SHAOLIN_WHITE = (0.96, 0.96, 0.98, 1.0)
 
-# +Y 方向へ進む（カメラは横 / 斜め）
-# yaw=0 はカメラ側（-Y）向きなので、+Y 進行には π
-MOVE_YAW = math.pi
-MOVE_DIR = Vector((0.0, 1.0, 0.0))
+# 左ゴール（Goal_L, -X）へ向かう
+# yaw=0 は -Y 向き。顔を -X にするには 1.5π（kubo と同じ）
+MOVE_YAW = math.pi * 1.5
+MOVE_DIR = Vector((-1.0, 0.0, 0.0))
+GOAL_TARGET_X = -131.25  # Goal_L
 
 
 def _ease_in_out(t: float) -> float:
@@ -76,12 +77,13 @@ def _move_dir(_frame: int) -> Vector:
 
 
 def _path_xy(frame: int) -> Tuple[float, float]:
-    """前進＋軽い蛇行。"""
+    """ミッド付近から左ゴール（-X）へ前進＋軽い蛇行。"""
     t = (frame - 1) / max(1, TOTAL_FRAMES - 1)
-    y = -8.0 + t * 36.0
-    x = (
-        1.1 * math.sin(t * 5.5 * math.pi)
-        + 0.55 * math.sin(t * 11.0 * math.pi + 0.4)
+    # センター寄りスタート → ゴール前まで迫る（ゴール線は x≈-131）
+    x = 18.0 - t * 95.0
+    y = (
+        1.2 * math.sin(t * 5.5 * math.pi)
+        + 0.6 * math.sin(t * 11.0 * math.pi + 0.4)
     )
     return x, y
 
@@ -263,7 +265,7 @@ def animate_shaolin_aerial_dribble() -> None:
     scene.frame_set(1)
     print(
         f"Shaolin aerial dribble: {TOTAL_FRAMES}f @ {FPS}fps — "
-        f"takeoff→cruise z≈{CRUISE_Z}"
+        f"toward Goal_L (x={GOAL_TARGET_X}), cruise z≈{CRUISE_Z}"
     )
 
 

@@ -269,5 +269,5 @@ SCENE_13_SCRIPT = (
 # シーン14 — 台本は scripts/scene_shaolin_aerial_dribble.md
 # 実行: build_part_field.py -- --animate-shaolin-aerial-dribble --render-shaolin-aerial-dribble-video
 SCENE_14_SCRIPT = (
-    "少林選手がピッチから跳び上がり、空中を進みながら足元でボールをドリブルする。"
+    "少林選手がピッチから跳び上がり、ゴール方向へ空中ドリブルで進む。"
 )
