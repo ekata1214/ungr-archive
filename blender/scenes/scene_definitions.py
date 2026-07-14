@@ -259,3 +259,9 @@ SCENE_11_SCRIPT = (
 SCENE_12_SCRIPT = (
     "オランダ代表（濃いオレンジ一色）と少林選手が、同じ向きに横並走しながらボールを取り合う。"
 )
+
+# シーン13 — 台本は scripts/scene_shaolin_pitch_talk.md
+# 実行: build_part_field.py -- --animate-shaolin-pitch-talk --render-shaolin-pitch-talk-video
+SCENE_13_SCRIPT = (
+    "少林チームの選手一人がピッチ上で約3秒話し、その後軽く頷く。"
+)
