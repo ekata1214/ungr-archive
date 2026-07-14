@@ -51,20 +51,23 @@ LEAO_YAW = math.pi / 2    # +X 向き（シンへ）
 RONALDO_YAW = math.pi
 
 # 奥：シン＋レオン / 手前：ロナウド
-LEAO_POS = Vector((2.45, 5.0, 0.0))
+# ルート間隔 ~5（スケール2.5で胴体が重ならない距離）。握手は腕を伸ばして届かせる。
+LEAO_POS = Vector((0.7, 5.0, 0.0))
 SHIN_START = Vector((18.0, 5.0, 0.0))
-SHIN_END = Vector((3.95, 5.0, 0.0))
+SHIN_END = Vector((5.7, 5.0, 0.0))
 RONALDO_POS = Vector((1.0, -5.5, 0.0))
 
 # idle 上に掛ける腕のオイラー差分。シン右手・レオン左手。
-# 手がカメラ側（-Y）へ出て、肩越し構図でも握手に見える組み合わせ。
+# 距離を開けた分、腕を大きく前へ出す。
 SHIN_OFFER_DELTA = {
-    "upperarm.r": (0.4, -0.4, 0.8),
-    "lowerarm.r": (-0.9, 0.1, 0.0),
+    "upperarm.r": (1.6, -0.2, 0.3),
+    "lowerarm.r": (-1.25, 0.25, 0.1),
+    "spine_02": (0.12, 0.0, 0.08),
 }
 LEAO_REPLY_DELTA = {
-    "upperarm.l": (0.4, 0.4, -0.8),
-    "lowerarm.l": (-0.9, -0.1, 0.0),
+    "upperarm.l": (1.6, 0.2, -0.3),
+    "lowerarm.l": (-1.25, -0.25, -0.1),
+    "spine_02": (0.12, 0.0, -0.08),
 }
 
 PoseDict = Dict[str, Quaternion]
