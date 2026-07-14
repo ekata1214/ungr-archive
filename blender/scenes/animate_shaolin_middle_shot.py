@@ -191,24 +191,22 @@ def _shaolin_path(frame: int) -> Vector:
 
 
 def _gk_path(frame: int) -> Vector:
-    # ゴール右（-Y）へ横っ飛び。届きそうで届かない
-    dive_target = Vector((GOAL_X - 1.2, BALL_GOAL.y * 0.82, 0.0))
+    # ゴール右（-Y）へ横っ飛び。ボール筋へ手は伸ばすが届かない
+    dive_target = Vector((GOAL_X - 2.0, BALL_GOAL.y * 0.88, 0.0))
     if frame < F_GK_DIVE:
         t = (frame - 1) / max(1, F_GK_DIVE - 1)
-        # わずかに右へ寄りつつ反応待機
-        sway = Vector((0.0, BALL_GOAL.y * 0.12 * _ease_in_out(t), 0.0))
+        sway = Vector((0.0, BALL_GOAL.y * 0.18 * _ease_in_out(t), 0.0))
         return GK_HOME + sway
-    if frame <= F_GOAL + 6:
-        t = (frame - F_GK_DIVE) / max(1, (F_GOAL + 6) - F_GK_DIVE)
-        # サイドに長く飛ぶ（横っ飛び）
-        p = GK_HOME.lerp(dive_target, _ease_in_out(t))
-        p.z = 1.55 * math.sin(min(1.0, t) * math.pi)
+    if frame <= F_GOAL + 4:
+        t = (frame - F_GK_DIVE) / max(1, (F_GOAL + 4) - F_GK_DIVE)
+        # 低い横っ飛び（高飛びよりサイドの移動を強調）
+        p = GK_HOME.lerp(dive_target, _ease_in_out(min(1.0, t * 1.15)))
+        p.z = 0.75 * math.sin(min(1.0, t) * math.pi)
         return p
-    # 着地（ボールはすでに右隅で決まっている）
-    t = (frame - (F_GOAL + 6)) / max(1, SHOT_FRAMES - (F_GOAL + 6))
-    land = dive_target + Vector((-0.3, -0.35, 0.0))
+    t = (frame - (F_GOAL + 4)) / max(1, SHOT_FRAMES - (F_GOAL + 4))
+    land = dive_target + Vector((-0.25, -0.45, 0.0))
     p = dive_target.lerp(land, _ease_in_out(min(1.0, t)))
-    p.z = max(0.0, 0.35 * (1.0 - _ease_in_out(min(1.0, t * 1.5))))
+    p.z = max(0.0, 0.25 * (1.0 - _ease_in_out(min(1.0, t * 1.6))))
     return p
 
 
