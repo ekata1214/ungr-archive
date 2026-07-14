@@ -257,5 +257,5 @@ SCENE_11_SCRIPT = (
 # シーン12 — 台本は scripts/scene_netherlands_shaolin_contest.md
 # 実行: build_part_field.py -- --animate-netherlands-contest --render-netherlands-contest-video
 SCENE_12_SCRIPT = (
-    "オランダ代表（濃いオレンジ一色）と少林選手がボールを争う。"
+    "オランダ代表（濃いオレンジ一色）と少林選手が、同じ向きに横並走しながらボールを取り合う。"
 )
