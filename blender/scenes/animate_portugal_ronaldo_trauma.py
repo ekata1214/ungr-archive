@@ -22,12 +22,12 @@ from animate_soccer_match import (
 )
 
 FPS = 24
-# 約10秒
-TRAUMA_FRAMES = 240
+# 約4.5秒（ニュースカット向けにテンポ短め）
+TRAUMA_FRAMES = 108
 
-F_NOTICE = 36
-F_CROUCH = 108
-F_HOLD = 150
+F_NOTICE = 12
+F_CROUCH = 42
+F_HOLD = 54
 
 RONALDO_YAW = 0.0  # カメラ（-Y）正面
 RONALDO_POS = Vector((0.0, 0.0, 0.0))
@@ -304,7 +304,7 @@ def _ronaldo_path(frame: int) -> Vector:
 
 def _animate_root(root: bpy.types.Object) -> None:
     _clear_anim(root)
-    sparse = [1, F_NOTICE, F_CROUCH - 20, F_CROUCH, F_HOLD, F_HOLD + 30, TRAUMA_FRAMES]
+    sparse = [1, F_NOTICE, F_CROUCH - 8, F_CROUCH, F_HOLD, F_HOLD + 12, TRAUMA_FRAMES]
     for f in sparse:
         _kf_loc(root, f, _ronaldo_path(f))
         _kf_rot_z(root, f, RONALDO_YAW)
@@ -320,15 +320,15 @@ def _animate_trauma_pose(arm: bpy.types.Object) -> None:
     base = _capture_idle_base(arm)
     keys: List[Tuple[int, PoseDict]] = [
         (1, base),
-        (F_NOTICE, _pose_with_deltas(base, GUARD_DELTA, 0.55)),
-        (F_NOTICE + 18, _pose_with_deltas(base, GUARD_DELTA, 1.0)),
-        (F_CROUCH - 24, _pose_with_deltas(base, CROUCH_DELTA, 0.35)),
+        (F_NOTICE, _pose_with_deltas(base, GUARD_DELTA, 0.7)),
+        (F_NOTICE + 8, _pose_with_deltas(base, GUARD_DELTA, 1.0)),
+        (F_CROUCH - 10, _pose_with_deltas(base, CROUCH_DELTA, 0.4)),
         (F_CROUCH, _pose_with_deltas(base, CROUCH_DELTA, 1.0)),
         (F_HOLD, _pose_with_deltas(base, CROUCH_DELTA, 1.0)),
     ]
     # 微かな震え（頭抱えのまま）
-    for f in range(F_HOLD + 8, TRAUMA_FRAMES + 1, 6):
-        wiggle = 0.02 * math.sin((f - F_HOLD) * 0.7)
+    for f in range(F_HOLD + 4, TRAUMA_FRAMES + 1, 4):
+        wiggle = 0.02 * math.sin((f - F_HOLD) * 0.9)
         d = {
             k: (v[0] + (wiggle if "head" in k or "neck" in k or "spine" in k else 0.0), v[1], v[2])
             for k, v in CROUCH_DELTA.items()
@@ -421,7 +421,7 @@ def animate_portugal_ronaldo_trauma() -> None:
     scene.frame_set(1)
     print(
         f"Ronaldo trauma crouch: {TRAUMA_FRAMES}f @ {FPS}fps — "
-        "covers head and crouches (~10s)"
+        "covers head and crouches (~4.5s)"
     )
 
 
