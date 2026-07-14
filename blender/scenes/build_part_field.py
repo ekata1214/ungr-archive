@@ -712,6 +712,8 @@ def main() -> None:
         or "--render-leao-interview-video" in sys.argv
         or "--animate-portugal-ronaldo-trauma" in sys.argv
         or "--render-portugal-ronaldo-trauma-video" in sys.argv
+        or "--animate-netherlands-contest" in sys.argv
+        or "--render-netherlands-contest-video" in sys.argv
     )
     vignette_mode = kubo_mode or endo_mode or portugal_mode
     build_field_only(include_teams=not vignette_mode)
@@ -785,6 +787,18 @@ def main() -> None:
         from animate_leao_interview import render_leao_interview_video  # noqa: E402
 
         render_leao_interview_video()
+    if "--animate-netherlands-contest" in sys.argv:
+        from animate_netherlands_shaolin_contest import (  # noqa: E402
+            animate_netherlands_shaolin_contest,
+        )
+
+        animate_netherlands_shaolin_contest()
+    if "--render-netherlands-contest-video" in sys.argv:
+        from animate_netherlands_shaolin_contest import (  # noqa: E402
+            render_netherlands_shaolin_contest_video,
+        )
+
+        render_netherlands_shaolin_contest_video()
     if "--animate-match" in sys.argv:
         from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
 

@@ -253,3 +253,9 @@ SCENE_10_SCRIPT = (
 SCENE_11_SCRIPT = (
     "ヘディングのトラウマで、ロナウドが頭を両手で抱えてしゃがみ込む。"
 )
+
+# シーン12 — 台本は scripts/scene_netherlands_shaolin_contest.md
+# 実行: build_part_field.py -- --animate-netherlands-contest --render-netherlands-contest-video
+SCENE_12_SCRIPT = (
+    "オランダ代表（濃いオレンジ一色）と少林選手がボールを争う。"
+)
