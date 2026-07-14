@@ -401,14 +401,33 @@ def _animate_handshake_poses(shin_arm: bpy.types.Object, leao_arm: bpy.types.Obj
 
 
 def _animate_ronaldo_anger(ronaldo_arm: bpy.types.Object) -> None:
-    """握手を見て両手を振り上げるキレポーズ。"""
-    base = _capture_evaluated_pose(ronaldo_arm, F_RONALDO_NOTICE)
+    """握手を見て両手を頭上に振り上げる。idle 基準で強く焼く。"""
+    ad = ronaldo_arm.animation_data
+    if not ad:
+        ronaldo_arm.animation_data_create()
+        ad = ronaldo_arm.animation_data
+
+    muted = [(t, t.mute) for t in ad.nla_tracks]
+    for t, _ in muted:
+        t.mute = True
+
+    idle = bpy.data.actions.get(_resolve_action_name("idle"))
+    prev = ad.action
+    ad.action = idle
+    bpy.context.scene.frame_set(10)
+    bpy.context.view_layer.update()
+    idle_base = _snapshot_pose(ronaldo_arm)
+    angry = _pose_with_deltas(idle_base, RONALDO_ANGRY_DELTA, 1.0)
+    ad.action = prev
+    for t, was_muted in muted:
+        t.mute = was_muted
+
     keys = [
-        (F_RONALDO_NOTICE, base),
-        (F_RONALDO_TANTRUM - 8, _pose_with_deltas(base, RONALDO_ANGRY_DELTA, 0.4)),
-        (F_RONALDO_TANTRUM + 4, _pose_with_deltas(base, RONALDO_ANGRY_DELTA, 1.0)),
-        (F_LEAO_REPLY, _pose_with_deltas(base, RONALDO_ANGRY_DELTA, 1.0)),
-        (HANDSHAKE_FRAMES, _pose_with_deltas(base, RONALDO_ANGRY_DELTA, 1.0)),
+        (F_RONALDO_NOTICE, idle_base),
+        (F_RONALDO_TANTRUM - 10, _pose_with_deltas(idle_base, RONALDO_ANGRY_DELTA, 0.35)),
+        (F_RONALDO_TANTRUM + 2, angry),
+        (F_LEAO_REPLY, angry),
+        (HANDSHAKE_FRAMES, angry),
     ]
     _add_bone_pose_replace_strip(
         ronaldo_arm,
