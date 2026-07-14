@@ -706,6 +706,8 @@ def main() -> None:
         or "--render-portugal-header-clash-video" in sys.argv
         or "--animate-portugal-fernandes-slide" in sys.argv
         or "--render-portugal-fernandes-slide-video" in sys.argv
+        or "--animate-shaolin-middle-shot" in sys.argv
+        or "--render-shaolin-middle-shot-video" in sys.argv
     )
     vignette_mode = kubo_mode or endo_mode or portugal_mode
     build_field_only(include_teams=not vignette_mode)

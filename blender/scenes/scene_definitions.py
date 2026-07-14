@@ -235,3 +235,9 @@ SCENE_07_SCRIPT = (
 SCENE_08_SCRIPT = (
     "フェルナンデスがドリブル中、少林選手が頭スライディングでボールを奪う。"
 )
+
+# シーン09 — 台本は scripts/scene_shaolin_middle_shot.md
+# 実行: build_part_field.py -- --animate-shaolin-middle-shot --render-shaolin-middle-shot-video
+SCENE_09_SCRIPT = (
+    "少林選手がミドルシュート。GKが止めようとするが高速でゴールイン。"
+)
