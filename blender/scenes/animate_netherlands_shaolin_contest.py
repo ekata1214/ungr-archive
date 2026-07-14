@@ -31,11 +31,11 @@ CONTEST_FRAMES = 216  # 約9秒
 # 左ゴール（-X）へ前進。二人とも同じ向き
 MOVE_YAW = math.pi * 1.5
 
-# 横の最小離隔（体を重ねない）
-SIDE_GAP = 2.1
+# 横の最小離隔（体を重ねない・カメラでも重ならない）
+SIDE_GAP = 2.8
 # 少し前後ずらしつつ並走
-NED_LAG = -0.15
-SHAOLIN_LAG = 0.25
+NED_LAG = -0.2
+SHAOLIN_LAG = 0.35
 
 # オランダ：濃いオレンジ一色 / 少林：明るいオレンジ一色
 NETHERLANDS_ORANGE = (0.62, 0.16, 0.0, 1.0)
@@ -212,9 +212,9 @@ def setup_camera() -> bpy.types.Object:
         md = _move_dir(f)
         right = _right_of(md)
         ball = _ball_path(f)
-        # 斜め後方から二人＋ボールを捉える
-        pos = ball - md * 6.5 + right * 4.2 + Vector((0.0, 0.0, 2.8))
-        tgt = mid + md * 1.2 + Vector((0.0, 0.0, 1.15))
+        # 横寄り後方から二人を並べて見せる（重なりにくい）
+        pos = ball - md * 5.5 + right * 6.8 + Vector((0.0, 0.0, 2.6))
+        tgt = mid + md * 1.5 + Vector((0.0, 0.0, 1.1))
         _kf_cam(cam, f, pos, tgt)
 
     if cam.animation_data and cam.animation_data.action:
