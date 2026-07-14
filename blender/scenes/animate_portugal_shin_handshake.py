@@ -51,23 +51,50 @@ LEAO_YAW = math.pi / 2    # +X 向き（シンへ）
 RONALDO_YAW = math.pi
 
 # 奥：シン＋レオン / 手前：ロナウド
-# ルート間隔 ~5（スケール2.5で胴体が重ならない距離）。握手は腕を伸ばして届かせる。
-LEAO_POS = Vector((0.7, 5.0, 0.0))
+# ルート間隔 ~2.85（重ならないが握手できる距離）
+LEAO_POS = Vector((1.775, 5.0, 0.0))
 SHIN_START = Vector((18.0, 5.0, 0.0))
-SHIN_END = Vector((5.7, 5.0, 0.0))
+SHIN_END = Vector((4.625, 5.0, 0.0))
 RONALDO_POS = Vector((1.0, -5.5, 0.0))
 
-# idle 上に掛ける腕のオイラー差分。シン右手・レオン左手。
-# 距離を開けた分、腕を大きく前へ出す。
+
+def _finger_handshake_deltas(side: str) -> Dict[str, Tuple[float, float, float]]:
+    """idle の握り拳寄りの指を、握手の開いた手に近づける。"""
+    s = side
+    # idle は指が丸まり気味 → ローカルX負で開く
+    open_1, open_2, open_3 = (-0.55, -0.7, -0.4)
+    d: Dict[str, Tuple[float, float, float]] = {}
+    for finger in ("index", "middle", "ring"):
+        d[f"{finger}_01.{s}"] = (open_1, 0.0, 0.0)
+        d[f"{finger}_02.{s}"] = (open_2, 0.0, 0.0)
+        d[f"{finger}_03.{s}"] = (open_3, 0.0, 0.0)
+    if s == "r":
+        d["thumb_01.r"] = (0.1, 0.55, 0.35)
+        d["thumb_02.r"] = (0.15, 0.1, 0.0)
+        d["thumb_03.r"] = (0.1, 0.0, 0.0)
+    else:
+        d["thumb_01.l"] = (0.1, -0.55, -0.35)
+        d["thumb_02.l"] = (0.15, -0.1, 0.0)
+        d["thumb_03.l"] = (0.1, 0.0, 0.0)
+    return d
+
+
+# idle 上に掛ける腕＋手のオイラー差分。シン右手・レオン左手。
 SHIN_OFFER_DELTA = {
-    "upperarm.r": (1.6, -0.2, 0.3),
-    "lowerarm.r": (-1.25, 0.25, 0.1),
-    "spine_02": (0.12, 0.0, 0.08),
+    "upperarm.r": (1.0, 0.55, 1.3),
+    "lowerarm.r": (-1.05, 0.2, 0.1),
+    "hand.r": (0.15, 0.25, -1.05),  # 掌が相手側、親指だいたい上
+    "spine_02": (0.1, 0.0, 0.05),
+    "neck_01": (0.05, 0.0, -0.06),
+    **_finger_handshake_deltas("r"),
 }
 LEAO_REPLY_DELTA = {
-    "upperarm.l": (1.6, 0.2, -0.3),
-    "lowerarm.l": (-1.25, -0.25, -0.1),
-    "spine_02": (0.12, 0.0, -0.08),
+    "upperarm.l": (1.0, -0.55, -1.3),
+    "lowerarm.l": (-1.05, -0.2, -0.1),
+    "hand.l": (0.15, -0.25, 1.05),
+    "spine_02": (0.1, 0.0, -0.05),
+    "neck_01": (0.05, 0.0, 0.06),
+    **_finger_handshake_deltas("l"),
 }
 
 PoseDict = Dict[str, Quaternion]
@@ -246,6 +273,18 @@ SHIN_HANDSHAKE_BONES = [
     "upperarm.r",
     "lowerarm.r",
     "hand.r",
+    "thumb_01.r",
+    "thumb_02.r",
+    "thumb_03.r",
+    "index_01.r",
+    "index_02.r",
+    "index_03.r",
+    "middle_01.r",
+    "middle_02.r",
+    "middle_03.r",
+    "ring_01.r",
+    "ring_02.r",
+    "ring_03.r",
     "spine_02",
     "neck_01",
     "head",
@@ -255,6 +294,18 @@ LEAO_HANDSHAKE_BONES = [
     "upperarm.l",
     "lowerarm.l",
     "hand.l",
+    "thumb_01.l",
+    "thumb_02.l",
+    "thumb_03.l",
+    "index_01.l",
+    "index_02.l",
+    "index_03.l",
+    "middle_01.l",
+    "middle_02.l",
+    "middle_03.l",
+    "ring_01.l",
+    "ring_02.l",
+    "ring_03.l",
     "spine_02",
     "neck_01",
     "head",
