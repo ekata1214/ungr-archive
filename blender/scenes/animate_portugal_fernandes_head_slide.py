@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 """ポルトガル戦 — フェルナンデスのドリブルに少林が頭スライディングで奪球
 
-別カット。フェルナンデス単独ドリブル → 少林が頭から滑り込みボールを奪う。
+別カット。フェルナンデス単独ドリブル → 少林が画面右からうつ伏せヘッドスライドでボールをぶっ飛ばす。
 """
 
 from __future__ import annotations
@@ -31,38 +31,40 @@ F_SLIDE_CONTACT = 160
 F_SLIDE_END = 200
 F_SETTLE = 250
 
-# フェルナンデスは +X へドリブル、少林は +Y 側から -Y 向きに頭スライディング
+# フェルナンデスは +X へドリブル。少林は画面右（+X）から -X 向きにうつ伏せヘッドスライド
 FERN_YAW = math.pi / 2
-SHAOLIN_YAW = math.pi  # -Y 向き（ボールへ横から）
+SHAOLIN_YAW = -math.pi / 2  # -X 向き（右から左へ滑る）
 FERN_START = Vector((-8.0, 0.0, 0.0))
-SHAOLIN_START = Vector((0.0, 7.5, 0.0))
+SHAOLIN_START = Vector((6.0, 0.8, 0.0))
 
 PORTUGAL_RED = (0.88, 0.12, 0.12, 1.0)
 PORTUGAL_GREEN = (0.12, 0.55, 0.28, 1.0)
 SHAOLIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 
-# ルート前傾＋腕開き（脚ループは idle hold）
+# 野球のヘッドスライディング：腕を前方へ、脚は伸ばしぎみ
 SLIDE_WINDUP = {
-    "spine_01": (0.2, 0.0, 0.0),
-    "spine_02": (0.25, 0.0, 0.05),
-    "neck_01": (0.3, 0.0, 0.05),
-    "head": (0.25, 0.0, 0.0),
-    "upperarm.r": (0.9, 1.0, -0.2),
-    "upperarm.l": (0.9, -1.0, 0.2),
-    "thigh.r": (0.25, 0.15, 0.0),
-    "thigh.l": (0.1, -0.1, 0.0),
+    "spine_01": (0.12, 0.0, 0.0),
+    "spine_02": (0.15, 0.0, 0.0),
+    "neck_01": (0.2, 0.0, 0.0),
+    "head": (0.15, 0.0, 0.0),
+    "upperarm.r": (1.35, 0.35, 0.15),
+    "upperarm.l": (1.35, -0.35, -0.15),
+    "lowerarm.r": (-0.25, 0.0, 0.0),
+    "lowerarm.l": (-0.25, 0.0, 0.0),
+    "thigh.r": (0.2, 0.12, 0.0),
+    "thigh.l": (0.15, -0.1, 0.0),
 }
 SLIDE_CONTACT = {
-    "spine_01": (0.25, 0.0, 0.0),
-    "spine_02": (0.3, 0.0, 0.08),
-    "neck_01": (0.4, 0.0, 0.05),
-    "head": (0.3, 0.0, 0.0),
-    "upperarm.r": (1.1, 1.15, -0.25),
-    "lowerarm.r": (-0.35, 0.0, 0.0),
-    "upperarm.l": (1.1, -1.15, 0.25),
-    "lowerarm.l": (-0.35, 0.0, 0.0),
-    "thigh.r": (0.35, 0.2, 0.05),
-    "thigh.l": (0.15, -0.15, -0.05),
+    "spine_01": (0.15, 0.0, 0.0),
+    "spine_02": (0.18, 0.0, 0.0),
+    "neck_01": (0.28, 0.0, 0.0),
+    "head": (0.22, 0.0, 0.0),
+    "upperarm.r": (1.55, 0.4, 0.2),
+    "upperarm.l": (1.55, -0.4, -0.2),
+    "lowerarm.r": (-0.2, 0.0, 0.0),
+    "lowerarm.l": (-0.2, 0.0, 0.0),
+    "thigh.r": (0.25, 0.15, 0.05),
+    "thigh.l": (0.2, -0.12, -0.05),
 }
 SLIDE_BONES = [
     "upperarm.r",
@@ -215,100 +217,98 @@ def _right_of(d: Vector) -> Vector:
 
 
 def _fernandes_path(frame: int) -> Vector:
-    """+X へ細かいドリブル。奪われ後は少しつんのめる。"""
-    if frame <= F_SLIDE_CONTACT - 8:
-        t = (frame - 1) / max(1, F_SLIDE_CONTACT - 8 - 1)
-        x = FERN_START.x + t * 13.6
+    """+X へ細かいドリブル。頭スライド後はよろけてつんのめる。"""
+    if frame <= F_SLIDE_CONTACT - 6:
+        t = (frame - 1) / max(1, F_SLIDE_CONTACT - 6 - 1)
+        x = FERN_START.x + t * 13.8
         y = 0.55 * math.sin(t * 7.0 * math.pi) + 0.28 * math.sin(t * 13.0 * math.pi + 0.4)
         return Vector((x, y, 0.0))
     if frame <= F_SLIDE_CONTACT:
-        # 接触直前：スライド線（＋Y）から少し避ける
-        t = (frame - (F_SLIDE_CONTACT - 8)) / 8.0
-        base = _fernandes_path(F_SLIDE_CONTACT - 8)
+        t = (frame - (F_SLIDE_CONTACT - 6)) / 6.0
+        base = _fernandes_path(F_SLIDE_CONTACT - 6)
+        # スライドは手前（-Y）を通るので、少し奥へ避ける
         return Vector(
             (
-                base.x + 0.9 * _ease_in_out(t),
-                base.y - 2.8 * _ease_in_out(t),
+                base.x + 0.25 * _ease_in_out(t),
+                base.y + 0.95 * _ease_in_out(t),
                 0.0,
             )
         )
-    # 接触後：ブレーキ＆よろけ（さらに -Y へ）
     base = _fernandes_path(F_SLIDE_CONTACT)
     t = (frame - F_SLIDE_CONTACT) / max(1, SLIDE_FRAMES - F_SLIDE_CONTACT)
-    stumble = 0.25 * math.sin(min(1.0, t * 2.2) * math.pi)
+    stumble = 0.3 * math.sin(min(1.0, t * 2.4) * math.pi)
     return Vector(
         (
-            base.x + 1.0 * _ease_in_out(t),
-            base.y - 0.7 * _ease_in_out(min(1.0, t * 1.5)) + stumble,
+            base.x + 0.7 * _ease_in_out(t),
+            base.y + 0.55 * _ease_in_out(min(1.0, t * 1.4)) + stumble,
             0.0,
         )
     )
 
 
 def _shaolin_contact() -> Vector:
-    """接触時ルート。ボール前方を頭で通し、胴体はフェルンを避ける。"""
+    """接触時ルート。足元がボールの少し +X（右側）、胴はカメラ手前（-Y）を通す。"""
     fern_at_contact = _fernandes_path(F_SLIDE_CONTACT)
-    return fern_at_contact + Vector((1.3, 6.15, 0.55))
+    return fern_at_contact + Vector((4.1, -1.15, 0.4))
 
 
 def _shaolin_pitch(frame: int) -> float:
-    """スライディング中にルートを前傾させて水平に近い姿勢にする。"""
-    dive = -1.48  # ~-85°
-    if frame < F_SLIDE_CONTACT - 26:
+    """うつ伏せ（腹ばい）になるようルートをほぼ水平まで倒す。"""
+    # yaw=-π/2（-X向き）では Rx 正で頭が -X（ボール側）へ倒れる
+    dive = 1.55  # ~+89° 腹ばい
+    if frame < F_SLIDE_CONTACT - 18:
         return 0.0
-    if frame <= F_SLIDE_CONTACT:
-        t = (frame - (F_SLIDE_CONTACT - 26)) / 26.0
+    if frame <= F_SLIDE_CONTACT - 4:
+        t = (frame - (F_SLIDE_CONTACT - 18)) / 14.0
         return dive * _ease_in_out(t)
-    if frame <= F_SLIDE_END:
+    if frame <= F_SLIDE_END + 10:
         return dive
-    t = (frame - F_SLIDE_END) / max(1, F_SETTLE - F_SLIDE_END)
-    return min(0.0, dive * 0.45 * (1.0 - _ease_in_out(min(1.0, t))))
+    t = (frame - (F_SLIDE_END + 10)) / max(1, F_SETTLE - (F_SLIDE_END + 10))
+    return max(0.0, dive * 0.35 * (1.0 - _ease_in_out(min(1.0, t))))
 
 
 def _shaolin_path(frame: int) -> Vector:
-    """+Y 側から -Y 向きに滑り、ボールへ頭から突っ込む。"""
+    """画面右（+X）から左（-X）へ、うつ伏せでヘッドスライディング。"""
     contact = _shaolin_contact()
 
     if frame < F_SLIDE_START:
         t = (frame - 1) / max(1, F_SLIDE_START - 1)
-        wait = Vector((contact.x - 1.5, 11.0, 0.0))
-        pre = Vector((contact.x, contact.y + 5.0, 0.0))
+        wait = Vector((contact.x + 10.0, contact.y - 0.4, 0.0))
+        pre = Vector((contact.x + 7.5, contact.y - 0.2, 0.0))
         return wait.lerp(pre, _ease_in_out(t))
 
     if frame <= F_SLIDE_CONTACT:
         t = (frame - F_SLIDE_START) / max(1, F_SLIDE_CONTACT - F_SLIDE_START)
-        # 後半に加速接近：途中でフェルン空間をゆっくり横切らない
-        t_ease = _ease_in_out(t) ** 1.55
-        start = Vector((contact.x + 1.2, contact.y + 5.5, 0.0))
+        t_ease = _ease_in_out(t) ** 1.3
+        start = Vector((contact.x + 7.5, contact.y - 0.2, 0.0))
         p = start.lerp(contact, t_ease)
         p.z = contact.z * t_ease
         return p
 
     if frame <= F_SLIDE_END:
         t = (frame - F_SLIDE_CONTACT) / max(1, F_SLIDE_END - F_SLIDE_CONTACT)
-        # 奪球後は -Y に潜らず、進行前方へ流す
-        end = contact + Vector((4.5, 0.6, 0.15))
+        # ボールを弾いた勢いでさらに左へ滑りつつ手前へ抜ける
+        end = contact + Vector((-4.8, -0.8, 0.12))
         p = contact.lerp(end, _ease_in_out(t))
-        p.z = contact.z * (1.0 - 0.55 * t)
+        p.z = contact.z * (1.0 - 0.3 * t)
         return p
 
-    end = contact + Vector((4.5, 0.6, 0.15))
+    end = contact + Vector((-4.8, -0.8, 0.12))
     t = (frame - F_SLIDE_END) / max(1, SLIDE_FRAMES - F_SLIDE_END)
-    p = end + Vector((2.0 * _ease_in_out(t), 0.2 * t, 0.0))
-    p.z = max(0.0, end.z * (1.0 - _ease_in_out(min(1.0, t * 1.4))))
+    p = end + Vector((-1.8 * _ease_in_out(t), -0.35 * t, 0.0))
+    p.z = max(0.0, end.z * (1.0 - _ease_in_out(min(1.0, t * 1.2))))
     return p
 
 
 def _ball_path(frame: int, fern: Vector, shaolin: Vector) -> Vector:
     move = Vector((1.0, 0.0, 0.0))
     right = _right_of(move)
-    # 接触までに少林側へ寄せ、その後押し出す
-    steal_start = F_SLIDE_CONTACT - 18
-    start = fern + move * 0.55
-    start.z = BALL_GROUND_Z
-    meet = fern + Vector((1.2, 2.7, max(0.55, shaolin.z + 0.08)))
-    end = shaolin + Vector((3.2, -0.4, 0.0))
-    end.z = BALL_GROUND_Z
+    steal_start = F_SLIDE_CONTACT - 8
+    # 接触点：少林の頭側（ルートより -X）
+    meet = Vector((shaolin.x - 3.25, shaolin.y + 0.15, max(BALL_GROUND_Z, shaolin.z + 0.02)))
+    # 吹っ飛ばし：画面左へ大きく＋高弾道
+    blast = meet + Vector((-9.5, -1.6, 0.0))
+    blast.z = BALL_GROUND_Z
 
     if frame < steal_start:
         phase = frame * 0.55
@@ -320,17 +320,19 @@ def _ball_path(frame: int, fern: Vector, shaolin: Vector) -> Vector:
 
     if frame <= F_SLIDE_CONTACT:
         u = (frame - steal_start) / max(1, F_SLIDE_CONTACT - steal_start)
+        start = fern + move * 0.5
+        start.z = BALL_GROUND_Z
         return start.lerp(meet, _ease_in_out(u))
 
     t = (frame - F_SLIDE_CONTACT) / max(1, SLIDE_FRAMES - F_SLIDE_CONTACT)
     t = min(1.0, t)
-    p = meet.lerp(end, _ease_in_out(t))
-    p.z = BALL_GROUND_Z + 0.95 * math.sin(min(1.0, t * 1.15) * math.pi)
+    # 速い吹っ飛ばし（序盤で飛び出す）
+    u = _ease_in_out(min(1.0, t * 1.35))
+    p = meet.lerp(blast, u)
+    p.z = BALL_GROUND_Z + 3.1 * math.sin(min(1.0, t * 1.35) * math.pi)
     if t > 0.55:
-        p.z = max(
-            BALL_GROUND_Z,
-            p.z * (1.0 - (t - 0.55) / 0.45) + BALL_GROUND_Z * ((t - 0.55) / 0.45),
-        )
+        land = (t - 0.55) / 0.45
+        p.z = max(BALL_GROUND_Z, p.z * (1.0 - land) + BALL_GROUND_Z * land)
     return p
 
 
@@ -482,7 +484,7 @@ def _solo_dribble_hide_shaolin(shin_arm: bpy.types.Object) -> None:
     from import_mannequiny import _mesh_child  # noqa: E402
 
     objs = [shin_arm, _mesh_child(shin_arm), bpy.data.objects.get("Shaolin_01_Root")]
-    reveal = F_SLIDE_CONTACT - 10
+    reveal = F_SLIDE_CONTACT - 28
     for obj in objs:
         if not obj:
             continue
@@ -544,15 +546,15 @@ def setup_camera() -> bpy.types.Object:
         shin = _shaolin_path(f)
         if f < F_SLIDE_START:
             mid = fern
-            pos = Vector((fern.x - 1.5, fern.y - 8.5, 3.4))
-            tgt = Vector((fern.x + 1.2, fern.y, 1.6))
+            pos = Vector((fern.x - 0.5, fern.y - 9.0, 3.5))
+            tgt = Vector((fern.x + 1.5, fern.y, 1.5))
             cam.data.lens = 28
         else:
             mid = (fern + shin) * 0.5
-            # 横からのシルエットで頭スライドが読める
-            pos = Vector((mid.x - 5.5, mid.y - 8.2, 3.5))
-            tgt = Vector((mid.x + 0.4, mid.y + 0.5, 1.05))
-            cam.data.lens = 28
+            # -Y から見て +X=画面右。右側から滑り込むヘッドスライドを正面気味に
+            pos = Vector((mid.x + 0.8, mid.y - 10.5, 3.7))
+            tgt = Vector((mid.x - 0.6, mid.y + 0.2, 1.0))
+            cam.data.lens = 30
         cam.data.keyframe_insert(data_path="lens", frame=f)
         _kf_cam(cam, f, pos, tgt)
 
