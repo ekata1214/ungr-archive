@@ -56,15 +56,15 @@ SHIN_START = Vector((18.0, 5.0, 0.0))
 SHIN_END = Vector((3.95, 5.0, 0.0))
 RONALDO_POS = Vector((1.0, -5.5, 0.0))
 
-# idle 上に掛ける腕のオイラー差分。シン右手・レオン左手（同じ側で合う）。
-# upperarm の +X が相手方向へ伸びる（X対面・この向きの組み合わせ）。
+# idle 上に掛ける腕のオイラー差分。シン右手・レオン左手。
+# 手がカメラ側（-Y）へ出て、肩越し構図でも握手に見える組み合わせ。
 SHIN_OFFER_DELTA = {
-    "upperarm.r": (0.85, -0.1, 0.25),
-    "lowerarm.r": (-0.95, 0.1, 0.0),
+    "upperarm.r": (0.4, -0.4, 0.8),
+    "lowerarm.r": (-0.9, 0.1, 0.0),
 }
 LEAO_REPLY_DELTA = {
-    "upperarm.l": (0.85, 0.1, -0.25),
-    "lowerarm.l": (-0.95, -0.1, 0.0),
+    "upperarm.l": (0.4, 0.4, -0.8),
+    "lowerarm.l": (-0.9, -0.1, 0.0),
 }
 
 PoseDict = Dict[str, Quaternion]
