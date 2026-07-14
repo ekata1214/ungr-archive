@@ -32,55 +32,64 @@ F_SEPARATE = 198
 F_LAND = 250
 F_SETTLE = 280
 
-JUMP_HEIGHT = 2.15
+JUMP_HEIGHT = 2.55
 # 互いに対面（ロナウド:+X / 少林:-X）
 RONALDO_YAW = math.pi / 2
 SHAOLIN_YAW = math.pi * 1.5
-RONALDO_START = Vector((-3.4, 0.0, 0.0))
-SHAOLIN_START = Vector((3.4, 0.0, 0.0))
-# 衝突時の頭間距離（ボーン中心）。スケール×2.5で頭が当たる間隔
-HEAD_CLASH_GAP = 0.52
+# 体が重ならないようスタート／合流を広く。頭は前傾で寄せる
+# サイドカメラなので Y=0 のまま。ルート間隔〜2.7 + 前傾で頭が中央接触
+RONALDO_START = Vector((-4.4, 0.0, 0.0))
+SHAOLIN_START = Vector((4.4, 0.0, 0.0))
+RONALDO_CLASH_X = -1.85
+SHAOLIN_CLASH_X = 1.85
+RONALDO_Y = 0.0
+SHAOLIN_Y = 0.0
+MIN_ROOT_SEPARATION = 3.5
+# 頭ボーン中心の接触間隔（メッシュ半径ぶん空ける＝見た目で軽く当たる）
+HEAD_CLASH_GAP = 0.88
+# ボールは頭より上
+BALL_ABOVE_HEAD = 1.7
 
 PORTUGAL_RED = (0.88, 0.12, 0.12, 1.0)
 PORTUGAL_GREEN = (0.12, 0.55, 0.28, 1.0)
 SHAOLIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 
-# ヘディング（互いに向き合うので左右対称）
+# ヘディング：正の spine/neck で相手方向へ前傾（負は後傾で体が寄ってしまう）
 HEADER_WINDUP_R = {
-    "spine_02": (0.35, 0.0, 0.0),
-    "neck_01": (-0.2, 0.0, 0.0),
-    "head": (-0.1, 0.0, 0.0),
-    "upperarm.r": (0.2, -1.0, 0.45),
-    "lowerarm.r": (-0.7, 0.1, 0.0),
-    "upperarm.l": (0.2, 0.85, -0.35),
-    "lowerarm.l": (-0.6, -0.1, 0.0),
+    "spine_02": (0.65, 0.0, 0.0),
+    "neck_01": (0.4, 0.0, 0.0),
+    "head": (0.22, 0.0, 0.0),
+    "upperarm.r": (0.55, -1.4, 0.8),
+    "lowerarm.r": (-0.85, 0.1, 0.0),
+    "upperarm.l": (0.55, 1.25, -0.65),
+    "lowerarm.l": (-0.75, -0.1, 0.0),
 }
 HEADER_CLASH_R = {
-    "spine_02": (-0.55, 0.0, 0.0),
-    "neck_01": (-0.7, 0.0, 0.0),
-    "head": (-0.45, 0.0, 0.0),
-    "upperarm.r": (-0.15, -1.15, 0.5),
-    "lowerarm.r": (-0.9, 0.15, 0.0),
-    "upperarm.l": (-0.1, 1.0, -0.4),
-    "lowerarm.l": (-0.8, -0.1, 0.0),
+    "spine_02": (1.25, 0.0, 0.0),
+    "neck_01": (1.0, 0.0, 0.0),
+    "head": (0.65, 0.0, 0.0),
+    "upperarm.r": (0.65, -1.55, 0.95),
+    "lowerarm.r": (-0.95, 0.15, 0.0),
+    "upperarm.l": (0.65, 1.45, -0.75),
+    "lowerarm.l": (-0.9, -0.1, 0.0),
 }
 HEADER_WINDUP_L = {
-    "spine_02": (0.35, 0.0, 0.0),
-    "neck_01": (-0.2, 0.0, 0.0),
-    "head": (-0.1, 0.0, 0.0),
-    "upperarm.l": (0.2, 1.0, -0.45),
-    "lowerarm.l": (-0.7, -0.1, 0.0),
-    "upperarm.r": (0.2, -0.85, 0.35),
-    "lowerarm.r": (-0.6, 0.1, 0.0),
+    "spine_02": (0.65, 0.0, 0.0),
+    "neck_01": (0.4, 0.0, 0.0),
+    "head": (0.22, 0.0, 0.0),
+    "upperarm.l": (0.55, 1.4, -0.8),
+    "lowerarm.l": (-0.85, -0.1, 0.0),
+    "upperarm.r": (0.55, -1.25, 0.65),
+    "lowerarm.r": (-0.75, 0.1, 0.0),
 }
 HEADER_CLASH_L = {
-    "spine_02": (-0.55, 0.0, 0.0),
-    "neck_01": (-0.7, 0.0, 0.0),
-    "head": (-0.45, 0.0, 0.0),
-    "upperarm.l": (-0.15, 1.15, -0.5),
-    "lowerarm.l": (-0.9, -0.15, 0.0),
-    "upperarm.r": (-0.1, -1.0, 0.4),
-    "lowerarm.r": (-0.8, 0.1, 0.0),
+    "spine_02": (1.25, 0.0, 0.0),
+    "neck_01": (1.0, 0.0, 0.0),
+    "head": (0.65, 0.0, 0.0),
+    "upperarm.l": (0.65, 1.55, -0.95),
+    "lowerarm.l": (-0.95, -0.15, 0.0),
+    "upperarm.r": (0.65, -1.45, 0.75),
+    "lowerarm.r": (-0.9, 0.1, 0.0),
 }
 
 HEADER_BONES = [
@@ -214,36 +223,34 @@ def _jump_z(frame: int) -> float:
     return 0.0
 
 
-def _approach_x(frame: int, start_x: float, toward_center: float) -> float:
-    """start → 衝突点近く → 跳ね返り。toward_center は符号付き移動量。"""
-    clash_x = start_x + toward_center
+def _approach_x(frame: int, start_x: float, clash_x: float) -> float:
+    """start → 衝突ルート位置 → 跳ね返り（胴体クリアランスを保つ）。"""
+    travel = clash_x - start_x
     if frame <= F_TAKEOFF:
         t = (frame - 1) / max(1, F_TAKEOFF - 1)
-        return start_x + toward_center * 0.12 * _ease_in_out(t)
+        return start_x + travel * 0.1 * _ease_in_out(t)
     if frame <= F_CLASH:
         t = (frame - F_TAKEOFF) / max(1, F_CLASH - F_TAKEOFF)
-        return start_x + toward_center * (0.12 + 0.88 * _ease_in_out(t))
+        return start_x + travel * (0.1 + 0.9 * _ease_in_out(t))
     if frame <= F_SEPARATE:
         t = (frame - F_CLASH) / max(1, F_SEPARATE - F_CLASH)
-        # 頭突きで少し跳ね返る
-        return clash_x - toward_center * 0.22 * _ease_in_out(t)
+        # 頭突きで外側へ跳ね返る
+        return clash_x - travel * 0.18 * _ease_in_out(t)
     if frame <= F_LAND:
         t = (frame - F_SEPARATE) / max(1, F_LAND - F_SEPARATE)
-        mid = clash_x - toward_center * 0.22
-        return mid - toward_center * 0.1 * _ease_in_out(t)
-    return clash_x - toward_center * 0.32
+        mid = clash_x - travel * 0.18
+        return mid - travel * 0.08 * _ease_in_out(t)
+    return clash_x - travel * 0.26
 
 
 def _ronaldo_path(frame: int) -> Vector:
-    # 中心方向へ +X
-    x = _approach_x(frame, RONALDO_START.x, toward_center=2.55)
-    return Vector((x, 0.0, _jump_z(frame)))
+    x = _approach_x(frame, RONALDO_START.x, RONALDO_CLASH_X)
+    return Vector((x, RONALDO_Y, _jump_z(frame)))
 
 
 def _shaolin_path(frame: int) -> Vector:
-    # 中心方向へ -X
-    x = _approach_x(frame, SHAOLIN_START.x, toward_center=-2.55)
-    return Vector((x, 0.0, _jump_z(frame)))
+    x = _approach_x(frame, SHAOLIN_START.x, SHAOLIN_CLASH_X)
+    return Vector((x, SHAOLIN_Y, _jump_z(frame)))
 
 
 def _head_world(arm: bpy.types.Object) -> Vector:
@@ -392,12 +399,9 @@ def _animate_root_sparse(
 
 
 def _apply_nla_jump(arm: bpy.types.Object) -> None:
-    _add_nla_hold_pose(arm, "idle", 1, F_TAKEOFF - 1)
-    try:
-        _add_nla_once_stretched(arm, "air_jump", F_TAKEOFF, F_LAND)
-    except KeyError:
-        _add_nla_hold_pose(arm, "idle", F_TAKEOFF, F_LAND)
-    _add_nla_hold_pose(arm, "idle", F_LAND + 1, CLASH_FRAMES)
+    # 空中で air_jump を入れると脚が中央に繰り出して相手に刺さるので、
+    # ジャンプはルート移動のみ。姿勢は idle ホールド＋ヘディング前傾。
+    _add_nla_hold_pose(arm, "idle", 1, CLASH_FRAMES)
 
 
 def _hide_ball() -> None:
@@ -411,21 +415,40 @@ def _hide_ball() -> None:
     ball.hide_viewport = False
 
 
-def _animate_ball_at_clash(ball: bpy.types.Object) -> None:
-    """両者の頭の間にボールがあり、衝突と同時に少し弾ける。"""
+def _animate_ball_above_heads(
+    ball: bpy.types.Object,
+    ron_arm: bpy.types.Object,
+    shin_arm: bpy.types.Object,
+) -> None:
+    """ボールは常に二人の頭より上。衝突点の直上で少し跳ねる。"""
     _clear_anim(ball)
-    mid = Vector((0.0, 0.0, 0.0))
-    start = mid + Vector((0.0, 0.0, 5.9))
-    clash = mid + Vector((0.0, 0.0, 5.75))
-    end = mid + Vector((0.15, -0.4, 7.4))
+    ball.hide_render = False
+    ball.hide_viewport = False
+
+    # 頭高さをサンプリングしてボール軌道を決める
+    head_z_peak = 0.0
+    for f in range(F_TAKEOFF, F_SEPARATE + 1, 4):
+        bpy.context.scene.frame_set(f)
+        bpy.context.view_layer.update()
+        head_z_peak = max(head_z_peak, _head_world(ron_arm).z, _head_world(shin_arm).z)
+
+    bpy.context.scene.frame_set(F_CLASH)
+    bpy.context.view_layer.update()
+    rh = _head_world(ron_arm)
+    sh = _head_world(shin_arm)
+    mid_x = 0.5 * (rh.x + sh.x)
+    mid_y = 0.5 * (rh.y + sh.y)
+    clash_ball = Vector((mid_x, mid_y, max(rh.z, sh.z) + BALL_ABOVE_HEAD))
+    start = Vector((mid_x, mid_y + 0.1, clash_ball.z + 1.2))
+    end = Vector((mid_x + 0.2, mid_y - 0.4, clash_ball.z + 1.5))
 
     for f, loc in (
-        (1, start + Vector((0.0, 0.0, 0.8))),
+        (1, start + Vector((0.0, 0.0, 0.6))),
         (F_TAKEOFF, start),
-        (F_CLASH, clash),
-        (F_SEPARATE, clash + Vector((0.2, -0.2, 0.9))),
+        (F_CLASH, clash_ball),
+        (F_SEPARATE, clash_ball + Vector((0.1, -0.25, 0.7))),
         (F_LAND, end),
-        (CLASH_FRAMES, end + Vector((0.3, -0.3, 0.4))),
+        (CLASH_FRAMES, end + Vector((0.25, -0.2, 0.3))),
     ):
         _kf_loc(ball, f, loc)
     if ball.animation_data and ball.animation_data.action:
@@ -442,25 +465,29 @@ def _nudge_roots_for_head_clash(
     ron_root: bpy.types.Object,
     shin_root: bpy.types.Object,
 ) -> None:
-    """衝突フレームで頭間距離を合わせてルートを微調整。"""
+    """衝突フレームで頭間距離を合わせてルートを微調整（X）。Y ずらしで胴体は交わらない。"""
     scene = bpy.context.scene
     scene.frame_set(F_CLASH)
     bpy.context.view_layer.update()
     rh = _head_world(ron_arm)
     sh = _head_world(shin_arm)
-    # 現状の頭間
-    delta = sh.x - rh.x
+    # XY 平面での頭間
+    delta_xy = Vector((sh.x - rh.x, sh.y - rh.y, 0.0))
+    dist = delta_xy.length
     desired = HEAD_CLASH_GAP
-    if abs(delta) < 1e-4:
+    if dist < 1e-4:
         return
-    # 両ルートを等しく寄せる／離す
-    corr = 0.5 * (desired - delta)
-    # 衝突キーだけ修正：既存アクションの F_CLASH 位置キーを書き換え
-    for root, sign in ((ron_root, -1.0), (shin_root, 1.0)):
-        # 再キー：衝突周辺を微修正したパスで打ち直す
-        pass
+    # X 方向に寄せる／離す（Y はキープ）
+    # 目標: XY距離 ≈ desired。まず X 補正に換算
+    corr = 0.5 * (desired - (sh.x - rh.x))
 
-    # パス関数にオフセットを焼き込む代わりに、衝突時の X を直接差し替え
+    scene.frame_set(F_CLASH)
+    bpy.context.view_layer.update()
+    root_gap = shin_root.location.x - ron_root.location.x
+    if corr < 0:
+        max_close = 0.5 * max(0.0, root_gap - MIN_ROOT_SEPARATION)
+        corr = max(corr, -max_close)
+
     def _patch_x(root: bpy.types.Object, dx: float) -> None:
         ad = root.animation_data
         if not ad or not ad.action:
@@ -469,18 +496,15 @@ def _nudge_roots_for_head_clash(
             if fc.data_path != "location" or fc.array_index != 0:
                 continue
             for kp in fc.keyframe_points:
-                # テイクオフ以降〜セパレート前を寄せる
                 if F_TAKEOFF <= kp.co.x <= F_SEPARATE:
-                    t = (kp.co.x - F_TAKEOFF) / max(1, F_CLASH - F_TAKEOFF)
-                    t = max(0.0, min(1.0, t))
-                    # 衝突で最大補正、前後はフェード
                     if kp.co.x <= F_CLASH:
-                        w = t
+                        w = (kp.co.x - F_TAKEOFF) / max(1, F_CLASH - F_TAKEOFF)
                     else:
                         w = 1.0 - (kp.co.x - F_CLASH) / max(1, F_SEPARATE - F_CLASH)
-                    kp.co.y += dx * max(0.0, w)
-                    kp.handle_left.y += dx * max(0.0, w)
-                    kp.handle_right.y += dx * max(0.0, w)
+                    w = max(0.0, min(1.0, w))
+                    kp.co.y += dx * w
+                    kp.handle_left.y += dx * w
+                    kp.handle_right.y += dx * w
 
     _patch_x(ron_root, -corr)
     _patch_x(shin_root, corr)
@@ -489,10 +513,43 @@ def _nudge_roots_for_head_clash(
     bpy.context.view_layer.update()
     rh2 = _head_world(ron_arm)
     sh2 = _head_world(shin_arm)
+    d2 = (Vector((sh2.x - rh2.x, sh2.y - rh2.y, 0.0))).length
+    overlap = _torso_overlap_amount(ron_arm, shin_arm)
     print(
-        f"Head clash gap: before={delta:.3f} after={(sh2.x - rh2.x):.3f} "
-        f"(target={desired:.3f}) heads=({rh2.x:.2f},{sh2.x:.2f}) z=({rh2.z:.2f},{sh2.z:.2f})"
+        f"Head clash: xy_before={dist:.3f} xy_after={d2:.3f} "
+        f"heads=({rh2.x:.2f},{rh2.y:.2f})/({sh2.x:.2f},{sh2.y:.2f}) z={rh2.z:.2f} "
+        f"torso_overlap={overlap:.3f}"
     )
+
+
+def _torso_overlap_amount(ron_arm: bpy.types.Object, shin_arm: bpy.types.Object) -> float:
+    """胸付近（腕を除外した胴幹）メッシュの X 重なり。0＝非接触。"""
+    from import_mannequiny import _mesh_child  # noqa: E402
+
+    def _chest_span(arm: bpy.types.Object) -> Tuple[float, float]:
+        mesh = _mesh_child(arm)
+        head = _head_world(arm)
+        root = arm.matrix_world.translation
+        deps = bpy.context.evaluated_depsgraph_get()
+        me = mesh.evaluated_get(deps).to_mesh()
+        mm = mesh.matrix_world
+        xs = []
+        for v in me.vertices:
+            w = mm @ v.co
+            # 頭〜腰の間、かつ体幹付近（左右に張り出した腕を除外）
+            if not (head.z - 2.4 < w.z < head.z - 0.55):
+                continue
+            if abs(w.y - root.y) > 0.55:
+                continue
+            xs.append(w.x)
+        mesh.to_mesh_clear()
+        if not xs:
+            return (root.x - 0.7, root.x + 0.7)
+        return (min(xs), max(xs))
+
+    r0, r1 = _chest_span(ron_arm)
+    s0, s1 = _chest_span(shin_arm)
+    return max(0.0, min(r1, s1) - max(r0, s0))
 
 
 def setup_characters() -> Tuple[
@@ -545,9 +602,9 @@ def setup_camera() -> bpy.types.Object:
         sz = _shaolin_path(f)
         mid = (rz + sz) * 0.5
         peak = max(0.0, mid.z)
-        tgt = Vector((mid.x, mid.y, 3.5 + peak * 0.55))
-        pos = Vector((mid.x, mid.y - 9.5, 3.0 + peak * 0.4))
-        cam.data.lens = 28
+        tgt = Vector((mid.x, mid.y, 4.0 + peak * 0.7))
+        pos = Vector((mid.x + 0.4, mid.y - 10.5, 3.4 + peak * 0.45))
+        cam.data.lens = 26
         cam.data.keyframe_insert(data_path="lens", frame=f)
         _kf_cam(cam, f, pos, tgt)
 
@@ -596,13 +653,13 @@ def animate_portugal_header_clash() -> None:
     _animate_header_pose(shin_arm, "l")
 
     ball = bpy.data.objects.get("Ball")
+    # ポーズ＋頭寄せ後に、頭上のボール軌道を焼く
+    _nudge_roots_for_head_clash(ron_arm, shin_arm, ron_root, shin_root)
     if ball:
-        _animate_ball_at_clash(ball)
+        _animate_ball_above_heads(ball, ron_arm, shin_arm)
     else:
         _hide_ball()
 
-    # ポーズ込みで頭間を調整
-    _nudge_roots_for_head_clash(ron_arm, shin_arm, ron_root, shin_root)
     setup_camera()
     scene.frame_set(1)
     print(f"Portugal header clash: {CLASH_FRAMES}f @ {FPS}fps slow-mo — dual aerial headers")
