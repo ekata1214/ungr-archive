@@ -44,28 +44,27 @@ SHIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 PORTUGAL_RED = (0.88, 0.12, 0.12, 1.0)
 PORTUGAL_GREEN = (0.12, 0.55, 0.28, 1.0)
 
-# カメラは -Y 側から見るので、握手ペアは Y 方向に対面させる
-# （X 対面だと腕の伸びがカメラから T-pose に見える）
-SHIN_YAW = math.pi          # -Y 向き（レオン＆カメラ側へ）
-LEAO_YAW = 0.0              # +Y 向き（シンへ）
+# 左右に対面（カメラから両方見える）。シンは +X から走ってくる。
+SHIN_YAW = math.pi * 1.5  # -X 向き（レオンへ）
+LEAO_YAW = math.pi / 2    # +X 向き（シンへ）
 # 手前ロナウド — 奥の2人の方を向く
 RONALDO_YAW = math.pi
 
 # 奥：シン＋レオン / 手前：ロナウド
-LEAO_POS = Vector((3.0, 4.05, 0.0))
-SHIN_START = Vector((3.0, 18.0, 0.0))
-SHIN_END = Vector((3.0, 5.25, 0.0))
+LEAO_POS = Vector((2.45, 5.0, 0.0))
+SHIN_START = Vector((18.0, 5.0, 0.0))
+SHIN_END = Vector((3.95, 5.0, 0.0))
 RONALDO_POS = Vector((1.0, -5.5, 0.0))
 
-# idle 上に掛ける腕のオイラー差分（親ローカル）。両手とも右手で前へ。
-# upperarm.r の -X が、対面どちらでも相手方向へ腕が伸びる。
+# idle 上に掛ける腕のオイラー差分。シン右手・レオン左手（同じ側で合う）。
+# upperarm の +X が相手方向へ伸びる（X対面・この向きの組み合わせ）。
 SHIN_OFFER_DELTA = {
-    "upperarm.r": (-1.2, 0.0, 0.15),
-    "lowerarm.r": (-0.85, 0.1, 0.15),
+    "upperarm.r": (0.85, -0.1, 0.25),
+    "lowerarm.r": (-0.95, 0.1, 0.0),
 }
 LEAO_REPLY_DELTA = {
-    "upperarm.r": (-1.2, 0.0, 0.15),
-    "lowerarm.r": (-0.85, 0.1, 0.15),
+    "upperarm.l": (0.85, 0.1, -0.25),
+    "lowerarm.l": (-0.95, -0.1, 0.0),
 }
 
 PoseDict = Dict[str, Quaternion]
@@ -180,19 +179,19 @@ def _capture_evaluated_pose(arm: bpy.types.Object, frame: int) -> PoseDict:
     return _snapshot_pose(arm)
 
 
-def _add_full_pose_replace_strip(
+def _add_bone_pose_replace_strip(
     arm: bpy.types.Object,
     name: str,
     strip_start: int,
     strip_end: int,
     keyed_poses: List[Tuple[int, PoseDict]],
+    bone_filter: List[str] | None = None,
 ) -> None:
-    """全身クォータニオンを REPLACE で重ねる。ADD+Euler は Mannequiny で T-pose 化するので使わない。"""
+    """指定ボーンのクォータニオンだけを REPLACE で重ねる（脚の idle は下のトラックが生きる）。"""
     if not arm.animation_data:
         arm.animation_data_create()
     ad = arm.animation_data
 
-    # キー投入中は既存 NLA をミュート（スナップショット済みの値だけを焼く）
     muted = [(t, t.mute) for t in ad.nla_tracks]
     for t, _ in muted:
         t.mute = True
@@ -203,8 +202,11 @@ def _add_full_pose_replace_strip(
     act = bpy.data.actions.new(act_name)
     ad.action = act
 
+    allowed = set(bone_filter) if bone_filter else None
     for frame, pose in keyed_poses:
         for bone_name, quat in pose.items():
+            if allowed is not None and bone_name not in allowed:
+                continue
             bone = arm.pose.bones.get(bone_name)
             if not bone:
                 continue
@@ -236,8 +238,28 @@ def _add_full_pose_replace_strip(
     strip.use_auto_blend = False
 
 
+SHIN_HANDSHAKE_BONES = [
+    "clavicle.r",
+    "upperarm.r",
+    "lowerarm.r",
+    "hand.r",
+    "spine_02",
+    "neck_01",
+    "head",
+]
+LEAO_HANDSHAKE_BONES = [
+    "clavicle.l",
+    "upperarm.l",
+    "lowerarm.l",
+    "hand.l",
+    "spine_02",
+    "neck_01",
+    "head",
+]
+
+
 def _animate_handshake_poses(shin_arm: bpy.types.Object, leao_arm: bpy.types.Object) -> None:
-    """到着後の idle を土台に、腕だけ伸ばした全身 REPLACE を乗せる。"""
+    """到着後の idle を土台に、腕まわりだけ REPLACE で伸ばす。"""
     shin_base = _capture_evaluated_pose(shin_arm, F_ARRIVE_HOLD)
     leao_base = _capture_evaluated_pose(leao_arm, F_OFFER_HOLD)
 
@@ -248,12 +270,13 @@ def _animate_handshake_poses(shin_arm: bpy.types.Object, leao_arm: bpy.types.Obj
         (F_OFFER_HOLD, _pose_with_deltas(shin_base, SHIN_OFFER_DELTA, 1.0)),
         (HANDSHAKE_FRAMES, _pose_with_deltas(shin_base, SHIN_OFFER_DELTA, 1.0)),
     ]
-    _add_full_pose_replace_strip(
+    _add_bone_pose_replace_strip(
         shin_arm,
         "Shin_ExcitedHandshake",
         F_ARRIVE_HOLD,
         HANDSHAKE_FRAMES,
         shin_keys,
+        SHIN_HANDSHAKE_BONES,
     )
 
     leao_keys = [
@@ -262,12 +285,13 @@ def _animate_handshake_poses(shin_arm: bpy.types.Object, leao_arm: bpy.types.Obj
         (F_LEAO_REPLY + 10, _pose_with_deltas(leao_base, LEAO_REPLY_DELTA, 1.0)),
         (HANDSHAKE_FRAMES, _pose_with_deltas(leao_base, LEAO_REPLY_DELTA, 1.0)),
     ]
-    _add_full_pose_replace_strip(
+    _add_bone_pose_replace_strip(
         leao_arm,
         "Leao_HandshakeReply",
         F_LEAO_REPLY - 16,
         HANDSHAKE_FRAMES,
         leao_keys,
+        LEAO_HANDSHAKE_BONES,
     )
 
 
