@@ -704,6 +704,8 @@ def main() -> None:
         or "--render-portugal-header-video" in sys.argv
         or "--animate-portugal-header-clash" in sys.argv
         or "--render-portugal-header-clash-video" in sys.argv
+        or "--animate-portugal-fernandes-slide" in sys.argv
+        or "--render-portugal-fernandes-slide-video" in sys.argv
     )
     vignette_mode = kubo_mode or endo_mode or portugal_mode
     build_field_only(include_teams=not vignette_mode)
@@ -747,6 +749,18 @@ def main() -> None:
         from animate_portugal_header_clash import render_portugal_header_clash_video  # noqa: E402
 
         render_portugal_header_clash_video()
+    if "--animate-portugal-fernandes-slide" in sys.argv:
+        from animate_portugal_fernandes_head_slide import (  # noqa: E402
+            animate_portugal_fernandes_head_slide,
+        )
+
+        animate_portugal_fernandes_head_slide()
+    if "--render-portugal-fernandes-slide-video" in sys.argv:
+        from animate_portugal_fernandes_head_slide import (  # noqa: E402
+            render_portugal_fernandes_head_slide_video,
+        )
+
+        render_portugal_fernandes_head_slide_video()
     if "--animate-match" in sys.argv:
         from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
 

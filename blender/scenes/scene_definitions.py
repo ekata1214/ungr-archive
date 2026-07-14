@@ -229,3 +229,9 @@ SCENE_06_SCRIPT = (
 SCENE_07_SCRIPT = (
     "ロナウドと少林選手が同時にヘディングし、空中で頭がぶつかるスローモーション。"
 )
+
+# シーン08 — 台本は scripts/scene_portugal_fernandes_head_slide.md
+# 実行: build_part_field.py -- --animate-portugal-fernandes-slide --render-portugal-fernandes-slide-video
+SCENE_08_SCRIPT = (
+    "フェルナンデスがドリブル中、少林選手が頭スライディングでボールを奪う。"
+)
