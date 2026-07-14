@@ -4,7 +4,7 @@
 流れ:
   シン: idle → 楽しそうに走っていく → 到着ホップ → 右手を差し出す
   レオン: idle のまま待つ → 左手で握手に応じる
-  ロナウド: 手前で idle のみ（ポーズ変更なし）
+  ロナウド: 手前で気づく → 握手を見てキレて飛び跳ねる
 """
 
 from __future__ import annotations
@@ -39,6 +39,12 @@ F_HAND_OFFER = 288
 F_OFFER_HOLD = 330
 F_LEAO_REPLY = 360
 F_HANDSHAKE_HOLD = 432
+
+# ロナウド — 握手を見てキレて飛び跳ねる
+F_RONALDO_NOTICE = F_ARRIVE_HOLD      # 「ぉぉ？」と気づく
+F_RONALDO_TANTRUM = F_HAND_OFFER - 6  # 握手要求で本格的にキレる
+RONALDO_HOP_PERIOD = 12
+RONALDO_HOP_HEIGHT = 0.95
 
 SHIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 PORTUGAL_RED = (0.88, 0.12, 0.12, 1.0)
@@ -94,6 +100,19 @@ LEAO_REPLY_DELTA = {
     "spine_02": (0.08, 0.0, -0.04),
     "neck_01": (0.04, 0.0, 0.05),
     **_finger_handshake_deltas("l"),
+}
+
+# キレたロナウド — 両手を上げて怒りのジェスチャー
+RONALDO_ANGRY_DELTA = {
+    "upperarm.r": (-0.35, -1.35, 0.45),
+    "lowerarm.r": (-1.15, 0.2, 0.15),
+    "hand.r": (0.2, 0.0, -0.35),
+    "upperarm.l": (-0.35, 1.35, -0.45),
+    "lowerarm.l": (-1.15, -0.2, -0.15),
+    "hand.l": (0.2, 0.0, 0.35),
+    "spine_02": (-0.18, 0.0, 0.0),
+    "neck_01": (0.25, 0.0, 0.0),
+    "head": (0.2, 0.0, 0.08),
 }
 
 PoseDict = Dict[str, Quaternion]
@@ -177,6 +196,25 @@ def _shin_path(frame: int) -> Vector:
         hop = (frame - F_RUN_END) / (F_ARRIVE_HOLD - F_RUN_END)
         # 嬉しそうなジャンプ — 高め＋二連跳ね
         p.z = 0.55 * math.sin(hop * math.pi) + 0.18 * math.sin(hop * math.pi * 2.0)
+    return p
+
+
+def _ronaldo_path(frame: int) -> Vector:
+    """ロナウド — 手前でキレて上下に飛び跳ねる（軽い左右も）"""
+    p = RONALDO_POS.copy()
+    if frame < F_RONALDO_TANTRUM:
+        # 気づき始め — 小さな足踏み
+        if frame >= F_RONALDO_NOTICE:
+            t = frame - F_RONALDO_NOTICE
+            p.z = 0.12 * abs(math.sin(t * 0.55))
+            p.x += 0.06 * math.sin(t * 0.35)
+        return p
+    t = frame - F_RONALDO_TANTRUM
+    phase = (t % RONALDO_HOP_PERIOD) / float(RONALDO_HOP_PERIOD)
+    # キレたジャンプ — 鋭く跳び上がる
+    p.z = RONALDO_HOP_HEIGHT * (math.sin(phase * math.pi) ** 0.85)
+    p.x += 0.22 * math.sin(t * 0.42)
+    p.y += 0.08 * math.sin(t * 0.61)
     return p
 
 
@@ -310,6 +348,20 @@ LEAO_HANDSHAKE_BONES = [
     "head",
 ]
 
+RONALDO_ANGRY_BONES = [
+    "clavicle.r",
+    "upperarm.r",
+    "lowerarm.r",
+    "hand.r",
+    "clavicle.l",
+    "upperarm.l",
+    "lowerarm.l",
+    "hand.l",
+    "spine_02",
+    "neck_01",
+    "head",
+]
+
 
 def _animate_handshake_poses(shin_arm: bpy.types.Object, leao_arm: bpy.types.Object) -> None:
     """到着後の idle を土台に、腕まわりだけ REPLACE で伸ばす。"""
@@ -345,6 +397,26 @@ def _animate_handshake_poses(shin_arm: bpy.types.Object, leao_arm: bpy.types.Obj
         HANDSHAKE_FRAMES,
         leao_keys,
         LEAO_HANDSHAKE_BONES,
+    )
+
+
+def _animate_ronaldo_anger(ronaldo_arm: bpy.types.Object) -> None:
+    """握手を見て両手を振り上げるキレポーズ。"""
+    base = _capture_evaluated_pose(ronaldo_arm, F_RONALDO_NOTICE)
+    keys = [
+        (F_RONALDO_NOTICE, base),
+        (F_RONALDO_TANTRUM - 8, _pose_with_deltas(base, RONALDO_ANGRY_DELTA, 0.4)),
+        (F_RONALDO_TANTRUM + 4, _pose_with_deltas(base, RONALDO_ANGRY_DELTA, 1.0)),
+        (F_LEAO_REPLY, _pose_with_deltas(base, RONALDO_ANGRY_DELTA, 1.0)),
+        (HANDSHAKE_FRAMES, _pose_with_deltas(base, RONALDO_ANGRY_DELTA, 1.0)),
+    ]
+    _add_bone_pose_replace_strip(
+        ronaldo_arm,
+        "Ronaldo_AngryTantrum",
+        F_RONALDO_NOTICE,
+        HANDSHAKE_FRAMES,
+        keys,
+        RONALDO_ANGRY_BONES,
     )
 
 
@@ -422,7 +494,7 @@ def animate_portugal_shin_handshake() -> None:
 
     shin_keys = [(f, _shin_path(f)) for f in range(1, HANDSHAKE_FRAMES + 1)]
     leao_keys = [(f, LEAO_POS) for f in range(1, HANDSHAKE_FRAMES + 1)]
-    ronaldo_keys = [(f, RONALDO_POS) for f in range(1, HANDSHAKE_FRAMES + 1)]
+    ronaldo_keys = [(f, _ronaldo_path(f)) for f in range(1, HANDSHAKE_FRAMES + 1)]
 
     _animate_root_fixed(shin_root, shin_keys, SHIN_YAW)
     _animate_root_fixed(leao_root, leao_keys, LEAO_YAW)
@@ -433,17 +505,28 @@ def animate_portugal_shin_handshake() -> None:
     _add_nla_strip(shin_arm, "run", F_RUN_START, F_RUN_END)
     _add_nla_strip(shin_arm, "idle", F_RUN_END + 1, HANDSHAKE_FRAMES)
 
-    # レオン・ロナウド：ずっと idle（握手は REPLACE オーバーレイで応答）
+    # レオン：ずっと idle（握手は REPLACE オーバーレイで応答）
     _add_nla_strip(leao_arm, "idle", 1, HANDSHAKE_FRAMES)
-    _add_nla_strip(ronaldo_arm, "idle", 1, HANDSHAKE_FRAMES)
+
+    # ロナウド：idle → 気づき → キレてジャンプ連打
+    _add_nla_strip(ronaldo_arm, "idle", 1, F_RONALDO_NOTICE - 1)
+    try:
+        _add_nla_strip(ronaldo_arm, "fight_idle", F_RONALDO_NOTICE, F_RONALDO_TANTRUM - 1)
+    except KeyError:
+        _add_nla_strip(ronaldo_arm, "idle", F_RONALDO_NOTICE, F_RONALDO_TANTRUM - 1)
+    try:
+        _add_nla_strip(ronaldo_arm, "air_jump", F_RONALDO_TANTRUM, HANDSHAKE_FRAMES)
+    except KeyError:
+        _add_nla_strip(ronaldo_arm, "idle", F_RONALDO_TANTRUM, HANDSHAKE_FRAMES)
 
     _animate_handshake_poses(shin_arm, leao_arm)
+    _animate_ronaldo_anger(ronaldo_arm)
 
     setup_portugal_handshake_camera()
     scene.frame_set(1)
     print(
         f"Portugal handshake: {HANDSHAKE_FRAMES}f @ {FPS}fps — "
-        "Shin run→offer, Leao idle→reply, Ronaldo idle"
+        "Shin run→offer, Leao idle→reply, Ronaldo angry hop"
     )
 
 
