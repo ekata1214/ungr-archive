@@ -29,8 +29,8 @@ INTERVIEW_FRAMES = 96
 PORTUGAL_RED = (0.88, 0.12, 0.12, 1.0)
 PORTUGAL_GREEN = (0.12, 0.55, 0.28, 1.0)
 
-# カメラ側（-Y）を向いて話す
-LEAO_YAW = math.pi  # -Y 向き
+# カメラ側（-Y）を向いて話す（Mannequiny の yaw=0 が -Y）
+LEAO_YAW = 0.0
 LEAO_POS = Vector((0.0, 0.0, 0.35))  # お立ち台の上
 
 PoseDict = Dict[str, Quaternion]
@@ -105,7 +105,6 @@ def _remove_all_players() -> None:
                 "Ronaldo_",
                 "Fernandes_",
                 "PortugalGK_",
-                "Interview_",
             )
         ):
             bpy.data.objects.remove(obj, do_unlink=True)
@@ -211,71 +210,71 @@ def setup_interview_set() -> None:
     # 床（足元周り）
     _add_box(
         "Interview_Floor",
-        (4.5, 3.2, 0.08),
-        Vector((0.0, 0.4, 0.04)),
+        (7.0, 5.0, 0.1),
+        Vector((0.0, 0.6, 0.05)),
         None,
         floor_mat,
     )
     # お立ち台
     _add_box(
         "Interview_Podium",
-        (1.35, 1.0, 0.32),
-        Vector((0.0, 0.0, 0.16)),
+        (2.0, 1.5, 0.35),
+        Vector((0.0, 0.0, 0.175)),
         None,
         podium_mat,
     )
-    # メイン背景パネル（レオン後ろ）
+    # メイン背景パネル（レオン後ろ＝+Y）
     _add_box(
         "Interview_Backdrop",
-        (5.2, 0.08, 3.4),
-        Vector((0.0, 1.55, 1.7)),
+        (8.0, 0.12, 5.4),
+        Vector((0.0, 2.4, 2.7)),
         None,
         back_mat,
     )
     # インタビューっぽい帯（上）
     _add_box(
         "Interview_Banner",
-        (5.0, 0.09, 0.42),
-        Vector((0.0, 1.48, 2.85)),
+        (7.6, 0.14, 0.55),
+        Vector((0.0, 2.28, 4.55)),
         None,
         stripe_mat,
     )
     # 下のアクセント帯
     _add_box(
         "Interview_Accent",
-        (5.0, 0.09, 0.18),
-        Vector((0.0, 1.48, 0.55)),
+        (7.6, 0.14, 0.28),
+        Vector((0.0, 2.28, 0.85)),
         None,
         accent_mat,
     )
-    # 左右のロゴ風パネル（無地の矩形で十分）
+    # 左右のロゴ風パネル
     _add_box(
         "Interview_LogoL",
-        (1.1, 0.06, 1.1),
-        Vector((-1.55, 1.46, 1.55)),
+        (1.6, 0.08, 1.6),
+        Vector((-2.3, 2.26, 2.5)),
         None,
         panel_mat,
     )
     _add_box(
         "Interview_LogoR",
-        (1.1, 0.06, 1.1),
-        Vector((1.55, 1.46, 1.55)),
+        (1.6, 0.08, 1.6),
+        Vector((2.3, 2.26, 2.5)),
         None,
         panel_mat,
     )
-    # マイクスタンド（手前）
+    # マイクスタンド（手前・カメラ側）
     _add_box(
         "Interview_MicPole",
-        (0.04, 0.04, 1.05),
-        Vector((0.55, -0.55, 0.85)),
+        (0.05, 0.05, 1.6),
+        Vector((0.85, -1.05, 1.15)),
         None,
         mic_mat,
     )
     _add_box(
         "Interview_MicHead",
-        (0.12, 0.08, 0.08),
-        Vector((0.42, -0.55, 1.38)),
-        Euler((0.0, 0.55, 0.0)),
+        (0.16, 0.1, 0.1),
+        Vector((0.62, -1.05, 2.0)),
+        Euler((0.0, 0.45, 0.0)),
         mic_mat,
     )
 
@@ -331,22 +330,22 @@ def _talk_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     nod = 0.07 * math.sin(t * 7.2) + 0.04 * math.sin(t * 11.0)
     turn = 0.11 * math.sin(t * 2.4 + 0.3) + 0.05 * math.sin(t * 5.1)
     lean = 0.05 * math.sin(t * 1.7)
-    # 右手で説明している感じ
-    gest = 0.5 + 0.5 * math.sin(t * 3.3)
-    gest2 = 0.5 + 0.5 * math.sin(t * 2.1 + 1.2)
+    # 右手で説明している感じ（常に前に出して後ろ手にならない）
+    gest = 0.55 + 0.45 * math.sin(t * 3.3)
+    gest2 = 0.55 + 0.45 * math.sin(t * 2.1 + 1.2)
     return {
         "spine_01": (0.03 + lean * 0.4, 0.0, turn * 0.25),
         "spine_02": (0.06 + lean, 0.0, turn * 0.45),
         "neck_01": (0.04 + nod * 0.6, 0.0, turn * 0.7),
         "head": (0.05 + nod, 0.0, turn),
-        "clavicle.r": (0.05, -0.05 - 0.04 * gest, 0.08),
-        "upperarm.r": (0.45 + 0.18 * gest, -0.55 - 0.2 * gest2, 0.55 + 0.25 * gest),
-        "lowerarm.r": (-0.85 - 0.2 * gest2, 0.2, 0.15),
-        "hand.r": (0.25, 0.35 + 0.15 * gest, -0.55),
-        "clavicle.l": (0.02, 0.03, -0.04),
-        "upperarm.l": (0.15, 0.35, -0.2),
-        "lowerarm.l": (-0.35, -0.1, -0.05),
-        "hand.l": (0.05, -0.1, 0.15),
+        "clavicle.r": (0.06, -0.08 - 0.04 * gest, 0.1),
+        "upperarm.r": (0.55 + 0.2 * gest, -0.75 - 0.15 * gest2, 0.85 + 0.2 * gest),
+        "lowerarm.r": (-1.05 - 0.15 * gest2, 0.25, 0.2),
+        "hand.r": (0.3, 0.4 + 0.12 * gest, -0.65),
+        "clavicle.l": (0.03, 0.05, -0.05),
+        "upperarm.l": (0.22, 0.45, -0.28),
+        "lowerarm.l": (-0.45, -0.12, -0.08),
+        "hand.l": (0.08, -0.12, 0.18),
     }
 
 
@@ -473,14 +472,20 @@ def setup_camera() -> bpy.types.Object:
     cam = bpy.data.objects.new("CamLeaoInterview", cam_data)
     bpy.context.collection.objects.link(cam)
     bpy.context.scene.camera = cam
-    cam_data.lens = 50
+    cam_data.lens = 35
 
-    # 正面寄りミディアムショット、わずかに寄る
+    # 正面寄りミディアム（頭〜お立ち台が見える）
     for f in (1, 36, 64, INTERVIEW_FRAMES):
         t = (f - 1) / max(1, INTERVIEW_FRAMES - 1)
-        pos = Vector((-0.35 + 0.08 * t, -3.55 + 0.25 * t, 1.55))
-        tgt = Vector((0.05 * math.sin(t * math.pi), 0.2, 1.45 + 0.05 * t))
+        pos = Vector((-0.7 + 0.15 * t, -8.4 + 0.4 * t, 3.45))
+        tgt = Vector((0.05 * math.sin(t * math.pi), 0.1, 3.15 + 0.1 * t))
         _kf_cam(cam, f, pos, tgt)
+    if cam.animation_data and cam.animation_data.action:
+        for fc in cam.animation_data.action.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation = "BEZIER"
+                kp.handle_left_type = "AUTO_CLAMPED"
+                kp.handle_right_type = "AUTO_CLAMPED"
     return cam
 
 
