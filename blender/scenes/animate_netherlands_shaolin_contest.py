@@ -41,8 +41,8 @@ SHAOLIN_START = Vector((7.5, -0.15, 0.0))
 NED_CONTACT = Vector((-1.15, 0.2, 0.0))
 SHAOLIN_CONTACT = Vector((1.15, -0.2, 0.0))
 
-# オランダ：濃いオレンジ一色 / 少林：明るいオレンジ一色（区別用）
-NETHERLANDS_ORANGE = (0.78, 0.28, 0.02, 1.0)
+# オランダ：濃いオレンジ一色（オランイェ寄り） / 少林：明るいオレンジ一色（区別用）
+NETHERLANDS_ORANGE = (0.62, 0.16, 0.0, 1.0)
 SHAOLIN_ORANGE = (0.95, 0.42, 0.06, 1.0)
 
 PoseDict = Dict[str, Quaternion]
