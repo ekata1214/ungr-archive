@@ -419,6 +419,7 @@ def save_cut_blend(slug: str) -> Path:
 
 
 def still_qc(slug: str, frame: int, tag: str) -> Path:
+    simplify_for_render()
     sc = bpy.context.scene
     sc.frame_set(frame)
     sc.render.image_settings.file_format = "PNG"
