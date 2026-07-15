@@ -377,95 +377,96 @@ def build_03() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 04 volley rally — 4 exchanges Norway ↔ Shaolin GK (wider gap, synced kicks)
+# 04 volley rally — kick then ball flies; GK save then ball returns ×4
 # ---------------------------------------------------------------------------
 def build_04() -> int:
     remove_players()
     _show_pitch()
-    frames = 384
+    frames = 420
     gx = goal_l_x()
-    # more distance between bodies
-    nor_pos = Vector((gx + 20.0, SIDE_GAP * 1.35, 0.0))
-    gk_pos = Vector((gx + 4.5, -SIDE_GAP * 1.35, 0.0))
+    nor_pos = Vector((gx + 22.0, SIDE_GAP * 1.5, 0.0))
+    gk_pos = Vector((gx + 5.0, -SIDE_GAP * 1.5, 0.0))
     assert (nor_pos - gk_pos).length >= SIDE_GAP * 2.0
 
     yaw_n = yaw_face_neg_x()
     yaw_gk = yaw_face_pos_x()
 
     nor_arm, nor_root = spawn_player(
-        "Norway",
-        NORWAY_RED,
-        nor_pos,
-        yaw_n,
-        actions=["idle", "fight_kick"],
-        split=(NORWAY_RED, NORWAY_WHITE, 0.42),
+        "Norway", NORWAY_RED, nor_pos, yaw_n,
+        actions=["idle", "fight_kick"], split=(NORWAY_RED, NORWAY_WHITE, 0.42),
     )
     gk_arm, gk_root = spawn_player(
-        "Shaolin",
-        SHAOLIN_ORANGE,
-        gk_pos,
-        yaw_gk,
-        actions=["fight_idle", "fight_punch", "idle"],
-        split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
+        "Shaolin", SHAOLIN_ORANGE, gk_pos, yaw_gk,
+        actions=["fight_idle", "fight_punch", "idle"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
     )
     _clear_all_nla(nor_arm)
     _clear_all_nla(gk_arm)
     animate_root(nor_root, [(1, nor_pos), (frames, nor_pos)], yaw_n)
     animate_root(gk_root, [(1, gk_pos), (frames, gk_pos)], yaw_gk)
 
-    # ball arrival times at contact; kicks/clears fire at contact
-    # kick → clear → kick → clear ×4
-    events = [48, 90, 132, 174, 216, 258, 300, 342]
-    kicks = events[0::2]
-    clears = events[1::2]
+    # Contact frames: after kick action, ball departs; after punch, ball returns
+    # kick contacts (Norway): ball then flies to GK
+    kicks = [40, 130, 220, 310]
+    # clear contacts (GK): ball then flies back to Norway
+    clears = [85, 175, 265, 355]
 
-    add_nla_hold(nor_arm, "idle", 1, kicks[0] - 14, af=5)
-    add_nla_hold(gk_arm, "fight_idle", 1, clears[0] - 12, af=10)
+    add_nla_hold(nor_arm, "idle", 1, kicks[0] - 16, af=5)
+    add_nla_hold(gk_arm, "fight_idle", 1, clears[0] - 14, af=10)
     for i, fk in enumerate(kicks):
-        # kick contact ≈ mid of fight_kick strip
-        add_nla_once(nor_arm, "fight_kick", fk - 14, fk + 12)
-        nxt = kicks[i + 1] - 15 if i + 1 < len(kicks) else frames
-        add_nla_hold(nor_arm, "idle", fk + 13, nxt, af=6)
+        add_nla_once(nor_arm, "fight_kick", fk - 14, fk + 10)
+        nxt = (kicks[i + 1] - 16) if i + 1 < len(kicks) else frames
+        add_nla_hold(nor_arm, "idle", fk + 11, nxt, af=6)
     for i, fc in enumerate(clears):
         add_nla_once(gk_arm, "fight_punch", fc - 12, fc + 10)
-        nxt = clears[i + 1] - 13 if i + 1 < len(clears) else frames
+        nxt = (clears[i + 1] - 14) if i + 1 < len(clears) else frames
         add_nla_hold(gk_arm, "fight_idle", fc + 11, nxt, af=10)
 
     ball = clear_ball_anim()
-    mid_y = (nor_pos.y + gk_pos.y) * 0.5
-    # contact points near each player's kicking / punching space (not through torso)
-    nor_feet = Vector((nor_pos.x - 2.2, nor_pos.y - 1.1, BALL_GROUND_Z + 0.45))
-    gk_hand = Vector((gk_pos.x + 2.0, gk_pos.y + 1.1, BALL_GROUND_Z + 1.7))
-    points = [nor_feet]
-    for i in range(4):
-        points.append(gk_hand.copy())
-        points.append(nor_feet.copy() if i < 3 else Vector((gx - 1.2, mid_y * 0.15, GOAL_H * 0.45)))
-    arrival = [1] + events
+    nor_feet = Vector((nor_pos.x - 2.0, nor_pos.y - 1.2, BALL_GROUND_Z + 0.4))
+    gk_hand = Vector((gk_pos.x + 1.8, gk_pos.y + 1.2, BALL_GROUND_Z + 1.75))
 
     def ball_path(f: int) -> Vector:
-        if f <= arrival[0]:
-            return points[0].copy()
-        for i in range(len(arrival) - 1):
-            a0, a1 = arrival[i], arrival[i + 1]
-            if f <= a1 or i == len(arrival) - 2:
-                t = ease((f - a0) / max(1, a1 - a0))
-                p0, p1 = points[i], points[min(i + 1, len(points) - 1)]
-                p = p0.lerp(p1, min(1.0, t))
-                p.z += 0.7 * math.sin(min(1.0, t) * math.pi)
+        # before first kick: hold at norway
+        if f <= kicks[0]:
+            return nor_feet.copy()
+        for i in range(4):
+            fk = kicks[i]
+            fc = clears[i]
+            # after kick → fly to GK (arrive at clear)
+            if f <= fc:
+                t = ease((f - fk) / max(1, fc - fk))
+                p = nor_feet.lerp(gk_hand, t)
+                p.z += 0.85 * math.sin(t * math.pi)
                 return p
-        return points[-1].copy()
+            # after clear → fly back to norway (or final hold)
+            if i < 3:
+                nxt = kicks[i + 1]
+                if f <= nxt:
+                    t = ease((f - fc) / max(1, nxt - fc))
+                    p = gk_hand.lerp(nor_feet, t)
+                    p.z += 0.85 * math.sin(t * math.pi)
+                    return p
+            else:
+                # last clear: ball drops near GK / goal area
+                end = Vector((gx + 2.0, gk_pos.y * 0.3, BALL_GROUND_Z + 0.35))
+                t = ease(min(1.0, (f - fc) / max(1, frames - fc)))
+                p = gk_hand.lerp(end, t)
+                p.z = gk_hand.z + (end.z - gk_hand.z) * t + 0.4 * math.sin(t * math.pi)
+                return p
+        return nor_feet.copy()
 
     key_ball(ball, range(1, frames + 1, 2), ball_path)
 
-    cam = setup_new_cam("CamCut04", lens=30)
+    cam = setup_new_cam("CamCut04", lens=26)
 
     def cam_pos(f: int) -> Vector:
-        b = ball_path(f)
-        return Vector((b.x + 5.0, b.y - 14.0, 4.4))
+        mid = (nor_pos + gk_pos) * 0.5
+        return Vector((mid.x + 6.0, mid.y - 20.0, 6.5))
 
     def cam_tgt(f: int) -> Vector:
         b = ball_path(f)
-        return Vector((b.x, b.y * 0.25, max(1.2, b.z)))
+        mid = (nor_pos + gk_pos) * 0.5
+        return Vector((mid.x, mid.y * 0.2, max(1.4, b.z)))
 
     _dense_cam(cam, frames, cam_pos, cam_tgt, step=3)
     set_frame_range(frames)

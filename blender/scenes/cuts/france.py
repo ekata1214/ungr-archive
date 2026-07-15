@@ -26,8 +26,12 @@ from cuts.common import (  # noqa: E402
     add_nla_hold,
     add_nla_loop,
     add_nla_once,
+    add_pose_strip,
     add_talk_strip,
     animate_gk_dive,
+    PHONE_ARM_BONES,
+    SIT_BONES,
+    parent_phone_to_hand,
     animate_root,
     ball_ahead_of,
     clear_ball_anim,
@@ -177,6 +181,45 @@ def _happy_fn() -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
     return deltas
 
 
+
+def _phone_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
+    t = frame / FPS
+    tap = 0.08 * math.sin(t * 14.0)
+    return {
+        # left arm holds phone up
+        "clavicle.l": (0.05, 0.15, 0.1),
+        "upperarm.l": (-0.55, 0.35, 0.45),
+        "lowerarm.l": (-0.85, 0.1, 0.2),
+        "hand.l": (0.2, 0.15, 0.1),
+        # right arm taps
+        "clavicle.r": (0.04, -0.1, -0.08),
+        "upperarm.r": (-0.45, -0.25, -0.35),
+        "lowerarm.r": (-0.7 + tap, 0.05, -0.15),
+        "hand.r": (0.15 + tap * 0.5, -0.1, 0.05),
+        "spine_01": (0.04, 0.0, 0.0),
+        "spine_02": (0.05, 0.0, 0.0),
+        "neck_01": (0.12, 0.0, 0.0),
+        "head": (0.18, 0.0, 0.05 * math.sin(t * 2.0)),
+    }
+
+
+def _sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
+    # 体育座り — kneess bent, torso lean
+    u = ease(min(1.0, (frame - 1) / 36.0))
+    return {
+        "thigh.l": (1.05 * u, 0.15 * u, 0.25 * u),
+        "calf.l": (-1.25 * u, 0.0, 0.0),
+        "foot.l": (0.35 * u, 0.0, 0.0),
+        "thigh.r": (1.05 * u, -0.15 * u, -0.25 * u),
+        "calf.r": (-1.25 * u, 0.0, 0.0),
+        "foot.r": (0.35 * u, 0.0, 0.0),
+        "pelvis": (0.15 * u, 0.0, 0.0),
+        "spine_01": (0.25 * u, 0.0, 0.0),
+        "spine_02": (0.2 * u, 0.0, 0.0),
+        "neck_01": (0.1 * u, 0.0, 0.0),
+        "head": (0.08 * u, 0.0, 0.0),
+    }
+
 # ---------------------------------------------------------------------------
 # 18 — 1v1 juke; France facing reversed
 # ---------------------------------------------------------------------------
@@ -257,10 +300,10 @@ def build_18() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 19 — France sits
+# 19 — France sits with bent legs (体育座り)
 # ---------------------------------------------------------------------------
 def build_19() -> int:
-    frames = 120
+    frames = 144
     remove_players()
     _show_pitch()
     set_frame_range(frames)
@@ -268,7 +311,8 @@ def build_19() -> int:
     pos = Vector((-10.0, 2.0, 0.0))
     arm, root = spawn_france("France", pos, yaw_face_neg_y(), actions=["idle"])
     _clear_all_nla(arm)
-    sit = Vector((pos.x, pos.y, -1.15))
+    # only slight root settle — legs bend via pose, not sink through pitch
+    sit = Vector((pos.x, pos.y, -0.35))
     keys = []
     for f in range(1, frames + 1, 2):
         if f <= 40:
@@ -276,18 +320,17 @@ def build_19() -> int:
             p = _lerp(pos, sit, t)
         else:
             p = sit.copy()
-            p.z += -0.02 * abs(math.sin(f * 0.12))
         keys.append((f, p))
     keys.append((frames, sit))
     animate_root(root, keys, yaw_face_neg_y())
     add_nla_hold(arm, "idle", 1, frames, af=12)
-    add_talk_strip(arm, "FranceSitLean", frames, _sad_fn(0.28), TALK_BONES, step=3)
+    add_pose_strip(arm, "FranceSitPose", frames, _sit_deltas, SIT_BONES, step=2, clamp=1.5)
 
-    cam = setup_new_cam("Cam19", lens=34)
+    cam = setup_new_cam("Cam19", lens=32)
     _cam_dense(
         cam, 1, frames,
-        Vector((-6.0, -10.5, 2.8)), Vector((-8.0, -9.5, 2.2)),
-        Vector((-10.0, 2.0, 1.2)), Vector((-10.0, 2.0, 0.55)),
+        Vector((-6.0, -11.0, 3.0)), Vector((-8.0, -10.0, 2.6)),
+        Vector((-10.0, 2.0, 1.1)), Vector((-10.0, 2.0, 0.9)),
         step=3,
     )
     finish_cam(cam)
@@ -295,10 +338,10 @@ def build_19() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 20 — phone on pitch only
+# 20 — phone: left hand holds, right operates; camera shows head+hands
 # ---------------------------------------------------------------------------
 def build_20() -> int:
-    frames = 120
+    frames = 144
     remove_players()
     _show_pitch()
     _clear_extras("Phone_")
@@ -309,22 +352,23 @@ def build_20() -> int:
     _clear_all_nla(arm)
     animate_root(root, [(1, pos), (frames, pos)], yaw_face_neg_y())
     add_nla_hold(arm, "idle", 1, frames, af=12)
-    add_talk_strip(arm, "FrancePhoneIdle", frames, _talk_fn(0.35), TALK_BONES, step=3)
+    add_pose_strip(arm, "FrancePhonePose", frames, _phone_deltas, PHONE_ARM_BONES, step=2, clamp=1.3)
 
     phone_mat = mat_rgba("Phone_Mat", (0.04, 0.04, 0.05, 1.0), 0.45)
-    hand = Vector((pos.x + 0.32, pos.y - 0.5, 1.55))
-    phone = add_box("Phone_01", (0.12, 0.02, 0.22), hand, phone_mat)
-    for f in range(1, frames + 1, 2):
-        wiggle = 0.035 * math.sin(f * 0.4)
-        phone.location = hand + Vector((wiggle, 0.015 * math.sin(f * 0.55), 0.01 * math.cos(f * 0.45)))
+    phone = add_box("Phone_01", (0.12, 0.02, 0.22), Vector((0, 0, 0)), phone_mat)
+    parent_phone_to_hand(phone, arm, "hand.l")
+    # subtle phone wiggle in local space
+    for f in range(1, frames + 1, 3):
+        w = 0.01 * math.sin(f * 0.45)
+        phone.location = Vector((0.05 + w, 0.08, 0.12))
         phone.keyframe_insert(data_path="location", frame=f)
     force_linear(phone)
 
-    cam = setup_new_cam("Cam20", lens=38)
+    cam = setup_new_cam("Cam20", lens=35)
     _cam_dense(
         cam, 1, frames,
-        Vector((-7.5, -8.0, 3.0)), Vector((-8.5, -7.0, 2.7)),
-        Vector((-10.0, 2.0, 1.5)), Vector((-10.0, 1.7, 1.45)),
+        Vector((-8.5, -9.5, 3.4)), Vector((-9.0, -8.8, 3.2)),
+        Vector((-10.0, 1.7, 2.4)), Vector((-10.0, 1.6, 2.35)),
         step=2,
     )
     finish_cam(cam)
@@ -335,7 +379,7 @@ def build_20() -> int:
 # 21 — France solo goal + Shaolin GK sideways miss
 # ---------------------------------------------------------------------------
 def build_21() -> int:
-    frames = 156
+    frames = 220
     remove_players()
     _show_pitch()
     set_frame_range(frames)
@@ -475,7 +519,7 @@ def build_22() -> int:
 # 23 — equalizer + France GK jumps up but fails
 # ---------------------------------------------------------------------------
 def build_23() -> int:
-    frames = 144
+    frames = 210
     remove_players()
     _show_pitch()
     set_frame_range(frames)
@@ -537,36 +581,36 @@ def build_23() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 24 — France slow walk, slumped shoulders
+# 24 — France walks slowly with slumped shoulders (not slow-mo run)
 # ---------------------------------------------------------------------------
 def build_24() -> int:
-    frames = 144
+    frames = 168
     remove_players()
     _show_pitch()
     set_frame_range(frames)
     hide_ball()
     start = Vector((-5.0, 3.0, 0.0))
-    end = Vector((-22.0, 4.2, 0.0))
-    arm, root = spawn_france("France", start, ATTACK_YAW, actions=["run", "idle"])
+    end = Vector((-24.0, 4.5, 0.0))
+    arm, root = spawn_france("France", start, ATTACK_YAW, actions=["idle", "fight_idle"])
     _clear_all_nla(arm)
     keys = []
     for f in range(1, frames + 1, 2):
         t = (f - 1) / max(1, frames - 1)
-        # very slow progress
-        p = _lerp(start, end, ease(t * 0.7 + 0.15 * t * t))
-        p.y += 0.12 * math.sin(t * math.pi * 2.2)
-        p.z = -0.04
+        p = _lerp(start, end, ease(t))
+        # walking bob small
+        p.z = 0.03 * abs(math.sin(t * math.pi * 6.0))
+        p.y += 0.08 * math.sin(t * math.pi * 3.0)
         keys.append((f, p))
     keys.append((frames, end))
     animate_root(root, keys, ATTACK_YAW)
-    add_nla_once(arm, "run", 1, frames)
-    add_talk_strip(arm, "FranceSlump", frames, _sad_fn(0.32), TALK_BONES, step=3)
+    add_nla_hold(arm, "idle", 1, frames, af=10)
+    add_talk_strip(arm, "FranceSlumpWalk", frames, _sad_fn(0.36), TALK_BONES, step=3)
 
     cam = setup_new_cam("Cam24", lens=34)
     _cam_dense(
         cam, 1, frames,
         Vector((2.0, -11.0, 3.2)), Vector((-14.0, -10.0, 3.0)),
-        Vector((-5.0, 3.0, 1.35)), Vector((-22.0, 4.0, 1.15)),
+        Vector((-5.0, 3.0, 1.35)), Vector((-24.0, 4.0, 1.15)),
         step=3,
     )
     finish_cam(cam)
@@ -577,7 +621,7 @@ def build_24() -> int:
 # 25 — air walk goal + France GK sideways miss; else unchanged
 # ---------------------------------------------------------------------------
 def build_25() -> int:
-    frames = 156
+    frames = 220
     remove_players()
     _show_pitch()
     set_frame_range(frames)
@@ -721,10 +765,10 @@ def build_27() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 28 — France on pitch with phone, then shoulders drop
+# 28 — phone left-hand + right operate, then shoulders drop; pull camera
 # ---------------------------------------------------------------------------
 def build_28() -> int:
-    frames = 132
+    frames = 168
     remove_players()
     _show_pitch()
     _clear_extras("Phone_")
@@ -737,26 +781,29 @@ def build_28() -> int:
     add_nla_hold(arm, "idle", 1, frames, af=12)
 
     def phone_then_sad(frame: int):
-        if frame < 55:
-            return _talk_fn(0.4)(frame)
-        return _sad_fn(0.34)(frame)
+        base = _phone_deltas(frame)
+        if frame >= 70:
+            sad = _sad_fn(0.34)(frame)
+            # merge: keep arms, override spine/head to slumped
+            base.update({k: sad[k] for k in ("spine_01", "spine_02", "neck_01", "head") if k in sad})
+        return base
 
-    add_talk_strip(arm, "FrancePhoneThenSad", frames, phone_then_sad, TALK_BONES, step=3)
+    add_pose_strip(arm, "FrancePhoneThenSad", frames, phone_then_sad, PHONE_ARM_BONES, step=2, clamp=1.3)
 
     phone_mat = mat_rgba("Phone_Mat", (0.04, 0.04, 0.05, 1.0), 0.45)
-    hand = Vector((pos.x + 0.3, pos.y - 0.55, 1.5))
-    phone = add_box("Phone_01", (0.12, 0.02, 0.22), hand, phone_mat)
+    phone = add_box("Phone_01", (0.12, 0.02, 0.22), Vector((0, 0, 0)), phone_mat)
+    parent_phone_to_hand(phone, arm, "hand.l")
     for f in range(1, frames + 1, 3):
-        wiggle = 0.02 * math.sin(f * 0.25)
-        phone.location = hand + Vector((wiggle, 0.0, 0.01 * math.cos(f * 0.3)))
+        w = 0.01 * math.sin(f * 0.35)
+        phone.location = Vector((0.05 + w, 0.08, 0.12))
         phone.keyframe_insert(data_path="location", frame=f)
     force_linear(phone)
 
-    cam = setup_new_cam("Cam28", lens=38)
+    cam = setup_new_cam("Cam28", lens=34)
     _cam_dense(
         cam, 1, frames,
-        Vector((-7.5, -8.0, 3.0)), Vector((-8.5, -7.2, 2.6)),
-        Vector((-10.0, 1.9, 1.55)), Vector((-10.0, 1.8, 1.35)),
+        Vector((-8.0, -9.8, 3.5)), Vector((-8.8, -9.0, 3.1)),
+        Vector((-10.0, 1.7, 2.45)), Vector((-10.0, 1.6, 2.2)),
         step=3,
     )
     finish_cam(cam)

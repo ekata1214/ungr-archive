@@ -717,3 +717,214 @@ def animate_gk_dive(
     add_nla_hold(arm, "fight_idle", 1, max(1, f_dive - 3), af=10)
     add_nla_once(arm, "jump_full", f_dive - 2, min(frames, f_land + 10))
     add_nla_hold(arm, "fight_idle", min(frames, f_land + 11), frames, af=8)
+
+
+def add_pose_strip(
+    arm: bpy.types.Object,
+    name: str,
+    frames: int,
+    deltas_fn,
+    bones: List[str],
+    step: int = 3,
+    clamp: float = 1.4,
+) -> None:
+    """腕・脚など大きめの角度が必要なポーズ用（座り・スマホ操作）。"""
+    base = capture_idle_base(arm)
+    keys = []
+    for f in range(1, frames + 1, step):
+        raw = deltas_fn(f)
+        clamped = {}
+        for bn, xyz in raw.items():
+            dx, dy, dz = xyz
+            clamped[bn] = (
+                max(-clamp, min(clamp, dx)),
+                max(-clamp, min(clamp, dy)),
+                max(-clamp, min(clamp, dz)),
+            )
+        keys.append((f, pose_with_deltas(base, clamped)))
+    # bypass pose_with_deltas clamp by applying manually
+    if not arm.animation_data:
+        arm.animation_data_create()
+    ad = arm.animation_data
+    muted = [(t, t.mute) for t in ad.nla_tracks]
+    for t, _ in muted:
+        t.mute = True
+    act_name = name if not bpy.data.actions.get(name) else f"{name}_{len(bpy.data.actions)}"
+    act = bpy.data.actions.new(act_name)
+    ad.action = act
+    allowed = set(bones)
+
+    def apply_pose(pose_dict):
+        for bn, quat in pose_dict.items():
+            if bn not in allowed:
+                continue
+            bone = arm.pose.bones.get(bn)
+            if not bone:
+                continue
+            bone.rotation_mode = "QUATERNION"
+            bone.rotation_quaternion = quat
+            bone.keyframe_insert(data_path="rotation_quaternion", frame=0)  # placeholder
+
+    # rebuild keys without the mild clamp in pose_with_deltas
+    rebuilt = []
+    for f in range(1, frames + 1, step):
+        out = {k: v.copy() for k, v in base.items()}
+        for bn, xyz in deltas_fn(f).items():
+            if bn not in out:
+                continue
+            dx, dy, dz = xyz
+            dx = max(-clamp, min(clamp, dx))
+            dy = max(-clamp, min(clamp, dy))
+            dz = max(-clamp, min(clamp, dz))
+            out[bn] = out[bn] @ Euler((dx, dy, dz), "XYZ").to_quaternion()
+        rebuilt.append((f, out))
+    if rebuilt[-1][0] != frames:
+        out = {k: v.copy() for k, v in base.items()}
+        for bn, xyz in deltas_fn(frames).items():
+            if bn not in out:
+                continue
+            dx, dy, dz = xyz
+            dx = max(-clamp, min(clamp, dx))
+            dy = max(-clamp, min(clamp, dy))
+            dz = max(-clamp, min(clamp, dz))
+            out[bn] = out[bn] @ Euler((dx, dy, dz), "XYZ").to_quaternion()
+        rebuilt.append((frames, out))
+
+    for frame, pose in rebuilt:
+        for bn, quat in pose.items():
+            if bn not in allowed:
+                continue
+            bone = arm.pose.bones.get(bn)
+            if not bone:
+                continue
+            bone.rotation_mode = "QUATERNION"
+            bone.rotation_quaternion = quat
+            bone.keyframe_insert(data_path="rotation_quaternion", frame=frame)
+    for fc in act.fcurves:
+        for kp in fc.keyframe_points:
+            kp.interpolation = "BEZIER"
+            kp.handle_left_type = "AUTO_CLAMPED"
+            kp.handle_right_type = "AUTO_CLAMPED"
+    ad.action = None
+    for t, was in muted:
+        t.mute = was
+    track = ad.nla_tracks.new()
+    track.name = name
+    strip = track.strips.new(name, 1, act)
+    strip.frame_start = 1
+    strip.frame_end = frames + 1
+    strip.action_frame_start = 1
+    strip.action_frame_end = frames
+    strip.blend_type = "REPLACE"
+    strip.extrapolation = "HOLD_FORWARD"
+    strip.influence = 1.0
+    strip.use_auto_blend = False
+
+
+PHONE_ARM_BONES = [
+    "clavicle.l", "upperarm.l", "lowerarm.l", "hand.l",
+    "clavicle.r", "upperarm.r", "lowerarm.r", "hand.r",
+    "spine_01", "spine_02", "neck_01", "head",
+]
+SIT_BONES = [
+    "thigh.l", "calf.l", "foot.l", "thigh.r", "calf.r", "foot.r",
+    "pelvis", "spine_01", "spine_02", "neck_01", "head",
+]
+
+
+def _uv_sphere_mesh(name: str, segments: int = 10, rings: int = 8) -> bpy.types.Mesh:
+    import math as _m
+    verts = []
+    for i in range(rings + 1):
+        v = i / rings
+        phi = _m.pi * v
+        for j in range(segments):
+            u = j / segments
+            th = 2.0 * _m.pi * u
+            x = _m.sin(phi) * _m.cos(th)
+            y = _m.sin(phi) * _m.sin(th)
+            z = _m.cos(phi)
+            verts.append((x, y, z))
+    faces = []
+    for i in range(rings):
+        for j in range(segments):
+            a = i * segments + j
+            b = i * segments + (j + 1) % segments
+            c = (i + 1) * segments + (j + 1) % segments
+            d = (i + 1) * segments + j
+            faces.append((a, b, c, d))
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    return mesh
+
+
+def attach_feminine_hair(
+    arm: bpy.types.Object,
+    rgba=(0.18, 0.1, 0.05, 1.0),
+) -> list:
+    """複数の小さめ球で女性っぽい髪。直方体は使わない。"""
+    objs = []
+    mat = mat_rgba(f"Hair_{arm.name}_Mat", rgba, 0.85)
+    specs = [
+        ("crown", Vector((0.0, -0.02, 0.12)), Vector((0.22, 0.2, 0.16))),
+        ("bang_l", Vector((-0.12, -0.14, 0.02)), Vector((0.1, 0.08, 0.12))),
+        ("bang_r", Vector((0.12, -0.14, 0.02)), Vector((0.1, 0.08, 0.12))),
+        ("side_l", Vector((-0.16, -0.05, -0.25)), Vector((0.09, 0.1, 0.28))),
+        ("side_r", Vector((0.16, -0.05, -0.25)), Vector((0.09, 0.1, 0.28))),
+        ("rear_1", Vector((0.0, 0.1, -0.35)), Vector((0.14, 0.12, 0.32))),
+        ("rear_2", Vector((0.0, 0.12, -0.7)), Vector((0.11, 0.1, 0.28))),
+        ("rear_3", Vector((0.05, 0.08, -1.0)), Vector((0.09, 0.09, 0.22))),
+        ("rear_4", Vector((-0.05, 0.08, -1.0)), Vector((0.09, 0.09, 0.22))),
+    ]
+    for suffix, loc, sc in specs:
+        name = f"Hair_{arm.name}_{suffix}"
+        if name in bpy.data.objects:
+            bpy.data.objects.remove(bpy.data.objects[name], do_unlink=True)
+        mesh = _uv_sphere_mesh(name)
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.collection.objects.link(obj)
+        obj.scale = sc
+        obj.data.materials.append(mat)
+        obj.parent = arm
+        obj.parent_type = "BONE"
+        obj.parent_bone = "head"
+        obj.location = loc
+        objs.append(obj)
+    return objs
+
+
+def apply_female_chest(arm: bpy.types.Object) -> list:
+    """胸を少し膨らませて女性シルエットに。"""
+    mat = mat_rgba(f"Chest_{arm.name}_Mat", (0.95, 0.75, 0.65, 1.0), 0.7)
+    outs = []
+    for side, x in (("l", -0.14), ("r", 0.14)):
+        name = f"FemaleGK_{arm.name}_chest_{side}"
+        if name in bpy.data.objects:
+            bpy.data.objects.remove(bpy.data.objects[name], do_unlink=True)
+        mesh = _uv_sphere_mesh(name)
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.collection.objects.link(obj)
+        obj.scale = Vector((0.16, 0.14, 0.14))
+        obj.data.materials.append(mat)
+        bone = "spine_02" if arm.pose.bones.get("spine_02") else "spine_01"
+        obj.parent = arm
+        obj.parent_type = "BONE"
+        obj.parent_bone = bone
+        obj.location = Vector((x, -0.18, 0.05))
+        outs.append(obj)
+    return outs
+
+
+def parent_phone_to_hand(
+    phone: bpy.types.Object,
+    arm: bpy.types.Object,
+    hand_bone: str = "hand.l",
+    loc: Vector | None = None,
+) -> None:
+    phone.parent = arm
+    phone.parent_type = "BONE"
+    phone.parent_bone = hand_bone if arm.pose.bones.get(hand_bone) else "lowerarm.l"
+    phone.location = loc or Vector((0.05, 0.08, 0.12))
+    phone.rotation_euler = Euler((1.2, 0.0, 0.4), "XYZ")
+    phone.scale = Vector((0.55, 0.55, 0.55))
