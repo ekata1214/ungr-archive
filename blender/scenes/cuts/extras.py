@@ -531,7 +531,7 @@ def build_42() -> int:
     add_nla_loop(fr_arm, "run", 1, f_steal - 1)
     add_nla_hold(fr_arm, "fight_idle", f_steal, frames, af=6)
 
-    # Headspin breakdance: tip upside-down, long readable Z-spin, stand, steal
+    # Readable breakdance: crouch + continuous Z-spin (keep torso upright so orange reads)
     sh_keys_eul: list = []
     for f in range(1, frames + 1, 2):
         if f <= f_approach:
@@ -540,17 +540,17 @@ def build_42() -> int:
             eul = Euler((0.0, 0.0, yaw_sh0), "XYZ")
         elif f <= f_drop:
             t = ease((f - f_approach) / max(1, f_drop - f_approach))
-            # Keep headspin body above pitch so mid QC shows orange torso, not only feet
-            p = Vector((steal_at.x, steal_at.y, 1.15 * (1.0 - t) + 1.35 * t))
-            eul = Euler((math.pi * t, 0.0, yaw_sh0), "XYZ")
+            p = Vector((steal_at.x, steal_at.y, -0.55 * t))
+            eul = Euler((0.35 * t, 0.0, yaw_sh0), "XYZ")  # slight lean into spin
         elif f <= f_steal:
-            spins = (f - f_spin0) * 0.95
-            p = Vector((steal_at.x, steal_at.y, 1.35))
-            eul = Euler((math.pi, 0.0, yaw_sh0 + spins), "XYZ")
+            spins = (f - f_spin0) * 0.78  # many full turns, upright
+            bob = 0.12 * abs(math.sin((f - f_spin0) * 0.55))
+            p = Vector((steal_at.x, steal_at.y, -0.55 + bob))
+            eul = Euler((0.35, 0.0, yaw_sh0 + spins), "XYZ")
         elif f <= f_up:
             t = ease((f - f_steal) / max(1, f_up - f_steal))
-            p = Vector((steal_at.x, steal_at.y, 1.35 * (1.0 - t)))
-            eul = Euler((math.pi * (1.0 - t), 0.0, math.atan2(ATTACK.y, ATTACK.x)), "XYZ")
+            p = Vector((steal_at.x, steal_at.y, -0.55 * (1.0 - t)))
+            eul = Euler((0.35 * (1.0 - t), 0.0, math.atan2(ATTACK.y, ATTACK.x)), "XYZ")
         elif f <= f_exit:
             t = ease((f - f_up) / max(1, f_exit - f_up))
             p = _lerp(steal_at, _lerp(steal_at, sh_end, 0.35), t)
@@ -565,7 +565,7 @@ def build_42() -> int:
 
     add_nla_loop(sh_arm, "run", 1, f_drop - 1)
     add_nla_hold(sh_arm, "fight_idle", f_drop, f_steal + 2, af=4)
-    add_pose_strip(sh_arm, "ShaolinBreakPose", frames, _breakdance_deltas, BREAK_BONES, step=2, clamp=1.6)
+    add_pose_strip(sh_arm, "ShaolinBreakPose", frames, _breakdance_deltas, BREAK_BONES, step=2, clamp=1.6, absolute=True)
     add_nla_once(sh_arm, "fight_kick", f_steal - 4, f_steal + 14)
     add_nla_loop(sh_arm, "run", f_exit, frames)
 
@@ -598,14 +598,14 @@ def build_42() -> int:
     def cam_pos(f: int) -> Vector:
         if f_drop <= f <= f_up:
             c = steal_at
-            ang = (f - f_drop) * 0.12
-            return Vector((c.x + 6.5 * math.cos(ang), c.y + 6.5 * math.sin(ang) - 0.4, 3.6))
+            ang = (f - f_drop) * 0.11
+            return Vector((c.x + 6.0 * math.cos(ang), c.y + 6.0 * math.sin(ang) - 0.3, 3.4))
         b = path(f)
         return Vector((b.x - 3.5, b.y - 10.0, 3.5))
 
     def cam_tgt(f: int) -> Vector:
         if f_drop <= f <= f_up:
-            return Vector((steal_at.x, steal_at.y, 1.4))
+            return Vector((steal_at.x, steal_at.y, 1.2))
         b = path(f)
         return Vector((b.x + 1.0, b.y * 0.25, max(1.0, b.z + 0.5)))
 
@@ -646,11 +646,11 @@ def _build_france_phone_stomp(cam_mode: str) -> int:
     )
 
     phone_mat = mat_rgba("Phone_Mat", (0.02, 0.02, 0.025, 1.0), 0.35)
-    palm = (0.05, 0.01, 0.085)
+    palm = (0.07, 0.014, 0.12)
     phone = add_box("Phone_01", palm, Vector((0, 0, 0)), phone_mat)
-    # Between palms: parent left hand, offset toward midline / right palm
-    parent_phone_to_hand(phone, arm, "hand.l", loc=Vector((0.055, 0.02, 0.01)), palm_size=palm)
-    phone.rotation_euler = Euler((0.15, 0.05, 1.57), "XYZ")
+    # Between palms — slightly larger so clamp reads on close cam
+    parent_phone_to_hand(phone, arm, "hand.l", loc=Vector((0.04, 0.015, 0.0)), palm_size=palm)
+    phone.rotation_euler = Euler((0.1, 0.0, 1.57), "XYZ")
     phone.scale = Vector(palm)
 
     cam = setup_new_cam(f"CamFranceStomp_{cam_mode}", lens=34 if cam_mode == "A" else 42)
