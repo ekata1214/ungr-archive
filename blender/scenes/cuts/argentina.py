@@ -29,6 +29,7 @@ from cuts.common import (  # noqa: E402
     animate_gk_dive,
     animate_root,
     attach_feminine_hair,
+    flatten_female_torso,
     ball_ahead_of,
     clear_ball_anim,
     ease,
@@ -553,6 +554,7 @@ def build_32() -> int:
         scale=2.2,
     )
     _clear_all_nla(arm)
+    flatten_female_torso(arm)
     attach_feminine_hair(arm)
     keys = []
     for f in range(1, frames + 1, 2):
@@ -596,6 +598,7 @@ def build_33() -> int:
         scale=2.2,
     )
     _clear_all_nla(gk_arm)
+    flatten_female_torso(gk_arm)
     attach_feminine_hair(gk_arm)
     animate_root(ar_root, [(1, spot), (frames, spot)], ATTACK_YAW)
     dive_pos = GK_HOME + Vector((1.0, -4.5, 0.0))
@@ -658,6 +661,7 @@ def build_34() -> int:
         scale=2.2,
     )
     _clear_all_nla(arm)
+    flatten_female_torso(arm)
     attach_feminine_hair(arm)
     animate_root(root, [(1, pos), (frames, pos)], yaw_face_neg_y())
     add_nla_loop(arm, "idle", 1, frames)

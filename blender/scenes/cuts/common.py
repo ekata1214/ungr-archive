@@ -891,14 +891,36 @@ def attach_feminine_hair(
         objs.append(obj)
         return obj
 
-    # Single molded Lego long-hair piece: covers crown and hangs down the back.
-    # Sizes are local to the head bone; spawn scale amplifies world size.
-    _piece("lego_long", Vector((0.0, 0.04, -0.18)), Vector((0.15, 0.12, 0.42)))
+    # One molded long piece hanging past the shoulders (visible from front as side curtains).
+    _piece("lego_long", Vector((0.0, 0.05, -0.38)), Vector((0.2, 0.13, 0.72)))
     return objs
 
 
+def flatten_female_torso(arm: bpy.types.Object) -> None:
+    """Lego female figures are flat-chested — squash upper-torso depth on the mesh."""
+    mesh_objs = [
+        o for o in bpy.data.objects
+        if o.parent == arm and o.type == "MESH" and "Hair_" not in o.name
+    ]
+    if not mesh_objs:
+        # skin is sibling under root / child of arm by armature modifier
+        mesh_objs = [
+            o for o in bpy.data.objects
+            if o.type == "MESH" and arm.name.split("_Armature")[0] in o.name and "Mesh" in o.name
+        ]
+    for obj in mesh_objs:
+        # permanent geometry squash in local Y (front thickness for this mannequin)
+        me = obj.data
+        for v in me.vertices:
+            # upper torso band: squash forward/back to remove "bust" read
+            if 0.55 < v.co.z < 1.35 and abs(v.co.x) < 0.35:
+                v.co.y *= 0.45
+        me.update()
+
+
 def apply_female_chest(arm: bpy.types.Object) -> list:
-    """Deprecated: Lego-style female has no chest bulge. No-op."""
+    """Deprecated: Lego-style female has no chest bulge. Flatten instead."""
+    flatten_female_torso(arm)
     return []
 
 
