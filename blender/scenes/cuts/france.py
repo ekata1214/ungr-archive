@@ -7,13 +7,11 @@ import math
 from typing import Callable, Dict, List, Tuple
 
 import bpy
-from mathutils import Vector
+from mathutils import Euler, Vector
 
 from animate_soccer_match import BALL_GROUND_Z, _clear_all_nla  # noqa: E402
 
 from cuts.common import (  # noqa: E402
-    ARG_LIGHT,
-    ARG_WHITE,
     FRANCE_BLUE,
     FRANCE_RED,
     FRANCE_WHITE,
@@ -29,6 +27,7 @@ from cuts.common import (  # noqa: E402
     add_nla_loop,
     add_nla_once,
     add_talk_strip,
+    animate_gk_dive,
     animate_root,
     ball_ahead_of,
     clear_ball_anim,
@@ -43,9 +42,11 @@ from cuts.common import (  # noqa: E402
     remove_players,
     set_frame_range,
     setup_new_cam,
+    spawn_france,
     spawn_player,
     yaw_face_neg_x,
     yaw_face_neg_y,
+    yaw_face_pos_x,
 )
 
 GOAL_X = goal_l_x()
@@ -177,7 +178,7 @@ def _happy_fn() -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
 
 
 # ---------------------------------------------------------------------------
-# 18 — 1v1 juke
+# 18 — 1v1 juke; France facing reversed
 # ---------------------------------------------------------------------------
 def build_18() -> int:
     frames = 132
@@ -191,29 +192,24 @@ def build_18() -> int:
     sh_start = Vector((8.0, sh_y, 0.0))
     sh_mid = Vector((-22.0, sh_y - 0.4, 0.0))
     sh_end = Vector((-55.0, sh_y - 0.2, 0.0))
+    fr_yaw = yaw_face_pos_x()
 
-    fr_arm, fr_root = spawn_player(
-        "France", FRANCE_BLUE, fr_pos, ATTACK_YAW, actions=["idle"], split=(FRANCE_BLUE, FRANCE_WHITE, 0.42)
-    )
-
+    fr_arm, fr_root = spawn_france("France", fr_pos, fr_yaw, actions=["idle", "fight_kick", "fight_idle"])
     _clear_all_nla(fr_arm)
     sh_arm, sh_root = spawn_player(
         "Shaolin", SHAOLIN_ORANGE, sh_start, ATTACK_YAW, actions=["run"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42)
     )
     _clear_all_nla(sh_arm)
 
-    # France holds lane, stab-fail near approach
-    animate_root(fr_root, [(1, fr_pos), (50, fr_pos), (70, Vector((-21.2, fr_y, 0.0))), (frames, fr_pos)], ATTACK_YAW)
+    animate_root(fr_root, [(1, fr_pos), (50, fr_pos), (70, Vector((-21.2, fr_y, 0.0))), (frames, fr_pos)], fr_yaw)
     add_nla_loop(fr_arm, "idle", 1, 54)
     add_nla_once(fr_arm, "fight_kick", 55, 78)
     add_nla_hold(fr_arm, "fight_idle", 79, frames, af=8)
 
-    # Shaolin curves past on far side then accelerates
     sh_keys: List[Tuple[int, Vector]] = []
     for f in range(1, frames + 1, 2):
         if f <= 48:
             t = ease((f - 1) / 47.0)
-            # curve around France: dip further negative Y then straighten
             bend = math.sin(t * math.pi) * 1.2
             p = _lerp(sh_start, sh_mid, t)
             p.y = sh_y - bend
@@ -221,7 +217,6 @@ def build_18() -> int:
         else:
             t = ease((f - 48) / max(1, frames - 48))
             p = _lerp(sh_mid, sh_end, t)
-            # accelerate: bias later frames further ahead via ease already
             sh_keys.append((f, p))
     if sh_keys[-1][0] != frames:
         sh_keys.append((frames, sh_end))
@@ -231,7 +226,6 @@ def build_18() -> int:
     ball = clear_ball_anim()
 
     def ball_path(f: int) -> Vector:
-        # sample nearest keyed shaolin root
         loc = sh_start
         for kf, p in sh_keys:
             if kf <= f:
@@ -266,30 +260,34 @@ def build_18() -> int:
 # 19 — France sits
 # ---------------------------------------------------------------------------
 def build_19() -> int:
-    frames = 96
+    frames = 120
     remove_players()
     _show_pitch()
     set_frame_range(frames)
     hide_ball()
     pos = Vector((-10.0, 2.0, 0.0))
-    arm, root = spawn_player(
-        "France", FRANCE_BLUE, pos, yaw_face_neg_y(), actions=["idle"], split=(FRANCE_BLUE, FRANCE_WHITE, 0.42)
-    )
+    arm, root = spawn_france("France", pos, yaw_face_neg_y(), actions=["idle"])
     _clear_all_nla(arm)
+    sit = Vector((pos.x, pos.y, -1.15))
     keys = []
-    for f in range(1, frames + 1, 3):
-        t = ease((f - 1) / max(1, frames - 1))
-        z = -0.15 - 0.7 * t  # ~-0.85 sit
-        keys.append((f, Vector((pos.x, pos.y, z))))
-    keys.append((frames, Vector((pos.x, pos.y, -0.85))))
+    for f in range(1, frames + 1, 2):
+        if f <= 40:
+            t = ease((f - 1) / 39.0)
+            p = _lerp(pos, sit, t)
+        else:
+            p = sit.copy()
+            p.z += -0.02 * abs(math.sin(f * 0.12))
+        keys.append((f, p))
+    keys.append((frames, sit))
     animate_root(root, keys, yaw_face_neg_y())
     add_nla_hold(arm, "idle", 1, frames, af=12)
+    add_talk_strip(arm, "FranceSitLean", frames, _sad_fn(0.28), TALK_BONES, step=3)
 
-    cam = setup_new_cam("Cam19", lens=35)
+    cam = setup_new_cam("Cam19", lens=34)
     _cam_dense(
         cam, 1, frames,
-        Vector((-6.0, -9.5, 3.2)), Vector((-8.0, -8.5, 2.8)),
-        Vector((-10.0, 2.0, 1.0)), Vector((-10.0, 2.0, 0.7)),
+        Vector((-6.0, -10.5, 2.8)), Vector((-8.0, -9.5, 2.2)),
+        Vector((-10.0, 2.0, 1.2)), Vector((-10.0, 2.0, 0.55)),
         step=3,
     )
     finish_cam(cam)
@@ -297,7 +295,7 @@ def build_19() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 20 — phone from sock
+# 20 — phone on pitch only
 # ---------------------------------------------------------------------------
 def build_20() -> int:
     frames = 120
@@ -306,36 +304,27 @@ def build_20() -> int:
     _clear_extras("Phone_")
     set_frame_range(frames)
     hide_ball()
-    pos = Vector((-10.0, 2.0, -0.85))
-    arm, root = spawn_player(
-        "France", FRANCE_BLUE, pos, yaw_face_neg_y(), actions=["idle"], split=(FRANCE_BLUE, FRANCE_WHITE, 0.42)
-    )
+    pos = Vector((-10.0, 2.0, 0.0))
+    arm, root = spawn_france("France", pos, yaw_face_neg_y(), actions=["idle"])
     _clear_all_nla(arm)
     animate_root(root, [(1, pos), (frames, pos)], yaw_face_neg_y())
     add_nla_hold(arm, "idle", 1, frames, af=12)
+    add_talk_strip(arm, "FrancePhoneIdle", frames, _talk_fn(0.35), TALK_BONES, step=3)
 
-    phone_mat = mat_rgba("Phone_Mat", (0.08, 0.08, 0.1, 1.0), 0.35)
-    phone = add_box("Phone_01", (0.1, 0.05, 0.18), Vector((pos.x + 0.35, pos.y - 0.15, 0.08)), phone_mat)
-    # rise foot → hand region, then fidget
-    foot = Vector((pos.x + 0.4, pos.y - 0.2, 0.05))
-    hand = Vector((pos.x + 0.35, pos.y - 0.55, 1.15))
-    force_linear(phone)
+    phone_mat = mat_rgba("Phone_Mat", (0.04, 0.04, 0.05, 1.0), 0.45)
+    hand = Vector((pos.x + 0.32, pos.y - 0.5, 1.55))
+    phone = add_box("Phone_01", (0.12, 0.02, 0.22), hand, phone_mat)
     for f in range(1, frames + 1, 2):
-        if f <= 40:
-            t = ease((f - 1) / 39.0)
-            loc = _lerp(foot, hand, t)
-        else:
-            wiggle = 0.04 * math.sin((f - 40) * 0.35)
-            loc = hand + Vector((wiggle, 0.02 * math.sin(f * 0.5), 0.02 * math.cos(f * 0.4)))
-        phone.location = loc
+        wiggle = 0.035 * math.sin(f * 0.4)
+        phone.location = hand + Vector((wiggle, 0.015 * math.sin(f * 0.55), 0.01 * math.cos(f * 0.45)))
         phone.keyframe_insert(data_path="location", frame=f)
     force_linear(phone)
 
-    cam = setup_new_cam("Cam20", lens=40)
+    cam = setup_new_cam("Cam20", lens=38)
     _cam_dense(
         cam, 1, frames,
-        Vector((-8.5, -6.5, 2.4)), Vector((-9.0, -5.2, 2.1)),
-        Vector((-10.0, 2.0, 0.9)), Vector((-10.0, 1.8, 1.0)),
+        Vector((-7.5, -8.0, 3.0)), Vector((-8.5, -7.0, 2.7)),
+        Vector((-10.0, 2.0, 1.5)), Vector((-10.0, 1.7, 1.45)),
         step=2,
     )
     finish_cam(cam)
@@ -343,19 +332,24 @@ def build_20() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 21 — France solo goal
+# 21 — France solo goal + Shaolin GK sideways miss
 # ---------------------------------------------------------------------------
 def build_21() -> int:
-    frames = 144
+    frames = 156
     remove_players()
     _show_pitch()
     set_frame_range(frames)
     start = Vector((-30.0, 1.0, 0.0))
     kick = Vector((GOAL_X + 22.0, 0.6, 0.0))
-    arm, root = spawn_player(
-        "France", FRANCE_BLUE, start, ATTACK_YAW, actions=["run"], split=(FRANCE_BLUE, FRANCE_WHITE, 0.42)
-    )
+    gk_home = Vector((GOAL_X + 3.0, -0.2, 0.0))
+    arm, root = spawn_france("France", start, ATTACK_YAW, actions=["run", "fight_kick", "fight_idle"])
     _clear_all_nla(arm)
+    gk_arm, gk_root = spawn_player(
+        "Shaolin_GK", SHAOLIN_ORANGE, gk_home, yaw_face_pos_x(),
+        actions=["fight_idle", "jump_full"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
+    )
+    _clear_all_nla(gk_arm)
+
     keys = []
     for f in range(1, 96, 2):
         t = ease((f - 1) / 94.0)
@@ -368,6 +362,7 @@ def build_21() -> int:
 
     ball = clear_ball_anim()
     goal = Vector((GOAL_X - 1.5, -GOAL_INNER_HALF_W * 0.55, GOAL_H * 0.62))
+    animate_gk_dive(gk_root, gk_arm, gk_home, goal.y * 0.7, 108, 130, frames, yaw_face_pos_x(), side=True)
 
     def path(f: int) -> Vector:
         if f < 96:
@@ -375,8 +370,8 @@ def build_21() -> int:
             return ball_ahead_of(loc, ATTACK_DIR, f, arm=arm)
         if f <= 104:
             return ball_ahead_of(kick, ATTACK_DIR, f, arm=arm)
-        u = ease((f - 104) / max(1, 124 - 104))
-        if f > 124:
+        u = ease((f - 104) / max(1, 128 - 104))
+        if f > 128:
             return goal
         return _shot_arc(ball_ahead_of(kick, ATTACK_DIR, 104, arm=arm), goal, u, arc=2.8)
 
@@ -400,75 +395,100 @@ def build_21() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 22 — crowd react
+# 22 — Norway-style crowd; L blue / M white / R red
 # ---------------------------------------------------------------------------
 def build_22() -> int:
-    frames = 120
+    frames = 192
     remove_players()
     _show_pitch()
     set_frame_range(frames)
     hide_ball()
-    colors = [
-        FRANCE_BLUE, FRANCE_WHITE, FRANCE_RED, FRANCE_BLUE,
-        SHAOLIN_ORANGE, ARG_LIGHT, FRANCE_WHITE, FRANCE_BLUE,
-        (0.9, 0.85, 0.2, 1.0), FRANCE_RED, FRANCE_BLUE, ARG_WHITE,
-        FRANCE_WHITE, FRANCE_BLUE, SHAOLIN_WHITE, FRANCE_RED,
-        FRANCE_BLUE, FRANCE_WHITE, FRANCE_RED, FRANCE_BLUE,
-    ]
-    arms_roots = []
-    base = Vector((-40.0, 28.0, 0.0))
-    cols, rows = 5, 4
+    _clear_extras("Crowd_")
+    blue_m = mat_rgba("Crowd_FrBlue", FRANCE_BLUE, 0.7)
+    wht_m = mat_rgba("Crowd_FrWht", FRANCE_WHITE, 0.7)
+    red_m = mat_rgba("Crowd_FrRed", FRANCE_RED, 0.7)
+    stand_m = mat_rgba("Crowd_StandMat", (0.25, 0.25, 0.28, 1.0), 0.9)
+    add_box("Crowd_StandDeck", (48.0, 10.0, 0.4), Vector((0.0, 38.0, 6.0)), stand_m)
+    add_box("Crowd_StandRisers", (48.0, 8.0, 3.5), Vector((0.0, 40.5, 4.0)), stand_m)
+
+    def _cyl(name, radius, depth, loc, mat):
+        if name in bpy.data.objects:
+            bpy.data.objects.remove(bpy.data.objects[name], do_unlink=True)
+        mesh = bpy.data.meshes.new(name)
+        n = 8
+        verts = []
+        for i in range(n):
+            a = 2.0 * math.pi * i / n
+            verts.append((math.cos(a) * radius, math.sin(a) * radius, -depth * 0.5))
+        for i in range(n):
+            a = 2.0 * math.pi * i / n
+            verts.append((math.cos(a) * radius, math.sin(a) * radius, depth * 0.5))
+        faces = [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)]
+        faces.append(tuple(range(n - 1, -1, -1)))
+        faces.append(tuple(range(n, 2 * n)))
+        mesh.from_pydata(verts, [], faces)
+        mesh.update()
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.collection.objects.link(obj)
+        obj.location = loc
+        obj.data.materials.append(mat)
+        return obj
+
+    cols, rows = 20, 5
     idx = 0
     for r in range(rows):
         for c in range(cols):
-            px = base.x + c * SIDE_GAP * 1.05
-            py = base.y + r * 2.8
-            col = colors[idx % len(colors)]
-            arm, root = spawn_player(
-                f"Crowd_{idx:02d}", col, Vector((px, py, 0.0)), math.pi, actions=["idle"]
-            )
-            _clear_all_nla(arm)
-            arms_roots.append((arm, root, px, py, idx))
+            x = -22.0 + c * 2.3 + (0.3 if r % 2 else 0.0)
+            y = 34.5 + r * 1.7
+            z = 6.4 + r * 0.55
+            mat = blue_m if c < 7 else (wht_m if c < 13 else red_m)
+            name = f"Crowd_Fan{idx:03d}"
+            if (c + r) % 3 == 0:
+                obj = _cyl(name, 0.28, 0.95, Vector((x, y, z + 0.48)), mat)
+            else:
+                obj = add_box(name, (0.45, 0.35, 0.95), Vector((x, y, z + 0.48)), mat)
+            phase = idx * 0.37
+            for f in range(1, frames + 1, 2):
+                t = f / FPS
+                bob = 0.18 * math.sin(t * 7.0 + phase) + 0.08 * math.sin(t * 11.0 + phase * 0.5)
+                lean = 0.12 * math.sin(t * 5.5 + phase)
+                obj.location = Vector((x + lean * 0.15, y, z + 0.48 + bob))
+                obj.rotation_euler = Euler((lean * 0.25, 0.0, lean * 0.15), "XYZ")
+                obj.keyframe_insert(data_path="location", frame=f)
+                obj.keyframe_insert(data_path="rotation_euler", frame=f)
+            force_linear(obj)
             idx += 1
 
-    for arm, root, px, py, i in arms_roots:
-        keys = []
-        phase = i * 0.7
-        for f in range(1, frames + 1, 2):
-            # surprise bob — bigger mid surge
-            surge = 1.0
-            if 40 <= f <= 80:
-                surge = 1.0 + 0.55 * math.sin((f - 40) / 40.0 * math.pi)
-            z = 0.12 * surge * abs(math.sin(f * 0.28 + phase))
-            keys.append((f, Vector((px, py, z))))
-        animate_root(root, keys, math.pi)
-        add_nla_loop(arm, "idle", 1, frames)
-
-    cam = setup_new_cam("Cam22", lens=24)
-    _cam_dense(
-        cam, 1, frames,
-        Vector((-30.0, 10.0, 8.0)), Vector((-55.0, 14.0, 7.0)),
-        Vector((-40.0, 32.0, 2.5)), Vector((-45.0, 34.0, 3.0)),
-        step=2,
-    )
+    cam = setup_new_cam("Cam22", lens=28)
+    for f in range(1, frames + 1, 3):
+        t = (f - 1) / max(1, frames - 1)
+        pos = Vector((-18.0 + 36.0 * ease(t), 22.0, 9.5 + 1.5 * math.sin(t * math.pi)))
+        tgt = Vector((-10.0 + 20.0 * t, 38.0, 7.5))
+        kf_cam(cam, f, pos, tgt)
+    t = 1.0
+    kf_cam(cam, frames, Vector((-18.0 + 36.0 * ease(t), 22.0, 9.5)), Vector((-10.0 + 20.0 * t, 38.0, 7.5)))
     finish_cam(cam)
     return frames
 
 
 # ---------------------------------------------------------------------------
-# 23 — equalizer pass + shot
+# 23 — equalizer + France GK jumps up but fails
 # ---------------------------------------------------------------------------
 def build_23() -> int:
-    frames = 132
+    frames = 144
     remove_players()
     _show_pitch()
     set_frame_range(frames)
     recv = Vector((-45.0, -2.0, 0.0))
     kick = Vector((GOAL_X + 26.0, -1.2, 0.0))
+    gk_home = Vector((GOAL_X + 3.0, 0.2, 0.0))
     arm, root = spawn_player(
         "Shaolin", SHAOLIN_ORANGE, recv, ATTACK_YAW, actions=["run"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42)
     )
     _clear_all_nla(arm)
+    gk_arm, gk_root = spawn_france("France_GK", gk_home, yaw_face_pos_x(), actions=["fight_idle", "jump_full"])
+    _clear_all_nla(gk_arm)
+
     keys = [(1, recv)]
     for f in range(36, 90, 2):
         t = ease((f - 36) / 53.0)
@@ -478,6 +498,7 @@ def build_23() -> int:
     add_nla_loop(arm, "run", 1, 89)
     add_nla_once(arm, "fight_kick", 90, 112)
     add_nla_hold(arm, "fight_idle", 113, frames, af=6)
+    animate_gk_dive(gk_root, gk_arm, gk_home, 0.0, 102, 124, frames, yaw_face_pos_x(), side=False, rise=1.45)
 
     ball = clear_ball_anim()
     off = Vector((-20.0, 18.0, BALL_GROUND_Z))
@@ -516,40 +537,36 @@ def build_23() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 24 — France tired
+# 24 — France slow walk, slumped shoulders
 # ---------------------------------------------------------------------------
 def build_24() -> int:
-    frames = 120
+    frames = 144
     remove_players()
     _show_pitch()
     set_frame_range(frames)
     hide_ball()
     start = Vector((-5.0, 3.0, 0.0))
-    end = Vector((-18.0, 4.0, 0.0))
-    arm, root = spawn_player(
-        "France", FRANCE_BLUE, start, ATTACK_YAW, actions=["run"], split=(FRANCE_BLUE, FRANCE_WHITE, 0.42)
-    )
+    end = Vector((-22.0, 4.2, 0.0))
+    arm, root = spawn_france("France", start, ATTACK_YAW, actions=["run", "idle"])
     _clear_all_nla(arm)
     keys = []
-    for f in range(1, frames + 1, 3):
+    for f in range(1, frames + 1, 2):
         t = (f - 1) / max(1, frames - 1)
-        # slow with heavier sway
-        sway = 0.18 * math.sin(t * math.pi * 3.0)
-        p = _lerp(start, end, ease(t * 0.85))
-        p.y += sway
-        p.z = -0.05 * abs(math.sin(t * 6.0))
+        # very slow progress
+        p = _lerp(start, end, ease(t * 0.7 + 0.15 * t * t))
+        p.y += 0.12 * math.sin(t * math.pi * 2.2)
+        p.z = -0.04
         keys.append((f, p))
     keys.append((frames, end))
     animate_root(root, keys, ATTACK_YAW)
-    # slower run via stretched once segments loop feel
-    add_nla_once(arm, "run", 1, frames)  # stretched slow by scale in add_nla_once over full length
-    add_talk_strip(arm, "FranceTiredTalk", frames, _sad_fn(0.14), TALK_BONES, step=3)
+    add_nla_once(arm, "run", 1, frames)
+    add_talk_strip(arm, "FranceSlump", frames, _sad_fn(0.32), TALK_BONES, step=3)
 
     cam = setup_new_cam("Cam24", lens=34)
     _cam_dense(
         cam, 1, frames,
-        Vector((2.0, -10.0, 3.5)), Vector((-12.0, -9.0, 3.2)),
-        Vector((-5.0, 3.0, 1.4)), Vector((-18.0, 4.0, 1.2)),
+        Vector((2.0, -11.0, 3.2)), Vector((-14.0, -10.0, 3.0)),
+        Vector((-5.0, 3.0, 1.35)), Vector((-22.0, 4.0, 1.15)),
         step=3,
     )
     finish_cam(cam)
@@ -557,7 +574,7 @@ def build_24() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 25 — air walk goal
+# 25 — air walk goal + France GK sideways miss; else unchanged
 # ---------------------------------------------------------------------------
 def build_25() -> int:
     frames = 156
@@ -566,12 +583,15 @@ def build_25() -> int:
     set_frame_range(frames)
     start = Vector((-40.0, 0.5, 0.0))
     cruise_z = 4.6
-    mid = Vector((-70.0, 0.3, cruise_z))
     kick = Vector((GOAL_X + 24.0, 0.0, cruise_z))
+    gk_home = Vector((GOAL_X + 3.0, 0.2, 0.0))
     arm, root = spawn_player(
         "Shaolin", SHAOLIN_ORANGE, start, ATTACK_YAW, actions=["run"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42)
     )
     _clear_all_nla(arm)
+    gk_arm, gk_root = spawn_france("France_GK", gk_home, yaw_face_pos_x(), actions=["fight_idle", "jump_full"])
+    _clear_all_nla(gk_arm)
+
     keys = []
     for f in range(1, frames + 1, 2):
         if f <= 28:
@@ -592,9 +612,9 @@ def build_25() -> int:
 
     ball = clear_ball_anim()
     goal = Vector((GOAL_X - 1.5, -GOAL_INNER_HALF_W * 0.4, GOAL_H * 0.7))
+    animate_gk_dive(gk_root, gk_arm, gk_home, goal.y * 0.75, 118, 140, frames, yaw_face_pos_x(), side=True)
 
     def path(f: int) -> Vector:
-        # player sample
         loc = start
         for kf, p in keys:
             if kf <= f:
@@ -630,7 +650,7 @@ def build_25() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 26 — celebrate
+# 26 — celebrate (unchanged)
 # ---------------------------------------------------------------------------
 def build_26() -> int:
     frames = 108
@@ -653,7 +673,6 @@ def build_26() -> int:
             split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
         )
         _clear_all_nla(arm)
-        # gentle root bob only — arms stay idle
         keys = []
         for f in range(1, frames + 1, 3):
             z = 0.04 * abs(math.sin(f * 0.22 + i))
@@ -674,7 +693,7 @@ def build_26() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 27 — France interview
+# 27 — France interview kit colors (+ red foot)
 # ---------------------------------------------------------------------------
 def build_27() -> int:
     frames = 168
@@ -684,16 +703,13 @@ def build_27() -> int:
     _hide_pitch_studio(("Light", "Sun", "World", "Camera", "Cam", "France_", "Interview_"))
     _interview_set(FRANCE_BLUE, FRANCE_RED)
     pos = Vector((0.0, 0.0, 0.35))
-    arm, root = spawn_player(
-        "France", FRANCE_BLUE, pos, yaw_face_neg_y(), actions=["idle"], split=(FRANCE_BLUE, FRANCE_WHITE, 0.42)
-    )
+    arm, root = spawn_france("France", pos, yaw_face_neg_y(), actions=["idle"])
     _clear_all_nla(arm)
     animate_root(root, [(1, pos), (frames, pos)], yaw_face_neg_y())
     add_nla_loop(arm, "idle", 1, frames)
     add_talk_strip(arm, "FranceInterviewTalk", frames, _talk_fn(1.0), TALK_BONES, step=2)
 
     cam = setup_new_cam("Cam27", lens=35)
-    # bust-medium
     _cam_dense(
         cam, 1, frames,
         Vector((-0.5, -7.2, 3.35)), Vector((-0.35, -6.6, 3.4)),
@@ -705,42 +721,47 @@ def build_27() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 28 — phone disappoint
+# 28 — France on pitch with phone, then shoulders drop
 # ---------------------------------------------------------------------------
 def build_28() -> int:
-    frames = 108
+    frames = 132
     remove_players()
     _show_pitch()
     _clear_extras("Phone_")
     set_frame_range(frames)
     hide_ball()
-    pos = Vector((-10.0, 2.0, -0.85))
-    arm, root = spawn_player(
-        "France", FRANCE_BLUE, pos, yaw_face_neg_y(), actions=["idle"], split=(FRANCE_BLUE, FRANCE_WHITE, 0.42)
-    )
+    pos = Vector((-10.0, 2.0, 0.0))
+    arm, root = spawn_france("France", pos, yaw_face_neg_y(), actions=["idle"])
     _clear_all_nla(arm)
     animate_root(root, [(1, pos), (frames, pos)], yaw_face_neg_y())
     add_nla_hold(arm, "idle", 1, frames, af=12)
-    add_talk_strip(arm, "FrancePhoneSad", frames, _sad_fn(0.22), TALK_BONES, step=3)
 
-    phone_mat = mat_rgba("Phone_Mat", (0.08, 0.08, 0.1, 1.0), 0.35)
-    hand = Vector((pos.x + 0.3, pos.y - 0.55, 1.1))
-    phone = add_box("Phone_01", (0.1, 0.05, 0.18), hand, phone_mat)
+    def phone_then_sad(frame: int):
+        if frame < 55:
+            return _talk_fn(0.4)(frame)
+        return _sad_fn(0.34)(frame)
+
+    add_talk_strip(arm, "FrancePhoneThenSad", frames, phone_then_sad, TALK_BONES, step=3)
+
+    phone_mat = mat_rgba("Phone_Mat", (0.04, 0.04, 0.05, 1.0), 0.45)
+    hand = Vector((pos.x + 0.3, pos.y - 0.55, 1.5))
+    phone = add_box("Phone_01", (0.12, 0.02, 0.22), hand, phone_mat)
     for f in range(1, frames + 1, 3):
         wiggle = 0.02 * math.sin(f * 0.25)
         phone.location = hand + Vector((wiggle, 0.0, 0.01 * math.cos(f * 0.3)))
         phone.keyframe_insert(data_path="location", frame=f)
     force_linear(phone)
 
-    cam = setup_new_cam("Cam28", lens=42)
+    cam = setup_new_cam("Cam28", lens=38)
     _cam_dense(
         cam, 1, frames,
-        Vector((-8.8, -5.5, 2.2)), Vector((-9.2, -5.0, 2.0)),
-        Vector((-10.0, 1.9, 1.0)), Vector((-10.0, 1.8, 0.85)),
+        Vector((-7.5, -8.0, 3.0)), Vector((-8.5, -7.2, 2.6)),
+        Vector((-10.0, 1.9, 1.55)), Vector((-10.0, 1.8, 1.35)),
         step=3,
     )
     finish_cam(cam)
     return frames
+
 
 
 BUILDERS = {

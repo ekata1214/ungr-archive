@@ -46,7 +46,7 @@ CATALOG: List[Tuple[str, str, str, str]] = [
     (
         "07",
         "cut_07_norway_interview",
-        "ノルウェー選手のお立ち台インタビュー",
+        "少林選手のお立ち台インタビュー",
         "norway",
     ),
     (
@@ -124,7 +124,7 @@ CATALOG: List[Tuple[str, str, str, str]] = [
     (
         "20",
         "cut_20_phone_from_sock",
-        "座り込んだフランス選手がソックスの下からスマホを取り出しいじり始める",
+        "フランス選手がピッチ上でスマホをいじる",
         "france",
     ),
     (
@@ -148,7 +148,7 @@ CATALOG: List[Tuple[str, str, str, str]] = [
     (
         "24",
         "cut_24_france_tired",
-        "フランス選手一人が息切れして動きが鈍る様子",
+        "フランスがゆっくり肩を落として歩いている",
         "france",
     ),
     (
@@ -172,7 +172,7 @@ CATALOG: List[Tuple[str, str, str, str]] = [
     (
         "28",
         "cut_28_phone_disappoint",
-        "座っていたフランス選手がスマホを見てがっかりする",
+        "フランス、ピッチの上で携帯見て、ガックリと肩を落とす",
         "france",
     ),
     (

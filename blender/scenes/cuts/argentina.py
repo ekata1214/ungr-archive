@@ -14,8 +14,6 @@ from animate_soccer_match import BALL_GROUND_Z, _clear_all_nla  # noqa: E402
 from cuts.common import (  # noqa: E402
     ARG_LIGHT,
     ARG_WHITE,
-    FEMALE_GK_PINK,
-    FEMALE_GK_WHITE,
     FPS,
     GOAL_H,
     GOAL_INNER_HALF_W,
@@ -28,7 +26,9 @@ from cuts.common import (  # noqa: E402
     add_nla_loop,
     add_nla_once,
     add_talk_strip,
+    animate_gk_dive,
     animate_root,
+    attach_long_hair,
     ball_ahead_of,
     clear_ball_anim,
     ease,
@@ -176,7 +176,7 @@ def _mutter_fn() -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
 
 
 # ---------------------------------------------------------------------------
-# 29 — middle equalizer 2-2
+# 29 — middle equalizer 2-2; Arg GK sideways dive
 # ---------------------------------------------------------------------------
 def build_29() -> int:
     frames = 144
@@ -184,15 +184,14 @@ def build_29() -> int:
     _show_pitch()
     set_frame_range(frames)
     start = Vector((-35.0, 0.4, 0.0))
-    kick = Vector((GOAL_X + 55.0, -0.3, 0.0))  # middle range ~22m
+    kick = Vector((GOAL_X + 55.0, -0.3, 0.0))
     arm, root = spawn_player(
         "Shaolin", SHAOLIN_ORANGE, start, ATTACK_YAW, actions=["run"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42)
     )
     _clear_all_nla(arm)
-    # distant Arg GK that misses
     gk_arm, gk_root = spawn_player(
-        "Argentina", ARG_LIGHT, GK_HOME + Vector((0.0, 6.0, 0.0)), GK_YAW,
-        actions=["idle"], split=(ARG_LIGHT, ARG_WHITE, 0.42),
+        "Argentina", ARG_LIGHT, GK_HOME, GK_YAW,
+        actions=["fight_idle", "jump_full"], split=(ARG_LIGHT, ARG_WHITE, 0.42),
     )
     _clear_all_nla(gk_arm)
     keys = []
@@ -204,22 +203,9 @@ def build_29() -> int:
     add_nla_once(arm, "fight_kick", 90, 112)
     add_nla_hold(arm, "fight_idle", 113, frames, af=6)
 
-    animate_root(
-        gk_root,
-        [
-            (1, GK_HOME + Vector((0.0, 6.0, 0.0))),
-            (100, GK_HOME + Vector((0.0, 6.0, 0.0))),
-            (120, GK_HOME + Vector((0.5, 2.5, 0.0))),
-            (frames, GK_HOME + Vector((0.5, 2.5, 0.0))),
-        ],
-        GK_YAW,
-    )
-    add_nla_loop(gk_arm, "idle", 1, 105)
-    add_nla_once(gk_arm, "jump_full", 106, 130)
-    add_nla_hold(gk_arm, "fight_idle", 131, frames, af=4)
-
     ball = clear_ball_anim()
     goal = Vector((GOAL_X - 1.8, -GOAL_INNER_HALF_W * 0.72, GOAL_H * 0.68))
+    animate_gk_dive(gk_root, gk_arm, GK_HOME, goal.y * 0.7, 100, 122, frames, GK_YAW, side=True)
 
     def path(f: int) -> Vector:
         if f < 90:
@@ -228,7 +214,6 @@ def build_29() -> int:
         if f <= 98:
             return ball_ahead_of(kick, ATTACK_DIR, f, arm=arm)
         u = ease((f - 98) / max(1, 116 - 98))
-        # rocket — flatter arc
         return goal if f > 116 else _shot_arc(
             ball_ahead_of(kick, ATTACK_DIR, 98, arm=arm), goal, min(1.0, u * 1.15), arc=1.4
         )
@@ -253,10 +238,11 @@ def build_29() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 30 — extra time misses mashup
+# 30 — ET misses mashup with both GKs; some saves
+# One file sequences 4 beats (cam hard-cuts): miss / miss / save / miss
 # ---------------------------------------------------------------------------
 def build_30() -> int:
-    frames = 264
+    frames = 320
     remove_players()
     _show_pitch()
     set_frame_range(frames)
@@ -266,111 +252,162 @@ def build_30() -> int:
     sh_kick1 = Vector((GOAL_X + 30.0, -gap * 0.5, 0.0))
     ar_kick = Vector((GOAL_X + 28.0, gap * 0.55, 0.0))
     sh_kick2 = Vector((GOAL_X + 32.0, -gap * 0.4, 0.0))
+    ar_kick2 = Vector((GOAL_X + 30.0, gap * 0.35, 0.0))
 
     sh_arm, sh_root = spawn_player(
         "Shaolin", SHAOLIN_ORANGE, sh_pos, ATTACK_YAW, actions=["run"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42)
     )
-
     _clear_all_nla(sh_arm)
     ar_arm, ar_root = spawn_player(
         "Argentina", ARG_LIGHT, ar_pos, ATTACK_YAW, actions=["run"], split=(ARG_LIGHT, ARG_WHITE, 0.42)
     )
     _clear_all_nla(ar_arm)
+    # defending GKs in goal
+    arg_gk_arm, arg_gk_root = spawn_player(
+        "Argentina_GK", ARG_LIGHT, GK_HOME, GK_YAW,
+        actions=["fight_idle", "jump_full"], split=(ARG_LIGHT, ARG_WHITE, 0.42),
+    )
+    _clear_all_nla(arg_gk_arm)
+    sh_gk_arm, sh_gk_root = spawn_player(
+        "Shaolin_GK", SHAOLIN_ORANGE, GK_HOME + Vector((0.0, SIDE_GAP * 1.4, 0.0)), GK_YAW,
+        actions=["fight_idle", "jump_full"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
+    )
+    _clear_all_nla(sh_gk_arm)
 
-    # Segment A: Shaolin shot over bar (1-88)
-    # Segment B: Arg shot wide (89-176)
-    # Segment C: another miss (177-264)
-    sh_keys: List[Tuple[int, Vector]] = []
-    for f in range(1, 70, 2):
-        sh_keys.append((f, _lerp(sh_pos, sh_kick1, ease((f - 1) / 68.0))))
-    sh_keys += [(70, sh_kick1), (88, sh_kick1)]
-    # park far during others
     park_sh = Vector((-40.0, -gap - 1.0, 0.0))
-    sh_keys += [(89, park_sh), (176, park_sh)]
-    for f in range(177, 240, 2):
-        sh_keys.append((f, _lerp(Vector((-48.0, -gap * 0.4, 0.0)), sh_kick2, ease((f - 177) / 62.0))))
-    sh_keys += [(240, sh_kick2), (frames, sh_kick2)]
+    park_ar = Vector((-42.0, gap + 1.0, 0.0))
+    # A 1-80 Shaolin miss over; B 81-160 Arg wide; C 161-240 Shaolin SAVED; D 241-320 Arg miss
+    sh_keys: List[Tuple[int, Vector]] = []
+    for f in range(1, 60, 2):
+        sh_keys.append((f, _lerp(sh_pos, sh_kick1, ease((f - 1) / 58.0))))
+    sh_keys += [(60, sh_kick1), (80, sh_kick1), (81, park_sh), (160, park_sh)]
+    for f in range(161, 210, 2):
+        sh_keys.append((f, _lerp(Vector((-48.0, -gap * 0.4, 0.0)), sh_kick2, ease((f - 161) / 48.0))))
+    sh_keys += [(210, sh_kick2), (240, sh_kick2), (241, park_sh), (frames, park_sh)]
     animate_root(sh_root, sh_keys, ATTACK_YAW)
 
     ar_keys: List[Tuple[int, Vector]] = []
-    park_ar = Vector((-42.0, gap + 1.0, 0.0))
-    ar_keys += [(1, park_ar), (88, park_ar)]
-    for f in range(89, 150, 2):
-        ar_keys.append((f, _lerp(ar_pos, ar_kick, ease((f - 89) / 60.0))))
-    ar_keys += [(150, ar_kick), (176, ar_kick), (177, park_ar), (frames, park_ar)]
+    ar_keys += [(1, park_ar), (80, park_ar)]
+    for f in range(81, 130, 2):
+        ar_keys.append((f, _lerp(ar_pos, ar_kick, ease((f - 81) / 48.0))))
+    ar_keys += [(130, ar_kick), (160, ar_kick)]
+    ar_keys += [(161, park_ar), (240, park_ar)]
+    for f in range(241, 290, 2):
+        ar_keys.append((f, _lerp(Vector((-50.0, gap * 0.4, 0.0)), ar_kick2, ease((f - 241) / 48.0))))
+    ar_keys += [(290, ar_kick2), (frames, ar_kick2)]
     animate_root(ar_root, ar_keys, ATTACK_YAW)
 
-    add_nla_loop(sh_arm, "run", 1, 69)
-    add_nla_once(sh_arm, "fight_kick", 70, 88)
-    add_nla_hold(sh_arm, "idle", 89, 176, af=10)
-    add_nla_loop(sh_arm, "run", 177, 239)
-    add_nla_once(sh_arm, "fight_kick", 240, 258)
-    add_nla_hold(sh_arm, "fight_idle", 259, frames, af=5)
+    # Arg GK active on Shaolin shots (A,C); Shaolin GK on Arg shots (B,D)
+    animate_root(arg_gk_root, [(1, GK_HOME), (160, GK_HOME), (161, GK_HOME), (240, GK_HOME), (241, GK_HOME + Vector((0, 8, 0))), (frames, GK_HOME + Vector((0, 8, 0)))], GK_YAW)
+    animate_root(sh_gk_root, [(1, GK_HOME + Vector((0, 8, 0))), (80, GK_HOME + Vector((0, 8, 0))), (81, GK_HOME), (160, GK_HOME), (161, GK_HOME + Vector((0, 8, 0))), (240, GK_HOME + Vector((0, 8, 0))), (241, GK_HOME), (frames, GK_HOME)], GK_YAW)
 
-    add_nla_hold(ar_arm, "idle", 1, 88, af=10)
-    add_nla_loop(ar_arm, "run", 89, 149)
-    add_nla_once(ar_arm, "fight_kick", 150, 168)
-    add_nla_hold(ar_arm, "idle", 169, frames, af=10)
+    add_nla_loop(sh_arm, "run", 1, 59)
+    add_nla_once(sh_arm, "fight_kick", 60, 78)
+    add_nla_hold(sh_arm, "idle", 79, 160, af=10)
+    add_nla_loop(sh_arm, "run", 161, 209)
+    add_nla_once(sh_arm, "fight_kick", 210, 228)
+    add_nla_hold(sh_arm, "idle", 229, frames, af=10)
+
+    add_nla_hold(ar_arm, "idle", 1, 80, af=10)
+    add_nla_loop(ar_arm, "run", 81, 129)
+    add_nla_once(ar_arm, "fight_kick", 130, 148)
+    add_nla_hold(ar_arm, "idle", 149, 240, af=10)
+    add_nla_loop(ar_arm, "run", 241, 289)
+    add_nla_once(ar_arm, "fight_kick", 290, 308)
+    add_nla_hold(ar_arm, "idle", 309, frames, af=10)
+
+    # GK animations: A miss dive, B miss dive, C SAVE dive, D miss dive
+    add_nla_hold(arg_gk_arm, "fight_idle", 1, 55, af=10)
+    add_nla_once(arg_gk_arm, "jump_full", 56, 78)
+    add_nla_hold(arg_gk_arm, "fight_idle", 79, 200, af=8)
+    add_nla_once(arg_gk_arm, "jump_full", 201, 230)  # save
+    add_nla_hold(arg_gk_arm, "fight_idle", 231, frames, af=8)
+
+    add_nla_hold(sh_gk_arm, "fight_idle", 1, 120, af=10)
+    add_nla_once(sh_gk_arm, "jump_full", 121, 150)
+    add_nla_hold(sh_gk_arm, "fight_idle", 151, 285, af=8)
+    add_nla_once(sh_gk_arm, "jump_full", 286, 312)
+    add_nla_hold(sh_gk_arm, "fight_idle", 313, frames, af=8)
+
+    # dive root offsets during saves/misses
+    def gk_dive_keys(home, dive_y, f0, f1, rise=0.9):
+        keys = [(1, home)]
+        for f in range(f0, f1 + 1, 2):
+            t = (f - f0) / max(1, f1 - f0)
+            p = home + Vector((0.5, dive_y * ease(t), rise * math.sin(min(1.0, t) * math.pi)))
+            keys.append((f, p))
+        keys.append((frames, home + Vector((0.5, dive_y, 0.0))))
+        return keys
+
+    # Only apply extra motion via overlapping keyframes on arg_gk during A and C
+    arg_keys = [(1, GK_HOME)]
+    for f in range(56, 80, 2):
+        t = (f - 56) / 24.0
+        arg_keys.append((f, GK_HOME + Vector((0.4, -3.5 * ease(t), 0.85 * math.sin(min(1, t) * math.pi)))))
+    arg_keys += [(80, GK_HOME + Vector((0.4, -3.5, 0.0))), (160, GK_HOME)]
+    for f in range(201, 235, 2):
+        t = (f - 201) / 34.0
+        # save: dive farther into ball path
+        arg_keys.append((f, GK_HOME + Vector((0.8, -5.0 * ease(t), 1.0 * math.sin(min(1, t) * math.pi)))))
+    arg_keys += [(240, GK_HOME + Vector((0.8, -5.0, 0.0))), (241, GK_HOME + Vector((0, 8, 0))), (frames, GK_HOME + Vector((0, 8, 0)))]
+    animate_root(arg_gk_root, arg_keys, GK_YAW)
+
+    shgk_keys = [(1, GK_HOME + Vector((0, 8, 0))), (80, GK_HOME + Vector((0, 8, 0)))]
+    for f in range(121, 160, 2):
+        t = (f - 121) / 39.0
+        shgk_keys.append((f, GK_HOME + Vector((0.5, 4.0 * ease(t), 0.9 * math.sin(min(1, t) * math.pi)))))
+    shgk_keys += [(160, GK_HOME + Vector((0.5, 4.0, 0.0))), (161, GK_HOME + Vector((0, 8, 0))), (240, GK_HOME + Vector((0, 8, 0)))]
+    for f in range(286, 320, 2):
+        t = (f - 286) / 34.0
+        shgk_keys.append((f, GK_HOME + Vector((0.5, -4.2 * ease(t), 0.85 * math.sin(min(1, t) * math.pi)))))
+    shgk_keys.append((frames, GK_HOME + Vector((0.5, -4.2, 0.0))))
+    animate_root(sh_gk_root, shgk_keys, GK_YAW)
 
     ball = clear_ball_anim()
-    over = Vector((GOAL_X - 4.0, 0.5, GOAL_H + 4.5))  # over bar
+    over = Vector((GOAL_X - 4.0, 0.5, GOAL_H + 4.5))
     wide = Vector((GOAL_X - 2.0, GOAL_INNER_HALF_W + 6.0, GOAL_H * 0.4))
-    miss3 = Vector((GOAL_X - 3.0, -GOAL_INNER_HALF_W - 5.5, GOAL_H * 0.9))
+    saved = Vector((GOAL_X + 16.0, -10.0, BALL_GROUND_Z + 0.5))  # punched away
+    toward_save = Vector((GOAL_X + 2.0, -4.0, GOAL_H * 0.5))
+    miss4 = Vector((GOAL_X - 3.0, -GOAL_INNER_HALF_W - 5.5, GOAL_H * 0.9))
 
     def path(f: int) -> Vector:
-        if f <= 70:
-            loc = _lerp(sh_pos, sh_kick1, ease((f - 1) / 68.0))
+        if f <= 60:
+            loc = _lerp(sh_pos, sh_kick1, ease((f - 1) / 58.0))
             return ball_ahead_of(loc, ATTACK_DIR, f, arm=sh_arm)
-        if f <= 88:
-            u = ease((f - 70) / 18.0)
-            return _shot_arc(ball_ahead_of(sh_kick1, ATTACK_DIR, 70, arm=sh_arm), over, u, 5.5)
-        if f <= 150:
-            if f < 89:
-                return over
-            loc = _lerp(ar_pos, ar_kick, ease((f - 89) / 60.0))
-            return ball_ahead_of(loc, ATTACK_DIR, f, arm=ar_arm)
-        if f <= 176:
-            u = ease((f - 150) / 18.0)
-            return _shot_arc(ball_ahead_of(ar_kick, ATTACK_DIR, 150, arm=ar_arm), wide, u, 2.0)
+        if f <= 80:
+            return _shot_arc(ball_ahead_of(sh_kick1, ATTACK_DIR, 60, arm=sh_arm), over, ease((f - 60) / 20.0), 5.5)
+        if f <= 130:
+            loc = _lerp(ar_pos, ar_kick, ease((f - 81) / 48.0) if f >= 81 else 0.0)
+            return ball_ahead_of(loc if f >= 81 else ar_kick, ATTACK_DIR, f, arm=ar_arm)
+        if f <= 160:
+            return _shot_arc(ball_ahead_of(ar_kick, ATTACK_DIR, 130, arm=ar_arm), wide, ease((f - 130) / 30.0), 2.0)
+        if f <= 210:
+            loc = _lerp(Vector((-48.0, -gap * 0.4, 0.0)), sh_kick2, ease((f - 161) / 48.0) if f >= 161 else 0.0)
+            return ball_ahead_of(loc if f >= 161 else sh_kick2, ATTACK_DIR, f, arm=sh_arm)
+        if f <= 220:
+            return _shot_arc(ball_ahead_of(sh_kick2, ATTACK_DIR, 210, arm=sh_arm), toward_save, ease((f - 210) / 10.0), 2.0)
         if f <= 240:
-            loc = _lerp(Vector((-48.0, -gap * 0.4, 0.0)), sh_kick2, ease((f - 177) / 62.0) if f >= 177 else 0.0)
-            return ball_ahead_of(loc if f >= 177 else sh_kick2, ATTACK_DIR, f, arm=sh_arm)
-        u = ease((f - 240) / max(1, frames - 240))
-        return _shot_arc(ball_ahead_of(sh_kick2, ATTACK_DIR, 240, arm=sh_arm), miss3, u, 3.2)
+            return _shot_arc(toward_save, saved, ease((f - 220) / 20.0), 1.0)
+        if f <= 290:
+            loc = _lerp(Vector((-50.0, gap * 0.4, 0.0)), ar_kick2, ease((f - 241) / 48.0) if f >= 241 else 0.0)
+            return ball_ahead_of(loc if f >= 241 else ar_kick2, ATTACK_DIR, f, arm=ar_arm)
+        return _shot_arc(ball_ahead_of(ar_kick2, ATTACK_DIR, 290, arm=ar_arm), miss4, ease((f - 290) / max(1, frames - 290)), 3.0)
 
     key_ball(ball, range(1, frames + 1, 2), path)
 
     cam = setup_new_cam("Cam30", lens=28)
-    # cut A
-    _cam_dense(
-        cam, 1, 88,
-        Vector((-35.0, -18.0, 5.5)), Vector((GOAL_X + 25.0, -14.0, 5.0)),
-        Vector((-50.0, -1.5, 1.2)), Vector((GOAL_X + 10.0, 0.0, 2.5)),
-        step=2,
-    )
-    # cut B
-    _cam_dense(
-        cam, 89, 176,
-        Vector((-30.0, 16.0, 5.5)), Vector((GOAL_X + 22.0, 12.0, 4.8)),
-        Vector((-50.0, 2.0, 1.2)), Vector((GOAL_X + 8.0, 4.0, 2.0)),
-        step=2,
-    )
-    # cut C
-    _cam_dense(
-        cam, 177, frames,
-        Vector((-40.0, -16.0, 5.8)), Vector((GOAL_X + 20.0, -12.0, 5.0)),
-        Vector((-48.0, -1.5, 1.2)), Vector((GOAL_X, -3.0, 2.5)),
-        step=2,
-    )
+    _cam_dense(cam, 1, 80, Vector((-35.0, -18.0, 5.5)), Vector((GOAL_X + 25.0, -14.0, 5.0)), Vector((-50.0, -1.5, 1.2)), Vector((GOAL_X + 10.0, 0.0, 2.5)), step=2)
+    _cam_dense(cam, 81, 160, Vector((-30.0, 16.0, 5.5)), Vector((GOAL_X + 22.0, 12.0, 4.8)), Vector((-50.0, 2.0, 1.2)), Vector((GOAL_X + 8.0, 4.0, 2.0)), step=2)
+    _cam_dense(cam, 161, 240, Vector((-40.0, -16.0, 5.8)), Vector((GOAL_X + 20.0, -12.0, 5.0)), Vector((-48.0, -1.5, 1.2)), Vector((GOAL_X, -3.0, 2.0)), step=2)
+    _cam_dense(cam, 241, frames, Vector((-35.0, 14.0, 5.5)), Vector((GOAL_X + 18.0, 10.0, 4.8)), Vector((-48.0, 2.0, 1.2)), Vector((GOAL_X, -2.0, 2.2)), step=2)
     finish_cam(cam)
     return frames
 
 
 # ---------------------------------------------------------------------------
-# 31 — PK alternating (4+ goals)
+# 31 — PK alternating; GKs dive sideways sometimes
 # ---------------------------------------------------------------------------
 def build_31() -> int:
-    # 5 PKs x ~70f + padding
     n_pks = 5
     seg = 72
     frames = n_pks * seg
@@ -380,7 +417,6 @@ def build_31() -> int:
     _clear_extras("Card_")
 
     spot = Vector((PEN_X, 0.0, 0.0))
-    # markers near spot
     mark_mat = mat_rgba("PK_MarkMat", (0.95, 0.95, 0.9, 1.0), 0.8)
     add_box("Card_PKSpot", (0.6, 0.6, 0.04), Vector((PEN_X, 0.0, 0.02)), mark_mat)
 
@@ -394,7 +430,6 @@ def build_31() -> int:
         else:
             col, split, prefix = ARG_LIGHT, (ARG_LIGHT, ARG_WHITE, 0.42), f"Argentina_{i}"
             gk_col, gk_split, gk_pref = SHAOLIN_ORANGE, (SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42), f"Shaolin_{i}"
-        # park far off pitch when not active
         park = Vector((40.0 + i * SIDE_GAP, 30.0 + i * 2.0, 0.0))
         k_arm, k_root = spawn_player(prefix, col, park, ATTACK_YAW, actions=["idle"], split=split)
         _clear_all_nla(k_arm)
@@ -414,8 +449,8 @@ def build_31() -> int:
         corner_y = (-1 if i % 2 == 0 else 1) * GOAL_INNER_HALF_W * 0.65
         goal = Vector((GOAL_X - 1.5, corner_y, GOAL_H * (0.45 + 0.08 * (i % 3))))
         active_spot = spot + Vector((0.0, (i - 2) * 0.15, 0.0))
+        side_dive = (i % 2 == 0)  # alternate up vs sideways
 
-        # only this pair on pitch; others stay parked (SIDE_GAP from each other at park)
         animate_root(
             k_root,
             [
@@ -428,18 +463,25 @@ def build_31() -> int:
             ],
             ATTACK_YAW,
         )
-        animate_root(
-            g_root,
-            [
-                (1, Vector((40.0 + i * SIDE_GAP, 30.0 + i * 2.0 + SIDE_GAP, 0.0))),
-                (f0 - 1 if f0 > 1 else 1, Vector((40.0 + i * SIDE_GAP, 30.0 + i * 2.0 + SIDE_GAP, 0.0))),
-                (f0, GK_HOME),
-                (f1, GK_HOME),
-                (f1 + 1 if f1 < frames else frames, Vector((40.0 + i * SIDE_GAP, 30.0 + i * 2.0 + SIDE_GAP, 0.0))),
-                (frames, Vector((40.0 + i * SIDE_GAP, 30.0 + i * 2.0 + SIDE_GAP, 0.0))),
-            ],
-            GK_YAW,
-        )
+        dive_y = corner_y * 0.55 if side_dive else 0.0
+        dive_pos = GK_HOME + Vector((0.6 if side_dive else 0.2, dive_y, 0.0))
+        gk_keys = [
+            (1, Vector((40.0 + i * SIDE_GAP, 30.0 + i * 2.0 + SIDE_GAP, 0.0))),
+            (f0 - 1 if f0 > 1 else 1, Vector((40.0 + i * SIDE_GAP, 30.0 + i * 2.0 + SIDE_GAP, 0.0))),
+            (f0, GK_HOME),
+            (land_f - 8, GK_HOME),
+        ]
+        for f in range(land_f - 6, land_f + 12, 2):
+            t = (f - (land_f - 6)) / 18.0
+            p = GK_HOME.lerp(dive_pos, ease(min(1.0, t)))
+            p.z = (0.95 if side_dive else 1.35) * math.sin(min(1.0, t) * math.pi)
+            gk_keys.append((f, p))
+        gk_keys += [
+            (f1, dive_pos),
+            (f1 + 1 if f1 < frames else frames, Vector((40.0 + i * SIDE_GAP, 30.0 + i * 2.0 + SIDE_GAP, 0.0))),
+            (frames, Vector((40.0 + i * SIDE_GAP, 30.0 + i * 2.0 + SIDE_GAP, 0.0))),
+        ]
+        animate_root(g_root, gk_keys, GK_YAW)
         add_nla_hold(k_arm, "idle", 1, kick_f - 1, af=10)
         add_nla_once(k_arm, "fight_kick", kick_f, kick_f + 22)
         add_nla_hold(k_arm, "fight_idle", kick_f + 23, frames, af=5)
@@ -458,7 +500,6 @@ def build_31() -> int:
                 if f <= lf:
                     u = ease((f - kf) / max(1, lf - kf))
                     return _shot_arc(sb, gl, u, 2.4)
-                # hold in net then will be overridden by next segment start
                 return gl
 
             return seg_path
@@ -490,7 +531,7 @@ def build_31() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 32 — Female GK enter
+# 32 — Female GK enter (Shaolin kit + long hair, no crowd)
 # ---------------------------------------------------------------------------
 def build_32() -> int:
     frames = 132
@@ -502,14 +543,15 @@ def build_32() -> int:
     end = GK_HOME.copy()
     arm, root = spawn_player(
         "FemaleGK",
-        FEMALE_GK_PINK,
+        SHAOLIN_ORANGE,
         start,
         ATTACK_YAW,
         actions=["run"],
-        split=(FEMALE_GK_PINK, FEMALE_GK_WHITE, 0.42),
+        split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
         scale=2.2,
     )
     _clear_all_nla(arm)
+    attach_long_hair(arm)
     keys = []
     for f in range(1, frames + 1, 2):
         t = ease((f - 1) / max(1, frames - 1))
@@ -517,20 +559,6 @@ def build_32() -> int:
     animate_root(root, keys, ATTACK_YAW)
     add_nla_loop(arm, "run", 1, 110)
     add_nla_hold(arm, "idle", 111, frames, af=10)
-
-    # crowd buzz in stands
-    for i in range(12):
-        px = GOAL_X + 20.0 + (i % 4) * SIDE_GAP * 0.95
-        py = 26.0 + (i // 4) * 2.6
-        col = FEMALE_GK_PINK if i % 3 == 0 else (SHAOLIN_ORANGE if i % 3 == 1 else ARG_LIGHT)
-        c_arm, c_root = spawn_player(f"Crowd_{i:02d}", col, Vector((px, py, 0.0)), math.pi, actions=["idle"])
-        _clear_all_nla(c_arm)
-        ckeys = []
-        for f in range(1, frames + 1, 2):
-            z = 0.1 * abs(math.sin(f * 0.32 + i * 0.5))
-            ckeys.append((f, Vector((px, py, z))))
-        animate_root(c_root, ckeys, math.pi)
-        add_nla_loop(c_arm, "idle", 1, frames)
 
     cam = setup_new_cam("Cam32", lens=28)
     _cam_dense(
@@ -544,7 +572,7 @@ def build_32() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 33 — Arg PK, Female GK dive SAVE
+# 33 — Arg PK, Female GK (Shaolin kit + long hair) SAVE
 # ---------------------------------------------------------------------------
 def build_33() -> int:
     frames = 120
@@ -558,15 +586,15 @@ def build_33() -> int:
     _clear_all_nla(ar_arm)
     gk_arm, gk_root = spawn_player(
         "FemaleGK",
-        FEMALE_GK_PINK,
+        SHAOLIN_ORANGE,
         GK_HOME,
         GK_YAW,
         actions=["idle"],
-        split=(FEMALE_GK_PINK, FEMALE_GK_WHITE, 0.42),
+        split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
         scale=2.2,
     )
     _clear_all_nla(gk_arm)
-    # keep separated: kicker at spot y=1, GK at y=0 near goal
+    attach_long_hair(gk_arm)
     animate_root(ar_root, [(1, spot), (frames, spot)], ATTACK_YAW)
     dive_pos = GK_HOME + Vector((1.0, -4.5, 0.0))
     animate_root(
@@ -609,7 +637,7 @@ def build_33() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 34 — Female GK bust mutter
+# 34 — Female GK mutter (Shaolin kit + long hair)
 # ---------------------------------------------------------------------------
 def build_34() -> int:
     frames = 120
@@ -620,20 +648,20 @@ def build_34() -> int:
     pos = GK_HOME + Vector((2.0, 0.0, 0.0))
     arm, root = spawn_player(
         "FemaleGK",
-        FEMALE_GK_PINK,
+        SHAOLIN_ORANGE,
         pos,
         yaw_face_neg_y(),
         actions=["idle"],
-        split=(FEMALE_GK_PINK, FEMALE_GK_WHITE, 0.42),
+        split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
         scale=2.2,
     )
     _clear_all_nla(arm)
+    attach_long_hair(arm)
     animate_root(root, [(1, pos), (frames, pos)], yaw_face_neg_y())
     add_nla_loop(arm, "idle", 1, frames)
     add_talk_strip(arm, "FemaleGKMutter", frames, _mutter_fn(), TALK_BONES, step=2)
 
     cam = setup_new_cam("Cam34", lens=38)
-    # bust near goal
     _cam_dense(
         cam, 1, frames,
         Vector((pos.x - 0.4, pos.y - 6.5, 3.5)), Vector((pos.x - 0.2, pos.y - 5.8, 3.55)),
@@ -645,7 +673,7 @@ def build_34() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 35 — Shaolin winning PK (GK miss)
+# 35 — Shaolin winning PK; GK in Argentina kit (else unchanged)
 # ---------------------------------------------------------------------------
 def build_35() -> int:
     frames = 120
@@ -658,17 +686,17 @@ def build_35() -> int:
     )
     _clear_all_nla(sh_arm)
     gk_arm, gk_root = spawn_player(
-        "FemaleGK",
-        FEMALE_GK_PINK,
+        "Argentina_GK",
+        ARG_LIGHT,
         GK_HOME,
         GK_YAW,
         actions=["idle"],
-        split=(FEMALE_GK_PINK, FEMALE_GK_WHITE, 0.42),
+        split=(ARG_LIGHT, ARG_WHITE, 0.42),
         scale=2.2,
     )
     _clear_all_nla(gk_arm)
     animate_root(sh_root, [(1, spot), (frames, spot)], ATTACK_YAW)
-    miss_dive = GK_HOME + Vector((0.8, 5.5, 0.0))  # wrong way
+    miss_dive = GK_HOME + Vector((0.8, 5.5, 0.0))
     animate_root(
         gk_root,
         [(1, GK_HOME), (55, GK_HOME), (75, miss_dive), (frames, miss_dive)],

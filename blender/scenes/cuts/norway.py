@@ -26,6 +26,7 @@ from cuts.common import (  # noqa: E402
     add_nla_loop,
     add_nla_once,
     add_talk_strip,
+    animate_gk_dive,
     animate_root,
     ball_ahead_of,
     clear_ball_anim,
@@ -335,7 +336,7 @@ def build_02() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 03 shaolin GK talk bust
+# 03 shaolin GK talk — face-forward angle
 # ---------------------------------------------------------------------------
 def build_03() -> int:
     remove_players()
@@ -359,15 +360,16 @@ def build_03() -> int:
     add_nla_loop(arm, "idle", 1, frames)
     add_talk_strip(arm, "ShaolinGK_Talk", frames, _talk_deltas_calm, TALK_BONES, step=3)
 
-    cam = setup_new_cam("CamCut03", lens=40)
+    cam = setup_new_cam("CamCut03", lens=50)
 
     def cam_pos(f: int) -> Vector:
         t = (f - 1) / max(1, frames - 1)
-        return Vector((pos.x + 0.4, pos.y - 5.2 + 0.35 * t, 2.85))
+        # slightly below face line, looking up a touch — face fills frame
+        return Vector((pos.x + 0.15, pos.y - 4.2 + 0.2 * t, 3.55 + 0.05 * t))
 
     def cam_tgt(f: int) -> Vector:
         t = (f - 1) / max(1, frames - 1)
-        return Vector((pos.x, pos.y + 0.1, 2.55 + 0.08 * t))
+        return Vector((pos.x, pos.y + 0.05, 3.85 + 0.06 * t))
 
     _dense_cam(cam, frames, cam_pos, cam_tgt, step=4)
     set_frame_range(frames)
@@ -375,17 +377,17 @@ def build_03() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 04 volley rally — 4 exchanges Norway ↔ Shaolin GK
+# 04 volley rally — 4 exchanges Norway ↔ Shaolin GK (wider gap, synced kicks)
 # ---------------------------------------------------------------------------
 def build_04() -> int:
     remove_players()
     _show_pitch()
-    frames = 360
+    frames = 384
     gx = goal_l_x()
-    # spaced on y so SIDE_GAP holds; Norway at +y, GK at -y near goal
-    nor_pos = Vector((gx + 16.0, SIDE_GAP * 0.65, 0.0))
-    gk_pos = Vector((gx + 5.5, -SIDE_GAP * 0.65, 0.0))
-    assert (nor_pos - gk_pos).length >= SIDE_GAP
+    # more distance between bodies
+    nor_pos = Vector((gx + 20.0, SIDE_GAP * 1.35, 0.0))
+    gk_pos = Vector((gx + 4.5, -SIDE_GAP * 1.35, 0.0))
+    assert (nor_pos - gk_pos).length >= SIDE_GAP * 2.0
 
     yaw_n = yaw_face_neg_x()
     yaw_gk = yaw_face_pos_x()
@@ -411,36 +413,36 @@ def build_04() -> int:
     animate_root(nor_root, [(1, nor_pos), (frames, nor_pos)], yaw_n)
     animate_root(gk_root, [(1, gk_pos), (frames, gk_pos)], yaw_gk)
 
-    # timeline: kick1, clear1, kick2, clear2, kick3, clear3, kick4, clear4
-    events = [40, 70, 110, 140, 180, 210, 250, 280]  # 4 kicks + 4 clears
+    # ball arrival times at contact; kicks/clears fire at contact
+    # kick → clear → kick → clear ×4
+    events = [48, 90, 132, 174, 216, 258, 300, 342]
     kicks = events[0::2]
     clears = events[1::2]
 
-    add_nla_hold(nor_arm, "idle", 1, kicks[0] - 8, af=5)
-    add_nla_hold(gk_arm, "fight_idle", 1, clears[0] - 8, af=10)
+    add_nla_hold(nor_arm, "idle", 1, kicks[0] - 14, af=5)
+    add_nla_hold(gk_arm, "fight_idle", 1, clears[0] - 12, af=10)
     for i, fk in enumerate(kicks):
-        add_nla_once(nor_arm, "fight_kick", fk - 10, fk + 14)
-        nxt = kicks[i + 1] - 11 if i + 1 < len(kicks) else frames
-        add_nla_hold(nor_arm, "idle", fk + 15, nxt, af=6)
+        # kick contact ≈ mid of fight_kick strip
+        add_nla_once(nor_arm, "fight_kick", fk - 14, fk + 12)
+        nxt = kicks[i + 1] - 15 if i + 1 < len(kicks) else frames
+        add_nla_hold(nor_arm, "idle", fk + 13, nxt, af=6)
     for i, fc in enumerate(clears):
-        add_nla_once(gk_arm, "fight_punch", fc - 8, fc + 12)
-        nxt = clears[i + 1] - 9 if i + 1 < len(clears) else frames
-        add_nla_hold(gk_arm, "fight_idle", fc + 13, nxt, af=10)
+        add_nla_once(gk_arm, "fight_punch", fc - 12, fc + 10)
+        nxt = clears[i + 1] - 13 if i + 1 < len(clears) else frames
+        add_nla_hold(gk_arm, "fight_idle", fc + 11, nxt, af=10)
 
     ball = clear_ball_anim()
-    # waypoints along the midpoint lane between bodies (never through torsos)
     mid_y = (nor_pos.y + gk_pos.y) * 0.5
-    nor_feet = Vector((nor_pos.x - 1.8, mid_y + 0.9, BALL_GROUND_Z + 0.4))
-    gk_hand = Vector((gk_pos.x + 1.5, mid_y - 0.9, BALL_GROUND_Z + 1.6))
+    # contact points near each player's kicking / punching space (not through torso)
+    nor_feet = Vector((nor_pos.x - 2.2, nor_pos.y - 1.1, BALL_GROUND_Z + 0.45))
+    gk_hand = Vector((gk_pos.x + 2.0, gk_pos.y + 1.1, BALL_GROUND_Z + 1.7))
     points = [nor_feet]
     for i in range(4):
         points.append(gk_hand.copy())
-        points.append(nor_feet.copy() if i < 3 else Vector((gx - 1.2, mid_y * 0.2, GOAL_H * 0.45)))
-    # events map to arrivals at points[1..]
+        points.append(nor_feet.copy() if i < 3 else Vector((gx - 1.2, mid_y * 0.15, GOAL_H * 0.45)))
     arrival = [1] + events
 
     def ball_path(f: int) -> Vector:
-        # find segment
         if f <= arrival[0]:
             return points[0].copy()
         for i in range(len(arrival) - 1):
@@ -449,21 +451,21 @@ def build_04() -> int:
                 t = ease((f - a0) / max(1, a1 - a0))
                 p0, p1 = points[i], points[min(i + 1, len(points) - 1)]
                 p = p0.lerp(p1, min(1.0, t))
-                p.z += 0.55 * math.sin(min(1.0, t) * math.pi)
+                p.z += 0.7 * math.sin(min(1.0, t) * math.pi)
                 return p
         return points[-1].copy()
 
     key_ball(ball, range(1, frames + 1, 2), ball_path)
 
-    cam = setup_new_cam("CamCut04", lens=32)
+    cam = setup_new_cam("CamCut04", lens=30)
 
     def cam_pos(f: int) -> Vector:
         b = ball_path(f)
-        return Vector((b.x + 4.0, b.y - 12.0, 4.0))
+        return Vector((b.x + 5.0, b.y - 14.0, 4.4))
 
     def cam_tgt(f: int) -> Vector:
         b = ball_path(f)
-        return Vector((b.x, b.y * 0.3, max(1.2, b.z)))
+        return Vector((b.x, b.y * 0.25, max(1.2, b.z)))
 
     _dense_cam(cam, frames, cam_pos, cam_tgt, step=3)
     set_frame_range(frames)
@@ -471,7 +473,7 @@ def build_04() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 05 shaolin goal v1 — classic mid-range into Goal_L
+# 05 shaolin goal v1 — Norway GK sideways dive, can't save (no side Shaolin)
 # ---------------------------------------------------------------------------
 def build_05() -> int:
     remove_players()
@@ -479,14 +481,15 @@ def build_05() -> int:
     frames = 264
     gx = goal_l_x()
     yaw = yaw_face_neg_x()
+    yaw_gk = yaw_face_pos_x()
     start = Vector((gx + 48.0, -0.5, 0.0))
     kick_pos = Vector((gx + 22.0, -0.3, 0.0))
-    # distant unused GK
-    gk_far = Vector((gx + 3.0, 14.0, 0.0))
+    gk_home = Vector((gx + 3.0, 0.2, 0.0))
     ball_goal = Vector((gx - 1.5, -GOAL_INNER_HALF_W * 0.55, GOAL_H * 0.62))
     f_run = 100
     f_kick = 122
     f_goal = 152
+    f_dive = 128
 
     arm, root = spawn_player(
         "Shaolin",
@@ -497,12 +500,12 @@ def build_05() -> int:
         split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
     )
     gk_arm, gk_root = spawn_player(
-        "Shaolin_GK",
-        SHAOLIN_ORANGE,
-        gk_far,
-        yaw_face_pos_x(),
-        actions=["fight_idle"],
-        split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
+        "Norway_GK",
+        NORWAY_RED,
+        gk_home,
+        yaw_gk,
+        actions=["fight_idle", "jump_full", "idle"],
+        split=(NORWAY_RED, NORWAY_WHITE, 0.42),
     )
     _clear_all_nla(arm)
     _clear_all_nla(gk_arm)
@@ -520,11 +523,13 @@ def build_05() -> int:
     keys = [(f, path(f)) for f in range(1, frames + 1, 2)]
     keys.append((frames, path(frames)))
     animate_root(root, keys, yaw)
-    animate_root(gk_root, [(1, gk_far), (frames, gk_far)], yaw_face_pos_x())
     add_nla_loop(arm, "run", 1, f_run)
     add_nla_once(arm, "fight_kick", f_run + 1, f_kick + 16)
     add_nla_hold(arm, "idle", f_kick + 17, frames, af=8)
-    add_nla_hold(gk_arm, "fight_idle", 1, frames, af=10)
+    # dive toward ball side but short — ball goes in
+    animate_gk_dive(
+        gk_root, gk_arm, gk_home, ball_goal.y * 0.55, f_dive, f_goal + 6, frames, yaw_gk, side=True, rise=0.85
+    )
 
     ball = clear_ball_anim()
     move = Vector((-1.0, 0.0, 0.0))
@@ -564,7 +569,7 @@ def build_05() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 06 shaolin goal v2 — aerial / near-post, other camera side
+# 06 shaolin goal v2 — aerial / near-post + Norway GK sideways miss
 # ---------------------------------------------------------------------------
 def build_06() -> int:
     remove_players()
@@ -572,13 +577,16 @@ def build_06() -> int:
     frames = 264
     gx = goal_l_x()
     yaw = yaw_face_neg_x()
+    yaw_gk = yaw_face_pos_x()
     start = Vector((gx + 40.0, 1.8, 0.0))
     kick_pos = Vector((gx + 14.0, 1.1, 0.0))
+    gk_home = Vector((gx + 3.2, -0.3, 0.0))
     ball_goal = Vector((gx - 1.3, GOAL_INNER_HALF_W * 0.82, GOAL_H * 0.4))  # near post
     f_run = 96
     f_air = 112
     f_kick = 128
     f_goal = 154
+    f_dive = 134
 
     arm, root = spawn_player(
         "Shaolin",
@@ -588,7 +596,16 @@ def build_06() -> int:
         actions=["run", "fight_kick", "jump_full", "idle"],
         split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
     )
+    gk_arm, gk_root = spawn_player(
+        "Norway_GK",
+        NORWAY_RED,
+        gk_home,
+        yaw_gk,
+        actions=["fight_idle", "jump_full", "idle"],
+        split=(NORWAY_RED, NORWAY_WHITE, 0.42),
+    )
     _clear_all_nla(arm)
+    _clear_all_nla(gk_arm)
 
     def path(f: int) -> Vector:
         if f <= f_run:
@@ -597,7 +614,6 @@ def build_06() -> int:
         if f <= f_kick:
             t = (f - f_run) / max(1, f_kick - f_run)
             p = kick_pos + Vector((-0.5 * ease(t), -0.15 * t, 0.0))
-            # brief aerial rise
             if f_air <= f <= f_kick:
                 u = (f - f_air) / max(1, f_kick - f_air)
                 p.z = 1.1 * math.sin(min(1.0, u) * math.pi)
@@ -614,6 +630,9 @@ def build_06() -> int:
     add_nla_once(arm, "jump_full", f_run + 1, f_air + 6)
     add_nla_once(arm, "fight_kick", f_air + 7, f_kick + 14)
     add_nla_hold(arm, "idle", f_kick + 15, frames, af=8)
+    animate_gk_dive(
+        gk_root, gk_arm, gk_home, ball_goal.y * 0.5, f_dive, f_goal + 4, frames, yaw_gk, side=True, rise=0.8
+    )
 
     ball = clear_ball_anim()
     move = Vector((-1.0, 0.0, 0.0))
@@ -637,7 +656,6 @@ def build_06() -> int:
         return out
 
     key_ball(ball, range(1, frames + 1, 2), ball_path)
-    # other camera side (+Y)
     cam = setup_new_cam("CamCut06", lens=28)
 
     def cam_pos(f: int) -> Vector:
@@ -657,23 +675,23 @@ def build_06() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 07 norway interview
+# 07 shaolin player interview (podium) — was mislabeled Norway
 # ---------------------------------------------------------------------------
 def build_07() -> int:
     remove_players()
     frames = 288
-    _hide_pitch(keep_extra=("Norway_", "Interview_"))
+    _hide_pitch(keep_extra=("Shaolin_", "Interview_"))
     hide_ball()
-    _setup_interview_set(NORWAY_RED, NORWAY_WHITE)
+    _setup_interview_set(SHAOLIN_ORANGE, SHAOLIN_WHITE)
     pos = Vector((0.0, 0.0, 0.35))
     yaw = yaw_face_neg_y()
     arm, root = spawn_player(
-        "Norway",
-        NORWAY_RED,
+        "Shaolin",
+        SHAOLIN_ORANGE,
         pos,
         yaw,
         actions=["idle"],
-        split=(NORWAY_RED, NORWAY_WHITE, 0.42),
+        split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
     )
     _clear_all_nla(arm)
     keys = []
@@ -683,7 +701,7 @@ def build_07() -> int:
     keys.append((frames, pos))
     animate_root(root, keys, yaw)
     add_nla_loop(arm, "idle", 1, frames)
-    add_talk_strip(arm, "Norway_Talk", frames, _talk_deltas_calm, TALK_BONES, step=3)
+    add_talk_strip(arm, "Shaolin_Talk", frames, _talk_deltas_calm, TALK_BONES, step=3)
 
     cam = setup_new_cam("CamCut07", lens=35)
 
@@ -701,7 +719,7 @@ def build_07() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 08 norway kungfu dojo
+# 08 norway kungfu dojo — full-body camera pull-back
 # ---------------------------------------------------------------------------
 def build_08() -> int:
     remove_players()
@@ -722,7 +740,6 @@ def build_08() -> int:
     _clear_all_nla(arm)
     animate_root(root, [(1, pos), (frames, pos)], yaw)
 
-    # slow sequenced kungfu
     add_nla_hold(arm, "fight_idle", 1, 60, af=12)
     add_nla_once(arm, "fight_punch", 61, 110)
     add_nla_hold(arm, "fight_idle", 111, 150, af=14)
@@ -731,14 +748,15 @@ def build_08() -> int:
     add_nla_once(arm, "fight_punch", 251, 280)
     add_nla_hold(arm, "fight_idle", 281, frames, af=12)
 
-    cam = setup_new_cam("CamCut08", lens=32)
+    cam = setup_new_cam("CamCut08", lens=28)
 
     def cam_pos(f: int) -> Vector:
         t = (f - 1) / max(1, frames - 1)
-        return Vector((0.3 * math.sin(t * math.pi), -7.5 + 0.4 * t, 2.6))
+        # pulled back — full body in frame
+        return Vector((0.4 * math.sin(t * math.pi), -12.5 + 0.5 * t, 3.4))
 
     def cam_tgt(f: int) -> Vector:
-        return Vector((0.0, 0.2, 1.85))
+        return Vector((0.0, 0.15, 1.55))
 
     _dense_cam(cam, frames, cam_pos, cam_tgt, step=4)
     set_frame_range(frames)

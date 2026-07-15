@@ -30,6 +30,7 @@ from cuts.common import (  # noqa: E402
     add_nla_loop,
     add_nla_once,
     add_talk_strip,
+    animate_gk_dive,
     animate_root,
     ball_ahead_of,
     clear_ball_anim,
@@ -132,7 +133,7 @@ def _assert_gaps(*positions: Vector) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 09 Spain pass triangle → goal (tight lanes)
+# 09 Spain pass triangle → goal + Shaolin GK jumps UP but goal
 # ---------------------------------------------------------------------------
 def build_09() -> int:
     remove_players()
@@ -140,10 +141,11 @@ def build_09() -> int:
     frames = 300
     gx = goal_r_x()
     yaw = yaw_face_pos_x()
-    # triangle: A back, B wide+, C wide- then shooter C
+    yaw_gk = yaw_face_neg_x()
     a = Vector((gx - 38.0, 0.0, 0.0))
     b = Vector((gx - 28.0, SIDE_GAP * 1.15, 0.0))
     c = Vector((gx - 22.0, -SIDE_GAP * 1.15, 0.0))
+    gk_home = Vector((gx - 2.8, 0.15, 0.0))
     _assert_gaps(a, b, c)
     shoot_pos = Vector((gx - 14.0, -SIDE_GAP * 0.9, 0.0))
     ball_goal = Vector((gx + 1.5, GOAL_INNER_HALF_W * 0.55, GOAL_H * 0.58))
@@ -151,10 +153,15 @@ def build_09() -> int:
     arm_a, root_a = spawn_player("Spain_A", SPAIN_YELLOW, a, yaw, actions=["idle", "fight_kick", "run"], split=(SPAIN_YELLOW, SPAIN_RED, 0.42))
     arm_b, root_b = spawn_player("Spain_B", SPAIN_YELLOW, b, yaw, actions=["idle", "fight_kick"], split=(SPAIN_YELLOW, SPAIN_RED, 0.42))
     arm_c, root_c = spawn_player("Spain_C", SPAIN_YELLOW, c, yaw, actions=["idle", "run", "fight_kick"], split=(SPAIN_YELLOW, SPAIN_RED, 0.42))
-    for ar in (arm_a, arm_b, arm_c):
+    gk_arm, gk_root = spawn_player(
+        "Shaolin_GK", SHAOLIN_ORANGE, gk_home, yaw_gk,
+        actions=["fight_idle", "jump_full", "idle"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
+    )
+    for ar in (arm_a, arm_b, arm_c, gk_arm):
         _clear_all_nla(ar)
 
     f_p1, f_p2, f_p3, f_kick, f_goal = 48, 90, 132, 168, 198
+    f_dive = 174
 
     def c_path(f: int) -> Vector:
         if f < f_p3:
@@ -170,6 +177,8 @@ def build_09() -> int:
     keys_c = [(f, c_path(f)) for f in range(1, frames + 1, 2)]
     keys_c.append((frames, c_path(frames)))
     animate_root(root_c, keys_c, yaw)
+    # vertical jump only (side=False)
+    animate_gk_dive(gk_root, gk_arm, gk_home, 0.0, f_dive, f_goal + 4, frames, yaw_gk, side=False, rise=1.4)
 
     add_nla_hold(arm_a, "idle", 1, f_p1 - 12, af=5)
     add_nla_once(arm_a, "fight_kick", f_p1 - 10, f_p1 + 12)
@@ -228,7 +237,7 @@ def build_09() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 10 Spain pass triangle v2 — wider lanes / different cam
+# 10 Spain pass triangle v2 — Shaolin GK sideways dive, still goal
 # ---------------------------------------------------------------------------
 def build_10() -> int:
     remove_players()
@@ -236,18 +245,25 @@ def build_10() -> int:
     frames = 300
     gx = goal_r_x()
     yaw = yaw_face_pos_x()
+    yaw_gk = yaw_face_neg_x()
     a = Vector((gx - 42.0, SIDE_GAP * 0.2, 0.0))
     b = Vector((gx - 30.0, SIDE_GAP * 1.6, 0.0))
     c = Vector((gx - 26.0, -SIDE_GAP * 1.6, 0.0))
+    gk_home = Vector((gx - 2.8, 0.0, 0.0))
     _assert_gaps(a, b, c)
     shoot_pos = Vector((gx - 12.0, -SIDE_GAP * 0.7, 0.0))
     ball_goal = Vector((gx + 1.4, -GOAL_INNER_HALF_W * 0.65, GOAL_H * 0.5))
     f_p1, f_p2, f_p3, f_kick, f_goal = 52, 100, 148, 185, 214
+    f_dive = 192
 
     arm_a, root_a = spawn_player("Spain_A", SPAIN_YELLOW, a, yaw, actions=["idle", "fight_kick"], split=(SPAIN_YELLOW, SPAIN_RED, 0.42))
     arm_b, root_b = spawn_player("Spain_B", SPAIN_YELLOW, b, yaw, actions=["idle", "fight_kick"], split=(SPAIN_YELLOW, SPAIN_RED, 0.42))
     arm_c, root_c = spawn_player("Spain_C", SPAIN_YELLOW, c, yaw, actions=["idle", "run", "fight_kick"], split=(SPAIN_YELLOW, SPAIN_RED, 0.42))
-    for ar in (arm_a, arm_b, arm_c):
+    gk_arm, gk_root = spawn_player(
+        "Shaolin_GK", SHAOLIN_ORANGE, gk_home, yaw_gk,
+        actions=["fight_idle", "jump_full", "idle"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
+    )
+    for ar in (arm_a, arm_b, arm_c, gk_arm):
         _clear_all_nla(ar)
 
     def c_path(f: int) -> Vector:
@@ -262,6 +278,9 @@ def build_10() -> int:
     animate_root(root_b, [(1, b), (frames, b)], yaw)
     keys_c = [(f, c_path(f)) for f in range(1, frames + 1, 2)] + [(frames, c_path(frames))]
     animate_root(root_c, keys_c, yaw)
+    animate_gk_dive(
+        gk_root, gk_arm, gk_home, ball_goal.y * 0.7, f_dive, f_goal + 4, frames, yaw_gk, side=True, rise=0.85
+    )
 
     add_nla_once(arm_a, "fight_kick", f_p1 - 10, f_p1 + 12)
     add_nla_hold(arm_a, "idle", 1, f_p1 - 11, af=5)
@@ -303,7 +322,6 @@ def build_10() -> int:
 
     def cam_pos(f: int) -> Vector:
         bp = ball_path(f)
-        # wider high angle from +Y
         return Vector((bp.x - 10.0, bp.y + 16.0, 7.5))
 
     def cam_tgt(f: int) -> Vector:
@@ -316,50 +334,57 @@ def build_10() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 11 Spain A —— Shaolin —— Spain B ; belly intercept
+# 11 Spain belly cut — wider gap; cut pass from screen-right (stomach-side)
 # ---------------------------------------------------------------------------
 def build_11() -> int:
     remove_players()
     _show_pitch()
     frames = 240
     gx = goal_r_x()
-    # centers spaced along y, Shaolin between
-    spa = Vector((gx - 30.0, SIDE_GAP * 1.2, 0.0))
-    sh = Vector((gx - 28.0, 0.0, 0.0))
-    spb = Vector((gx - 30.0, -SIDE_GAP * 1.2, 0.0))
-    _assert_gaps(spa, sh, spb)
+    # wider spacing; camera from -X so screen-right ≈ -Y
+    spa_left = Vector((gx - 32.0, SIDE_GAP * 2.0, 0.0))   # back / screen-left
+    sh = Vector((gx - 30.0, 0.0, 0.0))
+    spa_right = Vector((gx - 32.0, -SIDE_GAP * 2.0, 0.0))  # stomach / screen-right (passer)
+    _assert_gaps(spa_left, sh, spa_right)
 
-    arm_a, root_a = spawn_player("Spain_A", SPAIN_YELLOW, spa, yaw_face_neg_y(), actions=["idle", "fight_kick"], split=(SPAIN_YELLOW, SPAIN_RED, 0.42))
-    arm_s, root_s = spawn_player("Shaolin", SHAOLIN_ORANGE, sh, yaw_face_neg_y(), actions=["idle", "fight_idle"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42))
-    arm_b, root_b = spawn_player("Spain_B", SPAIN_YELLOW, spb, yaw_face_neg_y(), actions=["idle"], split=(SPAIN_YELLOW, SPAIN_RED, 0.42))
-    for ar in (arm_a, arm_s, arm_b):
+    # passer = screen-right (stomach side); receiver = screen-left (back)
+    arm_pass, root_pass = spawn_player(
+        "Spain_R", SPAIN_YELLOW, spa_right, yaw_face_pos_x(),
+        actions=["idle", "fight_kick"], split=(SPAIN_YELLOW, SPAIN_RED, 0.42),
+    )
+    arm_s, root_s = spawn_player(
+        "Shaolin", SHAOLIN_ORANGE, sh, yaw_face_neg_y(),
+        actions=["idle", "fight_idle"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
+    )
+    arm_recv, root_recv = spawn_player(
+        "Spain_L", SPAIN_YELLOW, spa_left, yaw_face_neg_x(),
+        actions=["idle"], split=(SPAIN_YELLOW, SPAIN_RED, 0.42),
+    )
+    for ar in (arm_pass, arm_s, arm_recv):
         _clear_all_nla(ar)
-    animate_root(root_a, [(1, spa), (frames, spa)], yaw_face_neg_y())
+    animate_root(root_pass, [(1, spa_right), (frames, spa_right)], yaw_face_pos_x())
     animate_root(root_s, [(1, sh), (frames, sh)], yaw_face_neg_y())
-    animate_root(root_b, [(1, spb), (frames, spb)], yaw_face_neg_y())
+    animate_root(root_recv, [(1, spa_left), (frames, spa_left)], yaw_face_neg_x())
 
     f_pass, f_cut = 70, 100
-    add_nla_hold(arm_a, "idle", 1, f_pass - 12, af=5)
-    add_nla_once(arm_a, "fight_kick", f_pass - 10, f_pass + 12)
-    add_nla_hold(arm_a, "idle", f_pass + 13, frames, af=6)
+    add_nla_hold(arm_pass, "idle", 1, f_pass - 12, af=5)
+    add_nla_once(arm_pass, "fight_kick", f_pass - 10, f_pass + 12)
+    add_nla_hold(arm_pass, "idle", f_pass + 13, frames, af=6)
     add_nla_hold(arm_s, "idle", 1, f_cut - 8, af=5)
     add_nla_hold(arm_s, "fight_idle", f_cut - 6, frames, af=12)
-    add_nla_hold(arm_b, "idle", 1, frames, af=5)
+    add_nla_hold(arm_recv, "idle", 1, frames, af=5)
 
     ball = clear_ball_anim()
-    face_pass = Vector((0.0, -1.0, 0.0))  # A toward B (-Y)
-    start_b = ball_ahead_of(spa, face_pass, 1)
-    end_intended = ball_ahead_of(spb, Vector((0.0, 1.0, 0.0)), 1)
-    belly = _belly_ball(sh, Vector((0.0, -1.0, 0.0)), z_off=2.2, ahead=0.9)
+    # pass from right (+Y direction toward left teammate through Shaolin belly)
+    face_pass = Vector((0.0, 1.0, 0.0))
+    start_b = ball_ahead_of(spa_right, face_pass, 1)
+    belly = _belly_ball(sh, Vector((0.0, 1.0, 0.0)), z_off=2.2, ahead=0.9)
 
     def ball_path(f: int) -> Vector:
         if f < f_pass:
             return start_b.copy()
         if f < f_cut:
-            # fly toward B but intercepted at mid
             t = (f - f_pass) / max(1, f_cut - f_pass)
-            mid = start_b.lerp(end_intended, 0.45)
-            mid = mid.lerp(belly, 0.55)
             return _lerp_ball_seg(start_b, belly, t, 0.7)
         return belly.copy()
 
@@ -368,7 +393,7 @@ def build_11() -> int:
 
     def cam_pos(f: int) -> Vector:
         bp = ball_path(f)
-        return Vector((bp.x - 8.0, bp.y - 2.0, 5.5))
+        return Vector((bp.x - 10.0, bp.y - 1.5, 5.8))
 
     def cam_tgt(f: int) -> Vector:
         return Vector((sh.x, 0.0, 1.8))
@@ -379,7 +404,7 @@ def build_11() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 12 Shaolin1 belly-ball → pass → Shaolin2 shoots Goal_R
+# 12 Shaolin belly pass → goal; Spain GK INSIDE goal
 # ---------------------------------------------------------------------------
 def build_12() -> int:
     remove_players()
@@ -387,18 +412,23 @@ def build_12() -> int:
     frames = 288
     gx = goal_r_x()
     yaw = yaw_face_pos_x()
+    yaw_gk = yaw_face_neg_x()
     s1 = Vector((gx - 40.0, SIDE_GAP * 0.55, 0.0))
     s2 = Vector((gx - 22.0, -SIDE_GAP * 0.55, 0.0))
     shoot = Vector((gx - 12.0, -SIDE_GAP * 0.4, 0.0))
-    spain_far = Vector((gx - 8.0, SIDE_GAP * 2.2, 0.0))
+    # Spain GK stands inside the goal mouth
+    gk_in = Vector((gx + 0.6, 0.15, 0.0))
     _assert_gaps(s1, s2)
     ball_goal = Vector((gx + 1.5, -GOAL_INNER_HALF_W * 0.45, GOAL_H * 0.6))
     f_pass, f_recv, f_kick, f_goal = 80, 110, 150, 178
 
     arm1, root1 = spawn_player("Shaolin_A", SHAOLIN_ORANGE, s1, yaw, actions=["idle", "fight_kick"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42))
     arm2, root2 = spawn_player("Shaolin_B", SHAOLIN_ORANGE, s2, yaw, actions=["idle", "run", "fight_kick"], split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42))
-    arm_sp, root_sp = spawn_player("Spain_Far", SPAIN_YELLOW, spain_far, yaw_face_neg_x(), actions=["fight_idle"], split=(SPAIN_YELLOW, SPAIN_RED, 0.42))
-    for ar in (arm1, arm2, arm_sp):
+    arm_gk, root_gk = spawn_player(
+        "Spain_GK", SPAIN_YELLOW, gk_in, yaw_gk,
+        actions=["fight_idle"], split=(SPAIN_YELLOW, SPAIN_RED, 0.42),
+    )
+    for ar in (arm1, arm2, arm_gk):
         _clear_all_nla(ar)
 
     def s2_path(f: int) -> Vector:
@@ -412,7 +442,7 @@ def build_12() -> int:
     animate_root(root1, [(1, s1), (frames, s1)], yaw)
     keys2 = [(f, s2_path(f)) for f in range(1, frames + 1, 2)] + [(frames, s2_path(frames))]
     animate_root(root2, keys2, yaw)
-    animate_root(root_sp, [(1, spain_far), (frames, spain_far)], yaw_face_neg_x())
+    animate_root(root_gk, [(1, gk_in), (frames, gk_in)], yaw_gk)
 
     add_nla_hold(arm1, "idle", 1, f_pass - 12, af=5)
     add_nla_once(arm1, "fight_kick", f_pass - 10, f_pass + 12)
@@ -421,7 +451,7 @@ def build_12() -> int:
     add_nla_loop(arm2, "run", f_recv, f_kick - 8)
     add_nla_once(arm2, "fight_kick", f_kick - 10, f_kick + 14)
     add_nla_hold(arm2, "idle", f_kick + 15, frames, af=6)
-    add_nla_hold(arm_sp, "fight_idle", 1, frames, af=10)
+    add_nla_hold(arm_gk, "fight_idle", 1, frames, af=10)
 
     ball = clear_ball_anim()
     move = Vector((1.0, 0.0, 0.0))
@@ -647,23 +677,19 @@ def build_15() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 16 Yellow card — black Referee_ + Spain protest (mild head/spine)
+# 16 Yellow card — face first; ref raises card high; Spain angry watching
 # ---------------------------------------------------------------------------
 def build_16() -> int:
     remove_players()
-    frames = 240
+    frames = 264
     _hide_pitch(keep_extra=("Referee_", "Spain_", "Card_"))
     hide_ball()
-    # simple studio floor
     floor_m = mat_rgba("Card_FloorMat", (0.12, 0.12, 0.13, 1.0), 0.9)
     add_box("Card_Floor", (8.0, 6.0, 0.1), Vector((0.0, 0.5, 0.05)), floor_m)
     add_box("Card_Back", (7.0, 0.15, 4.0), Vector((0.0, 2.8, 2.1)), mat_rgba("Card_BackMat", (0.08, 0.08, 0.1, 1.0), 0.85))
 
-    ref_pos = Vector((-1.4, 0.0, 0.0))
-    sp_pos = Vector((1.6, 0.15, 0.0))
-    assert (ref_pos - sp_pos).length >= SIDE_GAP - 0.5  # close bust; keep ~3
-    # nudge to respect SIDE_GAP
-    sp_pos = Vector((ref_pos.x + SIDE_GAP, 0.15, 0.0))
+    ref_pos = Vector((-1.8, 0.0, 0.0))
+    sp_pos = Vector((ref_pos.x + SIDE_GAP + 0.2, 0.15, 0.0))
     yaw = yaw_face_neg_y()
 
     ref_arm, ref_root = spawn_player("Referee", REF_BLACK, ref_pos, yaw, actions=["idle", "fight_idle"])
@@ -674,32 +700,41 @@ def build_16() -> int:
     animate_root(sp_root, [(1, sp_pos), (frames, sp_pos)], yaw)
     add_nla_loop(ref_arm, "idle", 1, frames)
     add_nla_loop(sp_arm, "idle", 1, frames)
+    # Spain anger after card is up
     add_talk_strip(sp_arm, "Spain_Protest", frames, _protest_deltas, TALK_BONES, step=3)
 
-    # yellow card rising in ref hand region
     card_m = mat_rgba("Card_YellowMat", (0.95, 0.85, 0.08, 1.0), 0.4)
-    card = add_box("Card_Yellow", (0.18, 0.02, 0.28), Vector((ref_pos.x + 0.55, ref_pos.y - 0.35, 1.4)), card_m)
-    f_raise = 48
+    card = add_box("Card_Yellow", (0.2, 0.025, 0.32), Vector((ref_pos.x + 0.45, ref_pos.y - 0.4, 1.5)), card_m)
+    f_raise = 36
     for f in range(1, frames + 1, 2):
         if f < f_raise:
-            z = 1.15
+            z = 1.5
         else:
-            t = min(1.0, (f - f_raise) / 36.0)
-            z = 1.15 + 0.85 * ease(t)
-        card.location = Vector((ref_pos.x + 0.55, ref_pos.y - 0.35, z))
+            t = min(1.0, (f - f_raise) / 40.0)
+            # held high above head
+            z = 1.5 + 2.3 * ease(t)
+        card.location = Vector((ref_pos.x + 0.35, ref_pos.y - 0.25, z))
         card.keyframe_insert(data_path="location", frame=f)
     force_linear(card)
 
-    cam = setup_new_cam("CamCut16", lens=40)
+    cam = setup_new_cam("CamCut16", lens=45)
 
     def cam_pos(f: int) -> Vector:
         t = (f - 1) / max(1, frames - 1)
-        return Vector((0.2, -6.2 + 0.3 * t, 2.7))
+        # start on faces (ref+card), ease out slightly to include angry Spain
+        if f < 90:
+            return Vector((ref_pos.x + 0.2, -4.0 + 0.15 * t, 3.7))
+        u = ease((f - 90) / max(1, frames - 90))
+        return Vector((ref_pos.x + 0.2, -4.0, 3.7)).lerp(Vector((0.15, -5.6, 3.55)), u)
 
     def cam_tgt(f: int) -> Vector:
-        return Vector((0.2, 0.1, 2.35))
+        if f < 90:
+            # face of ref + raised card
+            return Vector((ref_pos.x + 0.2, 0.05, 3.75))
+        u = ease((f - 90) / max(1, frames - 90))
+        return Vector((ref_pos.x + 0.2, 0.05, 3.75)).lerp(Vector((0.4, 0.1, 3.5)), u)
 
-    _dense_cam(cam, frames, cam_pos, cam_tgt, step=4)
+    _dense_cam(cam, frames, cam_pos, cam_tgt, step=3)
     set_frame_range(frames)
     return frames
 

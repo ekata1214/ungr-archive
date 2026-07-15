@@ -91,6 +91,7 @@ PLAYER_PREFIXES = (
     "Dojo_",
     "FemaleGK_",
     "Card_",
+    "Hair_",
 )
 
 
@@ -564,3 +565,155 @@ def goal_l_x() -> float:
 
 def goal_r_x() -> float:
     return PITCH_HALF
+
+
+def paint_vertex_groups(
+    arm: bpy.types.Object,
+    group_names: Sequence[str],
+    rgba,
+    mat_name: str | None = None,
+) -> None:
+    """指定頂点グループの面を別マテリアル色にする（フランス右足の赤など）。"""
+    from import_mannequiny import _mesh_child, _apply_principled_color  # noqa: E402
+
+    mesh_obj = _mesh_child(arm)
+    mesh = mesh_obj.data
+    want = set(group_names)
+    vg_index = {g.name: g.index for g in mesh_obj.vertex_groups if g.name in want}
+    if not vg_index:
+        return
+    mat = bpy.data.materials.new(mat_name or f"{mesh_obj.name}_accent")
+    _apply_principled_color(mat, rgba)
+    mat_i = len(mesh.materials)
+    mesh.materials.append(mat)
+    # face whose verts lean toward target groups
+    for poly in mesh.polygons:
+        score = 0
+        tot = 0
+        for vi in poly.vertices:
+            for g in mesh.vertices[vi].groups:
+                if g.group in vg_index.values():
+                    score += g.weight
+                tot += 1
+        if score > 0.35:
+            poly.material_index = mat_i
+    mesh.update()
+
+
+def apply_france_kit(arm: bpy.types.Object) -> None:
+    """フランスユニ：青上／白下＋右足を赤。"""
+    from import_mannequiny import _mesh_child, set_mesh_split_vertical  # noqa: E402
+
+    set_mesh_split_vertical(_mesh_child(arm), FRANCE_BLUE, FRANCE_WHITE, z_cut=0.42)
+    paint_vertex_groups(arm, ("foot.r", "ball.r"), FRANCE_RED, mat_name=f"{arm.name}_rf")
+
+
+def spawn_france(
+    prefix: str,
+    pos: Vector,
+    yaw: float,
+    actions: List[str] | None = None,
+    scale: float | None = None,
+) -> Tuple[bpy.types.Object, bpy.types.Object]:
+    arm, root = spawn_player(
+        prefix,
+        FRANCE_BLUE,
+        pos,
+        yaw,
+        actions=actions or ["idle"],
+        split=(FRANCE_BLUE, FRANCE_WHITE, 0.42),
+        scale=scale,
+    )
+    apply_france_kit(arm)
+    return arm, root
+
+
+def attach_long_hair(
+    arm: bpy.types.Object,
+    rgba=(0.12, 0.07, 0.04, 1.0),
+    name: str | None = None,
+) -> bpy.types.Object:
+    """頭ボーンに長い髪メッシュを付け足す。"""
+    hair_name = name or f"Hair_{arm.name}_Long"
+    if hair_name in bpy.data.objects:
+        bpy.data.objects.remove(bpy.data.objects[hair_name], do_unlink=True)
+    mat = mat_rgba(f"{hair_name}_Mat", rgba, 0.9)
+    # elongated soft blob hanging behind head
+    mesh = bpy.data.meshes.new(hair_name)
+    # simple capsule-ish: tall box stacked spheres approx
+    verts = [
+        (-0.18, -0.12, 0.05),
+        (0.18, -0.12, 0.05),
+        (0.18, 0.12, 0.05),
+        (-0.18, 0.12, 0.05),
+        (-0.28, -0.2, -1.55),
+        (0.28, -0.2, -1.55),
+        (0.28, 0.25, -1.55),
+        (-0.28, 0.25, -1.55),
+        (-0.12, -0.08, 0.35),
+        (0.12, -0.08, 0.35),
+        (0.12, 0.1, 0.35),
+        (-0.12, 0.1, 0.35),
+    ]
+    faces = [
+        (8, 9, 10, 11),
+        (0, 1, 9, 8),
+        (1, 2, 10, 9),
+        (2, 3, 11, 10),
+        (3, 0, 8, 11),
+        (0, 1, 5, 4),
+        (1, 2, 6, 5),
+        (2, 3, 7, 6),
+        (3, 0, 4, 7),
+        (4, 5, 6, 7),
+    ]
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(hair_name, mesh)
+    bpy.context.collection.objects.link(obj)
+    obj.data.materials.append(mat)
+    obj.parent = arm
+    obj.parent_type = "BONE"
+    obj.parent_bone = "head"
+    # offset relative to head bone tip
+    obj.location = Vector((0.0, -0.05, -0.15))
+    obj.rotation_euler = Euler((0.35, 0.0, 0.0), "XYZ")
+    obj.scale = Vector((1.15, 1.1, 1.0))
+    return obj
+
+
+def animate_gk_dive(
+    root: bpy.types.Object,
+    arm: bpy.types.Object,
+    home: Vector,
+    dive_y: float,
+    f_dive: int,
+    f_land: int,
+    frames: int,
+    yaw: float,
+    *,
+    side: bool = True,
+    rise: float = 0.9,
+) -> None:
+    """GKが横飛び（side=True）またはその場ジャンプ（side=False）。シュートは別途ボールで外す想定。"""
+    dive = home + Vector((0.6 if side else 0.2, dive_y if side else 0.0, 0.0))
+
+    def path(f: int) -> Vector:
+        if f < f_dive:
+            return home.copy()
+        if f <= f_land:
+            t = (f - f_dive) / max(1, f_land - f_dive)
+            p = home.lerp(dive, ease(min(1.0, t * 1.15)))
+            p.z = rise * math.sin(min(1.0, t) * math.pi)
+            return p
+        t = (f - f_land) / max(1, frames - f_land)
+        p = dive.copy()
+        p.z = max(0.0, 0.2 * (1.0 - ease(min(1.0, t * 1.5))))
+        return p
+
+    keys = [(f, path(f)) for f in range(1, frames + 1, 2)]
+    keys.append((frames, path(frames)))
+    animate_root(root, keys, yaw)
+    add_nla_hold(arm, "fight_idle", 1, max(1, f_dive - 3), af=10)
+    add_nla_once(arm, "jump_full", f_dive - 2, min(frames, f_land + 10))
+    add_nla_hold(arm, "fight_idle", min(frames, f_land + 11), frames, af=8)
