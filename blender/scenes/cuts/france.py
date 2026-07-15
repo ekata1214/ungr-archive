@@ -366,11 +366,11 @@ def build_20() -> int:
         phone.keyframe_insert(data_path="scale", frame=f)
     force_linear(phone)
 
-    cam = setup_new_cam("Cam20", lens=35)
+    cam = setup_new_cam("Cam20", lens=42)
     _cam_dense(
         cam, 1, frames,
-        Vector((-8.5, -9.5, 3.4)), Vector((-9.0, -8.8, 3.2)),
-        Vector((-10.0, 1.7, 2.4)), Vector((-10.0, 1.6, 2.35)),
+        Vector((-9.2, -5.2, 3.55)), Vector((-9.4, -4.8, 3.45)),
+        Vector((-10.0, 1.85, 2.55)), Vector((-10.0, 1.8, 2.5)),
         step=2,
     )
     finish_cam(cam)
