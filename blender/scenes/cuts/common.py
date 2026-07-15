@@ -891,8 +891,8 @@ def attach_feminine_hair(
         objs.append(obj)
         return obj
 
-    # One molded long piece hanging past the shoulders (visible from front as side curtains).
-    _piece("lego_long", Vector((0.0, 0.05, -0.38)), Vector((0.2, 0.13, 0.72)))
+    # Hang down the BACK via local -Y (head-bone Y points up; -Y drops toward body).
+    _piece("lego_long", Vector((0.0, -0.32, 0.06)), Vector((0.2, 0.62, 0.15)))
     return objs
 
 
