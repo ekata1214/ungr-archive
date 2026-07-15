@@ -726,10 +726,10 @@ def build_16() -> int:
     add_nla_loop(ref_arm, "idle", 1, frames)
     add_nla_loop(sp_arm, "idle", 1, frames)
 
-    f_raise_end = 90
-    # Spain calm until card fully up, then angry
+    f_raise_end = 48
+    # Spain sees floating card and gets angry after a short beat
     def spain_react(frame: int):
-        if frame < f_raise_end + 8:
+        if frame < f_raise_end:
             t = frame / FPS
             return {
                 "spine_01": (0.01, 0.0, 0.02 * math.sin(t * 1.2)),
@@ -742,19 +742,15 @@ def build_16() -> int:
     add_talk_strip(sp_arm, "Spain_CardReact", frames, spain_react, TALK_BONES, step=3)
 
     card_m = mat_rgba("Card_YellowMat", (0.95, 0.85, 0.08, 1.0), 0.4)
-    # card in referee's raised hand zone (toward Spain / +X)
-    card = add_box("Card_Yellow", (0.2, 0.025, 0.32), Vector((ref_pos.x + 0.55, ref_pos.y - 0.15, 1.6)), card_m)
-    f_raise = 30
+    # Hover midair between ref and Spain from frame 1 (never rises from a hand).
+    mid = Vector((0.0, 0.05, 1.75))
+    card = add_box("Card_Yellow", (0.2, 0.025, 0.32), mid, card_m)
     for f in range(1, frames + 1, 2):
-        if f < f_raise:
-            z = 1.6
-            y = ref_pos.y - 0.15
-        else:
-            t = min(1.0, (f - f_raise) / max(1, f_raise_end - f_raise))
-            z = 1.6 + 2.4 * ease(t)
-            y = ref_pos.y - 0.15
-        card.location = Vector((ref_pos.x + 0.5, y, z))
+        bob = 0.04 * math.sin(f * 0.12)
+        card.location = Vector((mid.x, mid.y, mid.z + bob))
         card.keyframe_insert(data_path="location", frame=f)
+    card.location = mid
+    card.keyframe_insert(data_path="location", frame=frames)
     force_linear(card)
 
     cam = setup_new_cam("CamCut16", lens=40)
@@ -763,9 +759,8 @@ def build_16() -> int:
         return Vector((0.0, -7.5, 3.5))
 
     def cam_tgt(f: int) -> Vector:
-        if f < f_raise_end:
-            return Vector((ref_pos.x + 0.3, 0.0, 3.2))
-        return Vector((0.2, 0.0, 3.1))
+        # Stay on the floating card / mutual stare
+        return Vector((0.05, 0.05, 1.85 + 0.02 * math.sin(f * 0.1)))
 
     _dense_cam(cam, frames, cam_pos, cam_tgt, step=3)
     set_frame_range(frames)

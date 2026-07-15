@@ -184,40 +184,39 @@ def _happy_fn() -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
 
 def _phone_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     t = frame / FPS
-    tap = 0.08 * math.sin(t * 14.0)
+    tap = 0.06 * math.sin(t * 14.0)
+    # Palms toward face: opposite signs from prior creepy twist; L holds, R taps.
     return {
-        # left arm holds phone up
-        "clavicle.l": (0.05, 0.15, 0.1),
-        "upperarm.l": (-0.55, 0.35, 0.45),
-        "lowerarm.l": (-0.85, 0.1, 0.2),
-        "hand.l": (0.2, 0.15, 0.1),
-        # right arm taps
-        "clavicle.r": (0.04, -0.1, -0.08),
-        "upperarm.r": (-0.45, -0.25, -0.35),
-        "lowerarm.r": (-0.7 + tap, 0.05, -0.15),
-        "hand.r": (0.15 + tap * 0.5, -0.1, 0.05),
+        "clavicle.l": (0.04, -0.12, -0.08),
+        "upperarm.l": (0.5, -0.3, -0.4),
+        "lowerarm.l": (0.75, -0.08, -0.15),
+        "hand.l": (-0.35, -0.2, 0.15),
+        "clavicle.r": (0.03, 0.1, 0.06),
+        "upperarm.r": (0.4, 0.22, 0.3),
+        "lowerarm.r": (0.65 + tap, -0.05, 0.12),
+        "hand.r": (-0.25 - tap * 0.4, 0.12, -0.08),
         "spine_01": (0.04, 0.0, 0.0),
         "spine_02": (0.05, 0.0, 0.0),
-        "neck_01": (0.12, 0.0, 0.0),
-        "head": (0.18, 0.0, 0.05 * math.sin(t * 2.0)),
+        "neck_01": (0.1, 0.0, 0.0),
+        "head": (0.14, 0.0, 0.04 * math.sin(t * 2.0)),
     }
 
 
 def _sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    # 体育座り — kneess bent, torso lean
+    # 体育座り — reverse prior bend (legs fold forward, torso slightly hunches)
     u = ease(min(1.0, (frame - 1) / 36.0))
     return {
-        "thigh.l": (1.05 * u, 0.15 * u, 0.25 * u),
-        "calf.l": (-1.25 * u, 0.0, 0.0),
-        "foot.l": (0.35 * u, 0.0, 0.0),
-        "thigh.r": (1.05 * u, -0.15 * u, -0.25 * u),
-        "calf.r": (-1.25 * u, 0.0, 0.0),
-        "foot.r": (0.35 * u, 0.0, 0.0),
-        "pelvis": (0.15 * u, 0.0, 0.0),
-        "spine_01": (0.25 * u, 0.0, 0.0),
-        "spine_02": (0.2 * u, 0.0, 0.0),
-        "neck_01": (0.1 * u, 0.0, 0.0),
-        "head": (0.08 * u, 0.0, 0.0),
+        "thigh.l": (-1.1 * u, -0.18 * u, -0.2 * u),
+        "calf.l": (1.3 * u, 0.0, 0.0),
+        "foot.l": (-0.4 * u, 0.0, 0.0),
+        "thigh.r": (-1.1 * u, 0.18 * u, 0.2 * u),
+        "calf.r": (1.3 * u, 0.0, 0.0),
+        "foot.r": (-0.4 * u, 0.0, 0.0),
+        "pelvis": (-0.12 * u, 0.0, 0.0),
+        "spine_01": (-0.28 * u, 0.0, 0.0),
+        "spine_02": (-0.22 * u, 0.0, 0.0),
+        "neck_01": (-0.08 * u, 0.0, 0.0),
+        "head": (-0.06 * u, 0.0, 0.0),
     }
 
 # ---------------------------------------------------------------------------
@@ -354,13 +353,13 @@ def build_20() -> int:
     add_nla_hold(arm, "idle", 1, frames, af=12)
     add_pose_strip(arm, "FrancePhonePose", frames, _phone_deltas, PHONE_ARM_BONES, step=2, clamp=1.3)
 
-    phone_mat = mat_rgba("Phone_Mat", (0.04, 0.04, 0.05, 1.0), 0.45)
-    phone = add_box("Phone_01", (0.12, 0.02, 0.22), Vector((0, 0, 0)), phone_mat)
+    phone_mat = mat_rgba("Phone_Mat", (0.02, 0.02, 0.025, 1.0), 0.35)
+    # Palm-sized black rectangle (サイゼ風の薄い黒プレート)
+    phone = add_box("Phone_01", (0.055, 0.008, 0.095), Vector((0, 0, 0)), phone_mat)
     parent_phone_to_hand(phone, arm, "hand.l")
-    # subtle phone wiggle in local space
     for f in range(1, frames + 1, 3):
-        w = 0.01 * math.sin(f * 0.45)
-        phone.location = Vector((0.05 + w, 0.08, 0.12))
+        w = 0.004 * math.sin(f * 0.45)
+        phone.location = Vector((0.02 + w, 0.04, 0.06))
         phone.keyframe_insert(data_path="location", frame=f)
     force_linear(phone)
 
@@ -422,18 +421,18 @@ def build_21() -> int:
     key_ball(ball, range(1, frames + 1, 2), path)
 
     cam = setup_new_cam("Cam21", lens=28)
-    _cam_dense(
-        cam, 1, 90,
-        Vector((-20.0, -20.0, 6.0)), Vector((GOAL_X + 35.0, -16.0, 5.0)),
-        Vector((-30.0, 1.0, 1.2)), Vector((GOAL_X + 20.0, 0.5, 1.2)),
-        step=2,
-    )
-    _cam_dense(
-        cam, 90, frames,
-        Vector((GOAL_X + 35.0, -16.0, 5.0)), Vector((GOAL_X + 18.0, -10.0, 4.0)),
-        Vector((GOAL_X + 20.0, 0.5, 1.2)), Vector((GOAL_X, 0.0, 2.0)),
-        step=2,
-    )
+
+    def cam_pos(f: int) -> Vector:
+        b = path(f)
+        return Vector((b.x - 6.0, b.y - 12.0, max(3.2, b.z + 2.2)))
+
+    def cam_tgt(f: int) -> Vector:
+        b = path(f)
+        return Vector((b.x + 1.5, b.y * 0.35, max(0.9, b.z)))
+
+    for f in range(1, frames + 1, 2):
+        kf_cam(cam, f, cam_pos(f), cam_tgt(f))
+    kf_cam(cam, frames, cam_pos(frames), cam_tgt(frames))
     finish_cam(cam)
     return frames
 
@@ -564,18 +563,18 @@ def build_23() -> int:
     key_ball(ball, range(1, frames + 1, 2), path)
 
     cam = setup_new_cam("Cam23", lens=30)
-    _cam_dense(
-        cam, 1, 40,
-        Vector((-15.0, -12.0, 5.0)), Vector((-40.0, -14.0, 4.5)),
-        Vector((-25.0, 8.0, 1.0)), Vector((-45.0, -2.0, 1.2)),
-        step=2,
-    )
-    _cam_dense(
-        cam, 40, frames,
-        Vector((-40.0, -14.0, 4.5)), Vector((GOAL_X + 20.0, -11.0, 4.0)),
-        Vector((-45.0, -2.0, 1.2)), Vector((GOAL_X, 0.0, 2.0)),
-        step=2,
-    )
+
+    def cam_pos(f: int) -> Vector:
+        b = path(f)
+        return Vector((b.x - 5.5, b.y - 11.5, max(3.0, b.z + 2.0)))
+
+    def cam_tgt(f: int) -> Vector:
+        b = path(f)
+        return Vector((b.x + 1.2, b.y * 0.3, max(0.9, b.z)))
+
+    for f in range(1, frames + 1, 2):
+        kf_cam(cam, f, cam_pos(f), cam_tgt(f))
+    kf_cam(cam, frames, cam_pos(frames), cam_tgt(frames))
     finish_cam(cam)
     return frames
 
@@ -790,12 +789,12 @@ def build_28() -> int:
 
     add_pose_strip(arm, "FrancePhoneThenSad", frames, phone_then_sad, PHONE_ARM_BONES, step=2, clamp=1.3)
 
-    phone_mat = mat_rgba("Phone_Mat", (0.04, 0.04, 0.05, 1.0), 0.45)
-    phone = add_box("Phone_01", (0.12, 0.02, 0.22), Vector((0, 0, 0)), phone_mat)
+    phone_mat = mat_rgba("Phone_Mat", (0.02, 0.02, 0.025, 1.0), 0.35)
+    phone = add_box("Phone_01", (0.055, 0.008, 0.095), Vector((0, 0, 0)), phone_mat)
     parent_phone_to_hand(phone, arm, "hand.l")
     for f in range(1, frames + 1, 3):
-        w = 0.01 * math.sin(f * 0.35)
-        phone.location = Vector((0.05 + w, 0.08, 0.12))
+        w = 0.004 * math.sin(f * 0.35)
+        phone.location = Vector((0.02 + w, 0.04, 0.06))
         phone.keyframe_insert(data_path="location", frame=f)
     force_linear(phone)
 

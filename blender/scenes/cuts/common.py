@@ -861,59 +861,43 @@ def _uv_sphere_mesh(name: str, segments: int = 10, rings: int = 8) -> bpy.types.
 
 def attach_feminine_hair(
     arm: bpy.types.Object,
-    rgba=(0.18, 0.1, 0.05, 1.0),
+    rgba=(0.08, 0.07, 0.06, 1.0),
 ) -> list:
-    """複数の小さめ球で女性っぽい髪。直方体は使わない。"""
+    """Lego-female style: smooth crown + one long rear piece. No chest / no blob cluster."""
     objs = []
-    mat = mat_rgba(f"Hair_{arm.name}_Mat", rgba, 0.85)
-    specs = [
-        ("crown", Vector((0.0, -0.02, 0.12)), Vector((0.22, 0.2, 0.16))),
-        ("bang_l", Vector((-0.12, -0.14, 0.02)), Vector((0.1, 0.08, 0.12))),
-        ("bang_r", Vector((0.12, -0.14, 0.02)), Vector((0.1, 0.08, 0.12))),
-        ("side_l", Vector((-0.16, -0.05, -0.25)), Vector((0.09, 0.1, 0.28))),
-        ("side_r", Vector((0.16, -0.05, -0.25)), Vector((0.09, 0.1, 0.28))),
-        ("rear_1", Vector((0.0, 0.1, -0.35)), Vector((0.14, 0.12, 0.32))),
-        ("rear_2", Vector((0.0, 0.12, -0.7)), Vector((0.11, 0.1, 0.28))),
-        ("rear_3", Vector((0.05, 0.08, -1.0)), Vector((0.09, 0.09, 0.22))),
-        ("rear_4", Vector((-0.05, 0.08, -1.0)), Vector((0.09, 0.09, 0.22))),
-    ]
-    for suffix, loc, sc in specs:
-        name = f"Hair_{arm.name}_{suffix}"
-        if name in bpy.data.objects:
-            bpy.data.objects.remove(bpy.data.objects[name], do_unlink=True)
-        mesh = _uv_sphere_mesh(name)
-        obj = bpy.data.objects.new(name, mesh)
-        bpy.context.collection.objects.link(obj)
-        obj.scale = sc
-        obj.data.materials.append(mat)
-        obj.parent = arm
-        obj.parent_type = "BONE"
-        obj.parent_bone = "head"
-        obj.location = loc
-        objs.append(obj)
+    mat = mat_rgba(f"Hair_{arm.name}_Mat", rgba, 0.55)
+    # Helmet-like crown covering the head
+    crown_name = f"Hair_{arm.name}_crown"
+    if crown_name in bpy.data.objects:
+        bpy.data.objects.remove(bpy.data.objects[crown_name], do_unlink=True)
+    crown = bpy.data.objects.new(crown_name, _uv_sphere_mesh(crown_name, segments=12, rings=8))
+    bpy.context.collection.objects.link(crown)
+    crown.scale = Vector((0.2, 0.18, 0.12))
+    crown.location = Vector((0.0, -0.01, 0.06))
+    crown.data.materials.append(mat)
+    crown.parent = arm
+    crown.parent_type = "BONE"
+    crown.parent_bone = "head"
+    objs.append(crown)
+    # Single long smooth back piece (Lego long-hair reference)
+    long_name = f"Hair_{arm.name}_long"
+    if long_name in bpy.data.objects:
+        bpy.data.objects.remove(bpy.data.objects[long_name], do_unlink=True)
+    long_hair = bpy.data.objects.new(long_name, _uv_sphere_mesh(long_name, segments=12, rings=10))
+    bpy.context.collection.objects.link(long_hair)
+    long_hair.scale = Vector((0.16, 0.2, 0.72))
+    long_hair.location = Vector((0.0, 0.08, -0.45))
+    long_hair.data.materials.append(mat)
+    long_hair.parent = arm
+    long_hair.parent_type = "BONE"
+    long_hair.parent_bone = "head"
+    objs.append(long_hair)
     return objs
 
 
 def apply_female_chest(arm: bpy.types.Object) -> list:
-    """胸を少し膨らませて女性シルエットに。"""
-    mat = mat_rgba(f"Chest_{arm.name}_Mat", (0.95, 0.75, 0.65, 1.0), 0.7)
-    outs = []
-    for side, x in (("l", -0.14), ("r", 0.14)):
-        name = f"FemaleGK_{arm.name}_chest_{side}"
-        if name in bpy.data.objects:
-            bpy.data.objects.remove(bpy.data.objects[name], do_unlink=True)
-        mesh = _uv_sphere_mesh(name)
-        obj = bpy.data.objects.new(name, mesh)
-        bpy.context.collection.objects.link(obj)
-        obj.scale = Vector((0.16, 0.14, 0.14))
-        obj.data.materials.append(mat)
-        bone = "spine_02" if arm.pose.bones.get("spine_02") else "spine_01"
-        obj.parent = arm
-        obj.parent_type = "BONE"
-        obj.parent_bone = bone
-        obj.location = Vector((x, -0.18, 0.05))
-        outs.append(obj)
-    return outs
+    """Deprecated: Lego-style female has no chest bulge. No-op."""
+    return []
 
 
 def parent_phone_to_hand(
@@ -925,6 +909,7 @@ def parent_phone_to_hand(
     phone.parent = arm
     phone.parent_type = "BONE"
     phone.parent_bone = hand_bone if arm.pose.bones.get(hand_bone) else "lowerarm.l"
-    phone.location = loc or Vector((0.05, 0.08, 0.12))
-    phone.rotation_euler = Euler((1.2, 0.0, 0.4), "XYZ")
-    phone.scale = Vector((0.55, 0.55, 0.55))
+    # Sit flat in the palm — palm-sized rectangle, no giant brick scale.
+    phone.location = loc or Vector((0.02, 0.04, 0.06))
+    phone.rotation_euler = Euler((-0.35, 0.0, 1.55), "XYZ")
+    phone.scale = Vector((1.0, 1.0, 1.0))

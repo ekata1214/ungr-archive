@@ -28,7 +28,6 @@ from cuts.common import (  # noqa: E402
     add_talk_strip,
     animate_gk_dive,
     animate_root,
-    apply_female_chest,
     attach_feminine_hair,
     ball_ahead_of,
     clear_ball_anim,
@@ -555,7 +554,6 @@ def build_32() -> int:
     )
     _clear_all_nla(arm)
     attach_feminine_hair(arm)
-    apply_female_chest(arm)
     keys = []
     for f in range(1, frames + 1, 2):
         t = ease((f - 1) / max(1, frames - 1))
@@ -599,7 +597,6 @@ def build_33() -> int:
     )
     _clear_all_nla(gk_arm)
     attach_feminine_hair(gk_arm)
-    apply_female_chest(gk_arm)
     animate_root(ar_root, [(1, spot), (frames, spot)], ATTACK_YAW)
     dive_pos = GK_HOME + Vector((1.0, -4.5, 0.0))
     animate_root(
@@ -662,7 +659,6 @@ def build_34() -> int:
     )
     _clear_all_nla(arm)
     attach_feminine_hair(arm)
-    apply_female_chest(arm)
     animate_root(root, [(1, pos), (frames, pos)], yaw_face_neg_y())
     add_nla_loop(arm, "idle", 1, frames)
     add_talk_strip(arm, "FemaleGKMutter", frames, _mutter_fn(), TALK_BONES, step=2)
