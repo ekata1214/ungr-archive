@@ -203,20 +203,20 @@ def _phone_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
 
 
 def _sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    # 体育座り — reverse prior bend (legs fold forward, torso slightly hunches)
+    # 体育座り — legs fold knees-up (original thigh/calf signs); torso forward (reversed)
     u = ease(min(1.0, (frame - 1) / 36.0))
     return {
-        "thigh.l": (-1.1 * u, -0.18 * u, -0.2 * u),
-        "calf.l": (1.3 * u, 0.0, 0.0),
-        "foot.l": (-0.4 * u, 0.0, 0.0),
-        "thigh.r": (-1.1 * u, 0.18 * u, 0.2 * u),
-        "calf.r": (1.3 * u, 0.0, 0.0),
-        "foot.r": (-0.4 * u, 0.0, 0.0),
-        "pelvis": (-0.12 * u, 0.0, 0.0),
-        "spine_01": (-0.28 * u, 0.0, 0.0),
-        "spine_02": (-0.22 * u, 0.0, 0.0),
-        "neck_01": (-0.08 * u, 0.0, 0.0),
-        "head": (-0.06 * u, 0.0, 0.0),
+        "thigh.l": (1.15 * u, 0.22 * u, 0.3 * u),
+        "calf.l": (-1.35 * u, 0.0, 0.0),
+        "foot.l": (0.4 * u, 0.0, 0.0),
+        "thigh.r": (1.15 * u, -0.22 * u, -0.3 * u),
+        "calf.r": (-1.35 * u, 0.0, 0.0),
+        "foot.r": (0.4 * u, 0.0, 0.0),
+        "pelvis": (-0.22 * u, 0.0, 0.0),
+        "spine_01": (-0.35 * u, 0.0, 0.0),
+        "spine_02": (-0.28 * u, 0.0, 0.0),
+        "neck_01": (0.12 * u, 0.0, 0.0),
+        "head": (0.08 * u, 0.0, 0.0),
     }
 
 # ---------------------------------------------------------------------------
@@ -310,8 +310,8 @@ def build_19() -> int:
     pos = Vector((-10.0, 2.0, 0.0))
     arm, root = spawn_france("France", pos, yaw_face_neg_y(), actions=["idle"])
     _clear_all_nla(arm)
-    # only slight root settle — legs bend via pose, not sink through pitch
-    sit = Vector((pos.x, pos.y, -0.35))
+    # only slight root settle — legs bend via pose
+    sit = Vector((pos.x, pos.y, -0.55))
     keys = []
     for f in range(1, frames + 1, 2):
         if f <= 40:
@@ -328,8 +328,8 @@ def build_19() -> int:
     cam = setup_new_cam("Cam19", lens=32)
     _cam_dense(
         cam, 1, frames,
-        Vector((-6.0, -11.0, 3.0)), Vector((-8.0, -10.0, 2.6)),
-        Vector((-10.0, 2.0, 1.1)), Vector((-10.0, 2.0, 0.9)),
+        Vector((-6.0, -11.0, 2.4)), Vector((-8.0, -10.0, 2.2)),
+        Vector((-10.0, 2.0, 0.9)), Vector((-10.0, 2.0, 0.75)),
         step=3,
     )
     finish_cam(cam)
@@ -355,12 +355,15 @@ def build_20() -> int:
 
     phone_mat = mat_rgba("Phone_Mat", (0.02, 0.02, 0.025, 1.0), 0.35)
     # Palm-sized black rectangle (サイゼ風の薄い黒プレート)
-    phone = add_box("Phone_01", (0.055, 0.008, 0.095), Vector((0, 0, 0)), phone_mat)
-    parent_phone_to_hand(phone, arm, "hand.l")
+    palm = (0.06, 0.01, 0.1)
+    phone = add_box("Phone_01", palm, Vector((0, 0, 0)), phone_mat)
+    parent_phone_to_hand(phone, arm, "hand.l", palm_size=palm)
     for f in range(1, frames + 1, 3):
         w = 0.004 * math.sin(f * 0.45)
-        phone.location = Vector((0.02 + w, 0.04, 0.06))
+        phone.location = Vector((0.02 + w, 0.035, 0.05))
+        phone.scale = Vector(palm)
         phone.keyframe_insert(data_path="location", frame=f)
+        phone.keyframe_insert(data_path="scale", frame=f)
     force_linear(phone)
 
     cam = setup_new_cam("Cam20", lens=35)
@@ -790,12 +793,15 @@ def build_28() -> int:
     add_pose_strip(arm, "FrancePhoneThenSad", frames, phone_then_sad, PHONE_ARM_BONES, step=2, clamp=1.3)
 
     phone_mat = mat_rgba("Phone_Mat", (0.02, 0.02, 0.025, 1.0), 0.35)
-    phone = add_box("Phone_01", (0.055, 0.008, 0.095), Vector((0, 0, 0)), phone_mat)
-    parent_phone_to_hand(phone, arm, "hand.l")
+    palm = (0.06, 0.01, 0.1)
+    phone = add_box("Phone_01", palm, Vector((0, 0, 0)), phone_mat)
+    parent_phone_to_hand(phone, arm, "hand.l", palm_size=palm)
     for f in range(1, frames + 1, 3):
         w = 0.004 * math.sin(f * 0.35)
-        phone.location = Vector((0.02 + w, 0.04, 0.06))
+        phone.location = Vector((0.02 + w, 0.035, 0.05))
+        phone.scale = Vector(palm)
         phone.keyframe_insert(data_path="location", frame=f)
+        phone.keyframe_insert(data_path="scale", frame=f)
     force_linear(phone)
 
     cam = setup_new_cam("Cam28", lens=34)

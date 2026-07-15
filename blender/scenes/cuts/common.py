@@ -861,37 +861,45 @@ def _uv_sphere_mesh(name: str, segments: int = 10, rings: int = 8) -> bpy.types.
 
 def attach_feminine_hair(
     arm: bpy.types.Object,
-    rgba=(0.08, 0.07, 0.06, 1.0),
+    rgba=(0.06, 0.05, 0.05, 1.0),
 ) -> list:
-    """Lego-female style: smooth crown + one long rear piece. No chest / no blob cluster."""
+    """レゴ女性ヘア参考: 頭頂カバー + 背中へ長い1本。球の塊／胸なし。"""
     objs = []
-    mat = mat_rgba(f"Hair_{arm.name}_Mat", rgba, 0.55)
-    # Helmet-like crown covering the head
-    crown_name = f"Hair_{arm.name}_crown"
-    if crown_name in bpy.data.objects:
-        bpy.data.objects.remove(bpy.data.objects[crown_name], do_unlink=True)
-    crown = bpy.data.objects.new(crown_name, _uv_sphere_mesh(crown_name, segments=12, rings=8))
-    bpy.context.collection.objects.link(crown)
-    crown.scale = Vector((0.2, 0.18, 0.12))
-    crown.location = Vector((0.0, -0.01, 0.06))
-    crown.data.materials.append(mat)
-    crown.parent = arm
-    crown.parent_type = "BONE"
-    crown.parent_bone = "head"
-    objs.append(crown)
-    # Single long smooth back piece (Lego long-hair reference)
-    long_name = f"Hair_{arm.name}_long"
-    if long_name in bpy.data.objects:
-        bpy.data.objects.remove(bpy.data.objects[long_name], do_unlink=True)
-    long_hair = bpy.data.objects.new(long_name, _uv_sphere_mesh(long_name, segments=12, rings=10))
-    bpy.context.collection.objects.link(long_hair)
-    long_hair.scale = Vector((0.16, 0.2, 0.72))
-    long_hair.location = Vector((0.0, 0.08, -0.45))
-    long_hair.data.materials.append(mat)
-    long_hair.parent = arm
-    long_hair.parent_type = "BONE"
-    long_hair.parent_bone = "head"
-    objs.append(long_hair)
+    mat = mat_rgba(f"Hair_{arm.name}_Mat", rgba, 0.4)
+    # clear prior hair for this arm
+    for o in list(bpy.data.objects):
+        if o.name.startswith(f"Hair_{arm.name}_"):
+            bpy.data.objects.remove(o, do_unlink=True)
+
+    def _piece(suffix: str, loc: Vector, sc: Vector) -> bpy.types.Object:
+        name = f"Hair_{arm.name}_{suffix}"
+        # hard plastic volume (Lego hair = solid molded piece)
+        mesh = bpy.data.meshes.new(name)
+        verts = [
+            (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, 0.5, -0.5),
+            (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, 0.5),
+        ]
+        faces = [(0, 1, 2, 3), (4, 7, 6, 5), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)]
+        mesh.from_pydata(verts, [], faces)
+        mesh.update()
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.collection.objects.link(obj)
+        obj.scale = sc
+        obj.location = loc
+        obj.data.materials.append(mat)
+        obj.parent = arm
+        obj.parent_type = "BONE"
+        obj.parent_bone = "head"
+        objs.append(obj)
+        return obj
+
+    # Helmet/crown covering head (compact)
+    _piece("crown", Vector((0.0, -0.02, 0.05)), Vector((0.28, 0.26, 0.14)))
+    # Side length (Lego long hair hangs down both sides / back)
+    _piece("side_l", Vector((-0.12, 0.02, -0.32)), Vector((0.1, 0.12, 0.55)))
+    _piece("side_r", Vector((0.12, 0.02, -0.32)), Vector((0.1, 0.12, 0.55)))
+    # Rear long fall
+    _piece("rear", Vector((0.0, 0.12, -0.5)), Vector((0.18, 0.14, 0.7)))
     return objs
 
 
@@ -905,11 +913,12 @@ def parent_phone_to_hand(
     arm: bpy.types.Object,
     hand_bone: str = "hand.l",
     loc: Vector | None = None,
+    palm_size: Tuple[float, float, float] = (0.06, 0.01, 0.1),
 ) -> None:
     phone.parent = arm
     phone.parent_type = "BONE"
     phone.parent_bone = hand_bone if arm.pose.bones.get(hand_bone) else "lowerarm.l"
-    # Sit flat in the palm — palm-sized rectangle, no giant brick scale.
-    phone.location = loc or Vector((0.02, 0.04, 0.06))
-    phone.rotation_euler = Euler((-0.35, 0.0, 1.55), "XYZ")
-    phone.scale = Vector((1.0, 1.0, 1.0))
+    # Sit flat in the palm. add_box stores size in obj.scale — never reset to 1.
+    phone.location = loc or Vector((0.02, 0.035, 0.05))
+    phone.rotation_euler = Euler((-0.4, 0.15, 1.55), "XYZ")
+    phone.scale = Vector(palm_size)
