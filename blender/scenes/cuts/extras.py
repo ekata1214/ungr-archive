@@ -122,20 +122,20 @@ def _talk_fn(amp: float = 1.0, phase: float = 0.0) -> Callable[[int], Dict[str, 
 
 
 def _chair_sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    """Chair sit — fold only on X (no Y/Z splay that read as creepy splits)."""
+    """Chair sit — negative-X thigh fold (positive-X = creepy splits on this rig)."""
     u = 1.0
     return {
-        "thigh.l": (1.55 * u, 0.0, 0.0),
-        "calf.l": (-1.65 * u, 0.0, 0.0),
-        "foot.l": (0.4 * u, 0.0, 0.0),
-        "thigh.r": (1.55 * u, 0.0, 0.0),
-        "calf.r": (-1.65 * u, 0.0, 0.0),
-        "foot.r": (0.4 * u, 0.0, 0.0),
-        "pelvis": (0.2 * u, 0.0, 0.0),
-        "spine_01": (-0.05 * u, 0.0, 0.0),
-        "spine_02": (-0.04 * u, 0.0, 0.0),
-        "neck_01": (-0.06 * u, 0.0, 0.0),
-        "head": (-0.05 * u, 0.0, 0.0),
+        "thigh.l": (-1.5 * u, 0.0, 0.0),
+        "calf.l": (1.55 * u, 0.0, 0.0),
+        "foot.l": (-0.25 * u, 0.0, 0.0),
+        "thigh.r": (-1.5 * u, 0.0, 0.0),
+        "calf.r": (1.55 * u, 0.0, 0.0),
+        "foot.r": (-0.25 * u, 0.0, 0.0),
+        "pelvis": (0.35 * u, 0.0, 0.0),
+        "spine_01": (-0.08 * u, 0.0, 0.0),
+        "spine_02": (-0.05 * u, 0.0, 0.0),
+        "neck_01": (-0.08 * u, 0.0, 0.0),
+        "head": (-0.06 * u, 0.0, 0.0),
     }
 
 
