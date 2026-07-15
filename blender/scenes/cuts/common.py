@@ -734,22 +734,14 @@ def add_pose_strip(
     bones: List[str],
     step: int = 3,
     clamp: float = 1.4,
+    absolute: bool = False,
 ) -> None:
-    """腕・脚など大きめの角度が必要なポーズ用（座り・スマホ操作）。"""
+    """腕・脚など大きめの角度が必要なポーズ用（座り・スマホ操作）。
+
+    absolute=True: Euler values replace rest (ignore idle base). Needed for chair sits —
+    composing large eulers onto idle already-bent thighs yields creepy splay.
+    """
     base = capture_idle_base(arm)
-    keys = []
-    for f in range(1, frames + 1, step):
-        raw = deltas_fn(f)
-        clamped = {}
-        for bn, xyz in raw.items():
-            dx, dy, dz = xyz
-            clamped[bn] = (
-                max(-clamp, min(clamp, dx)),
-                max(-clamp, min(clamp, dy)),
-                max(-clamp, min(clamp, dz)),
-            )
-        keys.append((f, pose_with_deltas(base, clamped)))
-    # bypass pose_with_deltas clamp by applying manually
     if not arm.animation_data:
         arm.animation_data_create()
     ad = arm.animation_data
@@ -761,20 +753,11 @@ def add_pose_strip(
     ad.action = act
     allowed = set(bones)
 
-    def apply_pose(pose_dict):
-        for bn, quat in pose_dict.items():
-            if bn not in allowed:
-                continue
-            bone = arm.pose.bones.get(bn)
-            if not bone:
-                continue
-            bone.rotation_mode = "QUATERNION"
-            bone.rotation_quaternion = quat
-            bone.keyframe_insert(data_path="rotation_quaternion", frame=0)  # placeholder
-
-    # rebuild keys without the mild clamp in pose_with_deltas
     rebuilt = []
-    for f in range(1, frames + 1, step):
+    frame_list = list(range(1, frames + 1, step))
+    if frame_list[-1] != frames:
+        frame_list.append(frames)
+    for f in frame_list:
         out = {k: v.copy() for k, v in base.items()}
         for bn, xyz in deltas_fn(f).items():
             if bn not in out:
@@ -783,19 +766,9 @@ def add_pose_strip(
             dx = max(-clamp, min(clamp, dx))
             dy = max(-clamp, min(clamp, dy))
             dz = max(-clamp, min(clamp, dz))
-            out[bn] = out[bn] @ Euler((dx, dy, dz), "XYZ").to_quaternion()
+            q = Euler((dx, dy, dz), "XYZ").to_quaternion()
+            out[bn] = q if absolute else (out[bn] @ q)
         rebuilt.append((f, out))
-    if rebuilt[-1][0] != frames:
-        out = {k: v.copy() for k, v in base.items()}
-        for bn, xyz in deltas_fn(frames).items():
-            if bn not in out:
-                continue
-            dx, dy, dz = xyz
-            dx = max(-clamp, min(clamp, dx))
-            dy = max(-clamp, min(clamp, dy))
-            dz = max(-clamp, min(clamp, dz))
-            out[bn] = out[bn] @ Euler((dx, dy, dz), "XYZ").to_quaternion()
-        rebuilt.append((frames, out))
 
     for frame, pose in rebuilt:
         for bn, quat in pose.items():
