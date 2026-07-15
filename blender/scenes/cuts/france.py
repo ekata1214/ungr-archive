@@ -94,6 +94,39 @@ def _cam_hold(cam: bpy.types.Object, frames: Sequence[int], pos: Vector, tgt: Ve
         kf_cam(cam, f, pos, tgt)
 
 
+def _ball_chase_cam(
+    cam: bpy.types.Object,
+    frames: int,
+    path,
+    *,
+    lens: float = 42,
+    look_ahead: int = 6,
+    dist: float = 3.8,
+    side: float = 2.8,
+    height: float = 1.6,
+) -> None:
+    """Ball-glued chase cam: every frame, look ahead, stay close so motion reads fast."""
+    cam.data.lens = lens
+    for f in range(1, frames + 1):
+        b = path(f)
+        ahead = path(min(frames, f + look_ahead))
+        vel = ahead - b
+        if vel.length < 1e-4:
+            vel = Vector((1.0, 0.0, 0.0))
+        else:
+            vel.normalize()
+        lateral = Vector((-vel.y, vel.x, 0.0))
+        if lateral.length < 1e-4:
+            lateral = Vector((0.0, -1.0, 0.0))
+        else:
+            lateral.normalize()
+        pos = b - vel * dist + lateral * side + Vector((0.0, 0.0, height))
+        pos.z = max(1.8, pos.z)
+        tgt = ahead + Vector((0.0, 0.0, 0.15))
+        kf_cam(cam, f, pos, tgt)
+    finish_cam(cam)
+
+
 def _clear_extras(*prefixes: str) -> None:
     for obj in list(bpy.data.objects):
         if obj.name.startswith(prefixes):
@@ -381,7 +414,7 @@ def build_20() -> int:
 # 21 — France solo goal + Shaolin GK sideways miss
 # ---------------------------------------------------------------------------
 def build_21() -> int:
-    frames = 220
+    frames = 160
     remove_players()
     _show_pitch()
     set_frame_range(frames)
@@ -396,47 +429,38 @@ def build_21() -> int:
     )
     _clear_all_nla(gk_arm)
 
+    f_kick, f_leave, f_goal = 72, 78, 92
     keys = []
-    for f in range(1, 96, 2):
-        t = ease((f - 1) / 94.0)
+    for f in range(1, f_kick, 2):
+        t = ease((f - 1) / max(1, f_kick - 2))
         keys.append((f, _lerp(start, kick, t)))
-    keys += [(96, kick), (frames, kick)]
+    keys += [(f_kick, kick), (frames, kick)]
     animate_root(root, keys, ATTACK_YAW)
-    add_nla_loop(arm, "run", 1, 95)
-    add_nla_once(arm, "fight_kick", 96, 118)
-    add_nla_hold(arm, "fight_idle", 119, frames, af=6)
+    add_nla_loop(arm, "run", 1, f_kick - 1)
+    add_nla_once(arm, "fight_kick", f_kick, f_kick + 20)
+    add_nla_hold(arm, "fight_idle", f_kick + 21, frames, af=6)
 
     ball = clear_ball_anim()
     goal = Vector((GOAL_X - 1.5, -GOAL_INNER_HALF_W * 0.55, GOAL_H * 0.62))
-    animate_gk_dive(gk_root, gk_arm, gk_home, goal.y * 0.7, 108, 130, frames, yaw_face_pos_x(), side=True)
+    animate_gk_dive(gk_root, gk_arm, gk_home, goal.y * 0.7, f_leave + 2, f_goal + 8, frames, yaw_face_pos_x(), side=True)
 
     def path(f: int) -> Vector:
-        if f < 96:
-            loc = _lerp(start, kick, ease((f - 1) / 94.0))
+        if f < f_kick:
+            loc = _lerp(start, kick, ease((f - 1) / max(1, f_kick - 2)))
             return ball_ahead_of(loc, ATTACK_DIR, f, arm=arm)
-        if f <= 104:
+        if f <= f_leave:
             return ball_ahead_of(kick, ATTACK_DIR, f, arm=arm)
-        u = ease((f - 104) / max(1, 128 - 104))
-        if f > 128:
+        # Fast linear-ish flight (minimal ease so cam chase feels snappy)
+        u = min(1.0, (f - f_leave) / max(1, f_goal - f_leave))
+        u = u * u * (3.0 - 2.0 * u)  # smoothstep — quicker mid-flight
+        if f > f_goal:
             return goal
-        return _shot_arc(ball_ahead_of(kick, ATTACK_DIR, 104, arm=arm), goal, u, arc=2.8)
+        return _shot_arc(ball_ahead_of(kick, ATTACK_DIR, f_leave, arm=arm), goal, u, arc=2.0)
 
-    key_ball(ball, range(1, frames + 1, 2), path)
+    key_ball(ball, range(1, frames + 1), path)
 
-    cam = setup_new_cam("Cam21", lens=28)
-
-    def cam_pos(f: int) -> Vector:
-        b = path(f)
-        return Vector((b.x - 6.0, b.y - 12.0, max(3.2, b.z + 2.2)))
-
-    def cam_tgt(f: int) -> Vector:
-        b = path(f)
-        return Vector((b.x + 1.5, b.y * 0.35, max(0.9, b.z)))
-
-    for f in range(1, frames + 1, 2):
-        kf_cam(cam, f, cam_pos(f), cam_tgt(f))
-    kf_cam(cam, frames, cam_pos(frames), cam_tgt(frames))
-    finish_cam(cam)
+    cam = setup_new_cam("Cam21", lens=42)
+    _ball_chase_cam(cam, frames, path, lens=42, look_ahead=5, dist=3.5, side=-2.6, height=1.5)
     return frames
 
 
@@ -521,7 +545,7 @@ def build_22() -> int:
 # 23 — equalizer + France GK jumps up but fails
 # ---------------------------------------------------------------------------
 def build_23() -> int:
-    frames = 210
+    frames = 150
     remove_players()
     _show_pitch()
     set_frame_range(frames)
@@ -535,50 +559,40 @@ def build_23() -> int:
     gk_arm, gk_root = spawn_france("France_GK", gk_home, yaw_face_pos_x(), actions=["fight_idle", "jump_full"])
     _clear_all_nla(gk_arm)
 
+    f_kick, f_leave, f_goal = 64, 70, 84
     keys = [(1, recv)]
-    for f in range(36, 90, 2):
-        t = ease((f - 36) / 53.0)
+    for f in range(24, f_kick, 2):
+        t = ease((f - 24) / max(1, f_kick - 25))
         keys.append((f, _lerp(recv, kick, t)))
-    keys += [(90, kick), (frames, kick)]
+    keys += [(f_kick, kick), (frames, kick)]
     animate_root(root, keys, ATTACK_YAW)
-    add_nla_loop(arm, "run", 1, 89)
-    add_nla_once(arm, "fight_kick", 90, 112)
-    add_nla_hold(arm, "fight_idle", 113, frames, af=6)
-    animate_gk_dive(gk_root, gk_arm, gk_home, 0.0, 102, 124, frames, yaw_face_pos_x(), side=False, rise=1.45)
+    add_nla_loop(arm, "run", 1, f_kick - 1)
+    add_nla_once(arm, "fight_kick", f_kick, f_kick + 18)
+    add_nla_hold(arm, "fight_idle", f_kick + 19, frames, af=6)
+    animate_gk_dive(gk_root, gk_arm, gk_home, 0.0, f_leave + 2, f_goal + 6, frames, yaw_face_pos_x(), side=False, rise=1.45)
 
     ball = clear_ball_anim()
     off = Vector((-20.0, 18.0, BALL_GROUND_Z))
-    arrive = ball_ahead_of(recv, ATTACK_DIR, 34, arm=arm)
+    arrive = ball_ahead_of(recv, ATTACK_DIR, 22, arm=arm)
     goal = Vector((GOAL_X - 1.6, GOAL_INNER_HALF_W * 0.5, GOAL_H * 0.58))
 
     def path(f: int) -> Vector:
-        if f <= 34:
-            u = ease((f - 1) / 33.0)
-            return _shot_arc(off, arrive, u, arc=1.4)
-        if f < 90:
-            loc = _lerp(recv, kick, ease((f - 36) / 53.0) if f >= 36 else 0.0)
-            return ball_ahead_of(loc if f >= 36 else recv, ATTACK_DIR, f, arm=arm)
-        if f <= 98:
+        if f <= 22:
+            u = min(1.0, (f - 1) / 21.0)
+            return _shot_arc(off, arrive, u, arc=1.0)
+        if f < f_kick:
+            loc = _lerp(recv, kick, ease((f - 24) / max(1, f_kick - 25)) if f >= 24 else 0.0)
+            return ball_ahead_of(loc if f >= 24 else recv, ATTACK_DIR, f, arm=arm)
+        if f <= f_leave:
             return ball_ahead_of(kick, ATTACK_DIR, f, arm=arm)
-        u = ease((f - 98) / max(1, 118 - 98))
-        return goal if f > 118 else _shot_arc(ball_ahead_of(kick, ATTACK_DIR, 98, arm=arm), goal, u, 3.0)
+        u = min(1.0, (f - f_leave) / max(1, f_goal - f_leave))
+        u = u * u * (3.0 - 2.0 * u)
+        return goal if f > f_goal else _shot_arc(ball_ahead_of(kick, ATTACK_DIR, f_leave, arm=arm), goal, u, 2.2)
 
-    key_ball(ball, range(1, frames + 1, 2), path)
+    key_ball(ball, range(1, frames + 1), path)
 
-    cam = setup_new_cam("Cam23", lens=30)
-
-    def cam_pos(f: int) -> Vector:
-        b = path(f)
-        return Vector((b.x - 5.5, b.y - 11.5, max(3.0, b.z + 2.0)))
-
-    def cam_tgt(f: int) -> Vector:
-        b = path(f)
-        return Vector((b.x + 1.2, b.y * 0.3, max(0.9, b.z)))
-
-    for f in range(1, frames + 1, 2):
-        kf_cam(cam, f, cam_pos(f), cam_tgt(f))
-    kf_cam(cam, frames, cam_pos(frames), cam_tgt(frames))
-    finish_cam(cam)
+    cam = setup_new_cam("Cam23", lens=42)
+    _ball_chase_cam(cam, frames, path, lens=42, look_ahead=5, dist=3.4, side=2.6, height=1.45)
     return frames
 
 
@@ -804,12 +818,12 @@ def build_28() -> int:
         phone.keyframe_insert(data_path="scale", frame=f)
     force_linear(phone)
 
-    cam = setup_new_cam("Cam28", lens=34)
+    cam = setup_new_cam("Cam28", lens=40)
     _cam_dense(
         cam, 1, frames,
-        Vector((-8.0, -9.8, 3.5)), Vector((-8.8, -9.0, 3.1)),
-        Vector((-10.0, 1.7, 2.45)), Vector((-10.0, 1.6, 2.2)),
-        step=3,
+        Vector((-9.0, -5.4, 3.5)), Vector((-9.5, -5.0, 3.2)),
+        Vector((-10.0, 1.85, 2.5)), Vector((-10.0, 1.75, 2.35)),
+        step=2,
     )
     finish_cam(cam)
     return frames
