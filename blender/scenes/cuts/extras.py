@@ -46,6 +46,7 @@ from cuts.common import (  # noqa: E402
     key_ball,
     kf_cam,
     mat_rgba,
+    parent_phone_to_hand,
     remove_players,
     set_frame_range,
     setup_new_cam,
@@ -105,37 +106,43 @@ def _clear_extras(*prefixes: str) -> None:
             bpy.data.objects.remove(obj, do_unlink=True)
 
 
-def _talk_fn(amp: float = 1.0, phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
+def _talk_fn(amp: float = 1.0, phase: float = 0.0, look_up: float = 0.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
     def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
         t = frame / FPS + phase
         nod = amp * (0.07 * math.sin(t * 6.8) + 0.04 * math.sin(t * 10.5))
         turn = amp * (0.1 * math.sin(t * 2.2 + 0.3) + 0.05 * math.sin(t * 4.7))
         lean = amp * 0.05 * math.sin(t * 1.6)
+        # look_up < 0 faces camera from a raised cam (rig: neg neck X ≈ look up)
+        base = look_up
         return {
-            "spine_01": (0.025 + lean * 0.4, 0.0, turn * 0.25),
-            "spine_02": (0.045 + lean, 0.0, turn * 0.4),
-            "neck_01": (0.04 + nod * 0.65, 0.0, turn * 0.75),
-            "head": (0.05 + nod, 0.0, turn),
+            "spine_01": (0.025 + lean * 0.4 + base * 0.15, 0.0, turn * 0.25),
+            "spine_02": (0.045 + lean + base * 0.2, 0.0, turn * 0.4),
+            "neck_01": (0.04 + nod * 0.65 + base, 0.0, turn * 0.75),
+            "head": (0.05 + nod + base * 0.85, 0.0, turn),
         }
 
     return deltas
 
 
 def _chair_sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    """Chair sit — negative-X thigh fold (positive-X = creepy splits on this rig)."""
+    """Chair sit on this mannequin: -Z brings knees toward camera; +X pure = splits.
+
+    Probed for ~rest foot/knee span with knees forward (neg-Y) and shins hanging.
+    """
     u = 1.0
     return {
-        "thigh.l": (-1.5 * u, 0.0, 0.0),
-        "calf.l": (1.55 * u, 0.0, 0.0),
-        "foot.l": (-0.25 * u, 0.0, 0.0),
-        "thigh.r": (-1.5 * u, 0.0, 0.0),
-        "calf.r": (1.55 * u, 0.0, 0.0),
-        "foot.r": (-0.25 * u, 0.0, 0.0),
-        "pelvis": (0.35 * u, 0.0, 0.0),
-        "spine_01": (-0.08 * u, 0.0, 0.0),
-        "spine_02": (-0.05 * u, 0.0, 0.0),
-        "neck_01": (-0.08 * u, 0.0, 0.0),
-        "head": (-0.06 * u, 0.0, 0.0),
+        "thigh.l": (-0.6 * u, -0.55 * u, -0.75 * u),
+        "calf.l": (1.25 * u, 0.0, 0.0),
+        "foot.l": (-0.2 * u, 0.0, 0.0),
+        "thigh.r": (-0.6 * u, 0.55 * u, 0.75 * u),
+        "calf.r": (1.25 * u, 0.0, 0.0),
+        "foot.r": (-0.2 * u, 0.0, 0.0),
+        "pelvis": (0.22 * u, 0.0, 0.0),
+        # Upper body stays upright — talk strip owns face motion when present.
+        "spine_01": (-0.04 * u, 0.0, 0.0),
+        "spine_02": (-0.02 * u, 0.0, 0.0),
+        "neck_01": (-0.12 * u, 0.0, 0.0),
+        "head": (-0.1 * u, 0.0, 0.0),
     }
 
 
@@ -159,18 +166,25 @@ def _angry_stomping(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float
 
 
 def _phone_clamp_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    """Stomp body + both hands meeting in front of chest clamping phone."""
+    """Stomp body + both hands meeting at chest to clamp phone between palms.
+
+    Arm deltas probed for ~0.3m hand distance (needs clamp ≥ 1.6).
+    """
     base = _angry_stomping(0.2)(frame)
     base.update(
         {
-            "clavicle.l": (0.08, 0.18, 0.1),
-            "upperarm.l": (-0.25, 0.85, 0.35),
-            "lowerarm.l": (-1.05, 0.25, 0.15),
-            "hand.l": (0.25, 0.35, 0.55),
-            "clavicle.r": (0.08, -0.18, -0.1),
-            "upperarm.r": (-0.25, -0.85, -0.35),
-            "lowerarm.r": (-1.05, -0.25, -0.15),
-            "hand.r": (0.25, -0.35, -0.55),
+            "clavicle.l": (0.12, 0.2, 0.12),
+            "upperarm.l": (-1.2, 1.5, 0.25),
+            "lowerarm.l": (-1.6, 0.05, 0.05),
+            "hand.l": (0.25, 0.55, 0.5),
+            "clavicle.r": (0.12, -0.2, -0.12),
+            "upperarm.r": (-1.2, -1.5, -0.25),
+            "lowerarm.r": (-1.6, -0.05, -0.05),
+            "hand.r": (0.25, -0.55, -0.5),
+            "spine_01": (0.08, 0.0, 0.0),
+            "spine_02": (0.1, 0.0, 0.0),
+            "neck_01": (-0.08, 0.0, 0.0),
+            "head": (-0.06, 0.0, 0.0),
         }
     )
     return base
@@ -258,28 +272,29 @@ def build_38() -> int:
     add_box("Desk_Backdrop", (12.0, 0.15, 5.5), Vector((0.0, 3.4, 2.7)), back_m)
     add_box("Desk_Banner", (10.0, 0.12, 0.55), Vector((0.0, 3.28, 4.5)), stripe)
 
-    # Tall news-desk: front panel hides legs completely; tabletop for mics
-    table_top_z = 2.35
-    add_box("Desk_Table", (6.5, 1.5, 0.14), Vector((0.0, 0.4, table_top_z)), desk_m)
-    add_box("Desk_Front", (6.5, 0.14, table_top_z), Vector((0.0, -0.3, table_top_z * 0.5)), desk_m)
-    add_box("Desk_LegL", (0.2, 1.2, table_top_z), Vector((-2.95, 0.4, table_top_z * 0.5)), desk_m)
-    add_box("Desk_LegR", (0.2, 1.2, table_top_z), Vector((2.95, 0.4, table_top_z * 0.5)), desk_m)
+    # News desk: top at mid-torso; tall front hides legs; faces clear above.
+    table_top_z = 1.55
+    add_box("Desk_Table", (6.5, 1.35, 0.12), Vector((0.0, 0.15, table_top_z)), desk_m)
+    add_box("Desk_Front", (6.5, 0.14, table_top_z), Vector((0.0, -0.45, table_top_z * 0.5)), desk_m)
+    add_box("Desk_LegL", (0.2, 1.05, table_top_z), Vector((-2.95, 0.2, table_top_z * 0.5)), desk_m)
+    add_box("Desk_LegR", (0.2, 1.05, table_top_z), Vector((2.95, 0.2, table_top_z * 0.5)), desk_m)
 
     gap = SIDE_GAP
-    # Standing/slight sit behind desk — legs hidden by front; faces above tabletop
-    a_pos = Vector((-gap * 0.55, 1.45, -0.15))
-    b_pos = Vector((gap * 0.55, 1.45, -0.15))
+    # Chair-height sit (NOT floor sink). Pelvis ~ seat; faces ~2.7 above desk.
+    seat_z = 1.2
+    a_pos = Vector((-gap * 0.55, 1.85, 0.22))
+    b_pos = Vector((gap * 0.55, 1.85, 0.22))
     yaw = yaw_face_neg_y()
     for name, px in (("Desk_ChairA", a_pos.x), ("Desk_ChairB", b_pos.x)):
-        add_box(f"{name}_Seat", (1.0, 0.95, 0.12), Vector((px, 1.7, 1.2)), chair_m)
-        add_box(f"{name}_Back", (1.0, 0.14, 1.3), Vector((px, 2.15, 2.0)), chair_m)
-        add_box(f"{name}_LegFL", (0.12, 0.12, 1.15), Vector((px - 0.38, 1.4, 0.58)), chair_m)
-        add_box(f"{name}_LegFR", (0.12, 0.12, 1.15), Vector((px + 0.38, 1.4, 0.58)), chair_m)
-        add_box(f"{name}_LegBL", (0.12, 0.12, 1.15), Vector((px - 0.38, 2.0, 0.58)), chair_m)
-        add_box(f"{name}_LegBR", (0.12, 0.12, 1.15), Vector((px + 0.38, 2.0, 0.58)), chair_m)
+        add_box(f"{name}_Seat", (1.0, 0.95, 0.12), Vector((px, 2.05, seat_z)), chair_m)
+        add_box(f"{name}_Back", (1.0, 0.14, 1.15), Vector((px, 2.5, seat_z + 0.7)), chair_m)
+        add_box(f"{name}_LegFL", (0.12, 0.12, seat_z), Vector((px - 0.38, 1.75, seat_z * 0.5)), chair_m)
+        add_box(f"{name}_LegFR", (0.12, 0.12, seat_z), Vector((px + 0.38, 1.75, seat_z * 0.5)), chair_m)
+        add_box(f"{name}_LegBL", (0.12, 0.12, seat_z), Vector((px - 0.38, 2.3, seat_z * 0.5)), chair_m)
+        add_box(f"{name}_LegBR", (0.12, 0.12, seat_z), Vector((px + 0.38, 2.3, seat_z * 0.5)), chair_m)
 
-    add_box("Mic_L", (0.07, 0.07, 0.32), Vector((-1.55, 0.55, table_top_z + 0.22)), mic_m)
-    add_box("Mic_R", (0.07, 0.07, 0.32), Vector((1.55, 0.55, table_top_z + 0.22)), mic_m)
+    add_box("Mic_L", (0.07, 0.07, 0.28), Vector((-1.45, 0.35, table_top_z + 0.2)), mic_m)
+    add_box("Mic_R", (0.07, 0.07, 0.28), Vector((1.45, 0.35, table_top_z + 0.2)), mic_m)
 
     a_arm, a_root = spawn_player(
         "Commentator_A", COMMENTATOR_WHITE, a_pos, yaw, actions=["idle"],
@@ -295,18 +310,19 @@ def build_38() -> int:
     animate_root(b_root, [(1, b_pos), (frames, b_pos)], yaw)
     add_nla_hold(a_arm, "idle", 1, frames, af=12)
     add_nla_hold(b_arm, "idle", 1, frames, af=12)
-    # Mild sit fold only (legs mostly hidden by desk front)
-    add_pose_strip(a_arm, "CommSitA", frames, _chair_sit_deltas, SIT_BONES, step=3, clamp=1.7)
-    add_pose_strip(b_arm, "CommSitB", frames, _chair_sit_deltas, SIT_BONES, step=3, clamp=1.7)
-    add_talk_strip(a_arm, "CommTalkA", frames, _talk_fn(1.15, 0.0), TALK_BONES, step=2)
-    add_talk_strip(b_arm, "CommTalkB", frames, _talk_fn(1.0, 1.7), TALK_BONES, step=2)
+    add_pose_strip(a_arm, "CommSitA", frames, _chair_sit_deltas, SIT_BONES, step=3, clamp=1.4)
+    add_pose_strip(b_arm, "CommSitB", frames, _chair_sit_deltas, SIT_BONES, step=3, clamp=1.4)
+    # Face-cam talk: slight look-up so fronts of heads read from raised cam
+    add_talk_strip(a_arm, "CommTalkA", frames, _talk_fn(1.0, 0.0, look_up=-0.18), TALK_BONES, step=2)
+    add_talk_strip(b_arm, "CommTalkB", frames, _talk_fn(0.9, 1.7, look_up=-0.18), TALK_BONES, step=2)
 
-    # High cam looking slightly down at faces above desk
-    cam = setup_new_cam("Cam38", lens=38)
+    # Raised cam, near-level on faces (not looking down onto crowns)
+    cam = setup_new_cam("Cam38", lens=34)
+    face = Vector((0.0, 1.85, 2.65))
     _cam_dense(
         cam, 1, frames,
-        Vector((0.1, -5.8, 5.4)), Vector((-0.15, -5.2, 5.35)),
-        Vector((0.0, 1.35, 3.85)), Vector((0.05, 1.4, 3.9)),
+        Vector((0.15, -4.2, 3.55)), Vector((-0.1, -3.9, 3.5)),
+        face, face + Vector((0.05, 0.05, 0.04)),
         step=2,
     )
     finish_cam(cam)
@@ -341,8 +357,8 @@ def build_39() -> int:
     for i in range(n_players):
         x = start_x + i * seat_gap
         pair_yaw = yaw + (0.18 if i % 2 == 0 else -0.18)
-        # Deeper sink so X-only fold lands hips on seat without splits
-        pos = Vector((x, bench_y - 0.12, -1.15))
+        # Chair-height root (floor-sit sink caused creepy splayed legs)
+        pos = Vector((x, bench_y - 0.05, 0.22))
         arm, root = spawn_player(
             f"Netherlands_{i}",
             NETHERLANDS_ORANGE,
@@ -354,7 +370,7 @@ def build_39() -> int:
         _clear_all_nla(arm)
         animate_root(root, [(1, pos), (frames, pos)], pair_yaw)
         add_nla_hold(arm, "idle", 1, frames, af=10)
-        add_pose_strip(arm, f"NLBenchSit{i}", frames, _chair_sit_deltas, SIT_BONES, step=4, clamp=1.7)
+        add_pose_strip(arm, f"NLBenchSit{i}", frames, _chair_sit_deltas, SIT_BONES, step=4, clamp=1.4)
         pair_phase = (i // 2) * 1.3 + (0.0 if i % 2 == 0 else 0.9)
         add_talk_strip(arm, f"NLBenchTalk{i}", frames, _talk_fn(0.85 + 0.1 * (i % 2), pair_phase), TALK_BONES, step=3)
 
@@ -499,7 +515,7 @@ def build_42() -> int:
     _clear_all_nla(fr_arm)
     _clear_all_nla(sh_arm)
 
-    f_approach, f_drop, f_spin0, f_steal, f_up, f_exit = 36, 48, 52, 115, 128, 140
+    f_approach, f_drop, f_spin0, f_steal, f_up, f_exit = 28, 40, 44, 130, 145, 158
 
     fr_keys = []
     for f in range(1, f_steal + 1, 2):
@@ -510,7 +526,7 @@ def build_42() -> int:
     add_nla_loop(fr_arm, "run", 1, f_steal - 1)
     add_nla_hold(fr_arm, "fight_idle", f_steal, frames, af=6)
 
-    # Headspin-style breakdance: upside-down + fast Z spin
+    # Headspin breakdance: tip upside-down, long readable Z-spin, stand, steal
     sh_keys_eul: list = []
     for f in range(1, frames + 1, 2):
         if f <= f_approach:
@@ -519,19 +535,16 @@ def build_42() -> int:
             eul = Euler((0.0, 0.0, yaw_sh0), "XYZ")
         elif f <= f_drop:
             t = ease((f - f_approach) / max(1, f_drop - f_approach))
-            # tip into headstand (pitch → π) while sinking
-            p = Vector((steal_at.x, steal_at.y, 0.9 * (1.0 - t) + 0.55 * t))
-            pitch = math.pi * t
-            eul = Euler((pitch, 0.0, yaw_sh0), "XYZ")
+            p = Vector((steal_at.x, steal_at.y, 0.85 * (1.0 - t) + 0.65 * t))
+            eul = Euler((math.pi * t, 0.0, yaw_sh0), "XYZ")
         elif f <= f_steal:
-            spins = (f - f_spin0) * 0.85  # fast readable spin
-            p = Vector((steal_at.x, steal_at.y, 0.55))
+            spins = (f - f_spin0) * 0.95
+            p = Vector((steal_at.x, steal_at.y, 0.65))
             eul = Euler((math.pi, 0.0, yaw_sh0 + spins), "XYZ")
         elif f <= f_up:
             t = ease((f - f_steal) / max(1, f_up - f_steal))
-            p = Vector((steal_at.x, steal_at.y, 0.55 * (1.0 - t)))
-            pitch = math.pi * (1.0 - t)
-            eul = Euler((pitch, 0.0, math.atan2(ATTACK.y, ATTACK.x)), "XYZ")
+            p = Vector((steal_at.x, steal_at.y, 0.65 * (1.0 - t)))
+            eul = Euler((math.pi * (1.0 - t), 0.0, math.atan2(ATTACK.y, ATTACK.x)), "XYZ")
         elif f <= f_exit:
             t = ease((f - f_up) / max(1, f_exit - f_up))
             p = _lerp(steal_at, _lerp(steal_at, sh_end, 0.35), t)
@@ -574,20 +587,19 @@ def build_42() -> int:
 
     key_ball(ball, range(1, frames + 1, 2), path)
 
-    cam = setup_new_cam("Cam42", lens=32)
+    cam = setup_new_cam("Cam42", lens=30)
 
     def cam_pos(f: int) -> Vector:
         if f_drop <= f <= f_up:
-            # Orbit the breakdance tightly
             c = steal_at
-            ang = (f - f_drop) * 0.1
-            return Vector((c.x + 8.0 * math.cos(ang), c.y + 8.0 * math.sin(ang) - 1.0, 4.2))
+            ang = (f - f_drop) * 0.12
+            return Vector((c.x + 7.0 * math.cos(ang), c.y + 7.0 * math.sin(ang) - 0.5, 3.2))
         b = path(f)
         return Vector((b.x - 3.5, b.y - 10.0, 3.5))
 
     def cam_tgt(f: int) -> Vector:
         if f_drop <= f <= f_up:
-            return Vector((steal_at.x, steal_at.y, 1.0))
+            return Vector((steal_at.x, steal_at.y, 0.9))
         b = path(f)
         return Vector((b.x + 1.0, b.y * 0.25, max(1.0, b.z + 0.5)))
 
@@ -621,17 +633,15 @@ def _build_france_phone_stomp(cam_mode: str) -> int:
     keys.append((frames, pos.copy()))
     animate_root(root, keys, yaw)
     add_nla_hold(arm, "fight_idle", 1, frames, af=8)
-    add_pose_strip(arm, f"FrancePhoneStomp_{cam_mode}", frames, _phone_clamp_deltas, PHONE_STOMP_BONES, step=2, clamp=1.4)
+    # clamp ≥ 1.6 so hands can actually meet (arm Δ exceeds default 1.4)
+    add_pose_strip(arm, f"FrancePhoneStomp_{cam_mode}", frames, _phone_clamp_deltas, PHONE_STOMP_BONES, step=2, clamp=1.75)
 
     phone_mat = mat_rgba("Phone_Mat", (0.02, 0.02, 0.025, 1.0), 0.35)
-    palm = (0.045, 0.008, 0.075)
+    palm = (0.05, 0.01, 0.085)
     phone = add_box("Phone_01", palm, Vector((0, 0, 0)), phone_mat)
-    # Clamp between both hands — parent to left hand, nudged toward centerline
-    phone.parent = arm
-    phone.parent_type = "BONE"
-    phone.parent_bone = "hand.l" if arm.pose.bones.get("hand.l") else "lowerarm.l"
-    phone.location = Vector((0.08, 0.05, 0.04))
-    phone.rotation_euler = Euler((0.3, 0.0, 1.4), "XYZ")
+    # Sit between palms: parent left hand, offset toward body midline / right palm
+    parent_phone_to_hand(phone, arm, "hand.l", loc=Vector((0.06, 0.04, 0.02)), palm_size=palm)
+    phone.rotation_euler = Euler((0.2, 0.1, 1.55), "XYZ")
     phone.scale = Vector(palm)
 
     cam = setup_new_cam(f"CamFranceStomp_{cam_mode}", lens=34 if cam_mode == "A" else 42)
