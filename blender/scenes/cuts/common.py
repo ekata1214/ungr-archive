@@ -861,19 +861,17 @@ def _uv_sphere_mesh(name: str, segments: int = 10, rings: int = 8) -> bpy.types.
 
 def attach_feminine_hair(
     arm: bpy.types.Object,
-    rgba=(0.06, 0.05, 0.05, 1.0),
+    rgba=(0.05, 0.04, 0.04, 1.0),
 ) -> list:
-    """レゴ女性ヘア参考: 頭頂カバー + 背中へ長い1本。球の塊／胸なし。"""
+    """レゴ女性ロングヘア: 1枚の成形プラスチック風ピースのみ（球の塊・胸なし）。"""
     objs = []
-    mat = mat_rgba(f"Hair_{arm.name}_Mat", rgba, 0.4)
-    # clear prior hair for this arm
+    mat = mat_rgba(f"Hair_{arm.name}_Mat", rgba, 0.35)
     for o in list(bpy.data.objects):
         if o.name.startswith(f"Hair_{arm.name}_"):
             bpy.data.objects.remove(o, do_unlink=True)
 
     def _piece(suffix: str, loc: Vector, sc: Vector) -> bpy.types.Object:
         name = f"Hair_{arm.name}_{suffix}"
-        # hard plastic volume (Lego hair = solid molded piece)
         mesh = bpy.data.meshes.new(name)
         verts = [
             (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, 0.5, -0.5),
@@ -893,13 +891,9 @@ def attach_feminine_hair(
         objs.append(obj)
         return obj
 
-    # Helmet/crown covering head (compact)
-    _piece("crown", Vector((0.0, -0.02, 0.05)), Vector((0.28, 0.26, 0.14)))
-    # Side length (Lego long hair hangs down both sides / back)
-    _piece("side_l", Vector((-0.12, 0.02, -0.32)), Vector((0.1, 0.12, 0.55)))
-    _piece("side_r", Vector((0.12, 0.02, -0.32)), Vector((0.1, 0.12, 0.55)))
-    # Rear long fall
-    _piece("rear", Vector((0.0, 0.12, -0.5)), Vector((0.18, 0.14, 0.7)))
+    # Single molded Lego long-hair piece: covers crown and hangs down the back.
+    # Sizes are local to the head bone; spawn scale amplifies world size.
+    _piece("lego_long", Vector((0.0, 0.04, -0.18)), Vector((0.15, 0.12, 0.42)))
     return objs
 
 

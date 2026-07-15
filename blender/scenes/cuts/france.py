@@ -184,17 +184,17 @@ def _happy_fn() -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
 
 def _phone_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     t = frame / FPS
-    tap = 0.06 * math.sin(t * 14.0)
-    # Palms toward face: opposite signs from prior creepy twist; L holds, R taps.
+    tap = 0.05 * math.sin(t * 14.0)
+    # Raise arms in front of face; wrists so palms face each other / screen (not "reverse")
     return {
-        "clavicle.l": (0.04, -0.12, -0.08),
-        "upperarm.l": (0.5, -0.3, -0.4),
-        "lowerarm.l": (0.75, -0.08, -0.15),
-        "hand.l": (-0.35, -0.2, 0.15),
-        "clavicle.r": (0.03, 0.1, 0.06),
-        "upperarm.r": (0.4, 0.22, 0.3),
-        "lowerarm.r": (0.65 + tap, -0.05, 0.12),
-        "hand.r": (-0.25 - tap * 0.4, 0.12, -0.08),
+        "clavicle.l": (0.05, 0.08, 0.06),
+        "upperarm.l": (-0.4, 0.25, 0.35),
+        "lowerarm.l": (-0.7, 0.12, 0.15),
+        "hand.l": (0.45, -0.35, -0.2),
+        "clavicle.r": (0.04, -0.06, -0.05),
+        "upperarm.r": (-0.35, -0.2, -0.28),
+        "lowerarm.r": (-0.55 + tap, -0.08, -0.1),
+        "hand.r": (0.35 + tap * 0.3, 0.25, 0.15),
         "spine_01": (0.04, 0.0, 0.0),
         "spine_02": (0.05, 0.0, 0.0),
         "neck_01": (0.1, 0.0, 0.0),
@@ -203,20 +203,20 @@ def _phone_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
 
 
 def _sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    # 体育座り — legs fold knees-up (original thigh/calf signs); torso forward (reversed)
-    u = ease(min(1.0, (frame - 1) / 36.0))
+    # 体育座り — deep knee fold + slight forward pelvis tip (not a back-arch)
+    u = ease(min(1.0, (frame - 1) / 40.0))
     return {
-        "thigh.l": (1.15 * u, 0.22 * u, 0.3 * u),
-        "calf.l": (-1.35 * u, 0.0, 0.0),
-        "foot.l": (0.4 * u, 0.0, 0.0),
-        "thigh.r": (1.15 * u, -0.22 * u, -0.3 * u),
-        "calf.r": (-1.35 * u, 0.0, 0.0),
-        "foot.r": (0.4 * u, 0.0, 0.0),
-        "pelvis": (-0.22 * u, 0.0, 0.0),
-        "spine_01": (-0.35 * u, 0.0, 0.0),
-        "spine_02": (-0.28 * u, 0.0, 0.0),
-        "neck_01": (0.12 * u, 0.0, 0.0),
-        "head": (0.08 * u, 0.0, 0.0),
+        "thigh.l": (1.3 * u, 0.45 * u, 0.55 * u),
+        "calf.l": (-1.45 * u, 0.05 * u, 0.0),
+        "foot.l": (0.5 * u, 0.0, 0.1 * u),
+        "thigh.r": (1.3 * u, -0.45 * u, -0.55 * u),
+        "calf.r": (-1.45 * u, -0.05 * u, 0.0),
+        "foot.r": (0.5 * u, 0.0, -0.1 * u),
+        "pelvis": (0.35 * u, 0.0, 0.0),
+        "spine_01": (0.12 * u, 0.0, 0.0),
+        "spine_02": (0.08 * u, 0.0, 0.0),
+        "neck_01": (-0.05 * u, 0.0, 0.0),
+        "head": (-0.04 * u, 0.0, 0.0),
     }
 
 # ---------------------------------------------------------------------------
@@ -310,12 +310,12 @@ def build_19() -> int:
     pos = Vector((-10.0, 2.0, 0.0))
     arm, root = spawn_france("France", pos, yaw_face_neg_y(), actions=["idle"])
     _clear_all_nla(arm)
-    # only slight root settle — legs bend via pose
-    sit = Vector((pos.x, pos.y, -0.55))
+    # Deep settle so buttocks reach the pitch with bent legs
+    sit = Vector((pos.x, pos.y, -1.05))
     keys = []
     for f in range(1, frames + 1, 2):
-        if f <= 40:
-            t = ease((f - 1) / 39.0)
+        if f <= 48:
+            t = ease((f - 1) / 47.0)
             p = _lerp(pos, sit, t)
         else:
             p = sit.copy()
@@ -323,13 +323,13 @@ def build_19() -> int:
     keys.append((frames, sit))
     animate_root(root, keys, yaw_face_neg_y())
     add_nla_hold(arm, "idle", 1, frames, af=12)
-    add_pose_strip(arm, "FranceSitPose", frames, _sit_deltas, SIT_BONES, step=2, clamp=1.5)
+    add_pose_strip(arm, "FranceSitPose", frames, _sit_deltas, SIT_BONES, step=2, clamp=1.6)
 
     cam = setup_new_cam("Cam19", lens=32)
     _cam_dense(
         cam, 1, frames,
-        Vector((-6.0, -11.0, 2.4)), Vector((-8.0, -10.0, 2.2)),
-        Vector((-10.0, 2.0, 0.9)), Vector((-10.0, 2.0, 0.75)),
+        Vector((-5.5, -10.5, 2.0)), Vector((-7.5, -9.5, 1.8)),
+        Vector((-10.0, 2.0, 0.7)), Vector((-10.0, 2.0, 0.55)),
         step=3,
     )
     finish_cam(cam)
@@ -355,7 +355,7 @@ def build_20() -> int:
 
     phone_mat = mat_rgba("Phone_Mat", (0.02, 0.02, 0.025, 1.0), 0.35)
     # Palm-sized black rectangle (サイゼ風の薄い黒プレート)
-    palm = (0.06, 0.01, 0.1)
+    palm = (0.045, 0.008, 0.075)
     phone = add_box("Phone_01", palm, Vector((0, 0, 0)), phone_mat)
     parent_phone_to_hand(phone, arm, "hand.l", palm_size=palm)
     for f in range(1, frames + 1, 3):
@@ -793,7 +793,7 @@ def build_28() -> int:
     add_pose_strip(arm, "FrancePhoneThenSad", frames, phone_then_sad, PHONE_ARM_BONES, step=2, clamp=1.3)
 
     phone_mat = mat_rgba("Phone_Mat", (0.02, 0.02, 0.025, 1.0), 0.35)
-    palm = (0.06, 0.01, 0.1)
+    palm = (0.045, 0.008, 0.075)
     phone = add_box("Phone_01", palm, Vector((0, 0, 0)), phone_mat)
     parent_phone_to_hand(phone, arm, "hand.l", palm_size=palm)
     for f in range(1, frames + 1, 3):
