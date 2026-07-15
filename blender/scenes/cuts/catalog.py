@@ -259,6 +259,18 @@ CATALOG: List[Tuple[str, str, str, str]] = [
         "ブレイクダンスしながらフランス選手からボールを奪う少林",
         "extra",
     ),
+    (
+        "43",
+        "cut_43_france_phone_stomp_wide",
+        "フランス選手一人が地団駄、両手の間に小さい長方形（携帯）を挟む・引きの画角",
+        "extra",
+    ),
+    (
+        "44",
+        "cut_44_france_phone_stomp_close",
+        "フランス選手一人が地団駄、両手の間に小さい長方形（携帯）を挟む・寄り画角",
+        "extra",
+    ),
 ]
 
 
