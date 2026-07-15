@@ -50,6 +50,9 @@ FRANCE_WHITE = (0.96, 0.96, 0.98, 1.0)
 FRANCE_RED = (0.85, 0.1, 0.12, 1.0)
 ARG_LIGHT = (0.55, 0.78, 0.92, 1.0)
 ARG_WHITE = (0.96, 0.96, 0.98, 1.0)
+NETHERLANDS_ORANGE = (0.92, 0.42, 0.05, 1.0)
+NETHERLANDS_DARK = (0.55, 0.18, 0.02, 1.0)
+COMMENTATOR_WHITE = (0.97, 0.97, 0.98, 1.0)
 REF_BLACK = (0.05, 0.05, 0.05, 1.0)
 FEMALE_GK_PINK = (0.92, 0.55, 0.65, 1.0)
 FEMALE_GK_WHITE = (0.96, 0.96, 0.98, 1.0)
@@ -86,12 +89,16 @@ PLAYER_PREFIXES = (
     "France_",
     "Argentina_",
     "Referee_",
+    "Commentator_",
     "Crowd_",
     "Interview_",
+    "Desk_",
+    "Bench_",
     "Dojo_",
     "FemaleGK_",
     "Card_",
     "Hair_",
+    "Mic_",
 )
 
 
