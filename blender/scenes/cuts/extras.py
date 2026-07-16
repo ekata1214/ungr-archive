@@ -711,25 +711,60 @@ def _shot_arc(p0: Vector, p1: Vector, u: float, arc: float = 2.2) -> Vector:
 
 
 def _happy_excited_fn(phase: float = 0.0, amp: float = 1.2) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
-    """Bench celebration — big head/torso bob + arms up."""
+    """Bench celebration — head bob + arms raised (keep mild so sit stays intact)."""
     def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
         t = frame / FPS + phase
-        bob = amp * 0.1 * math.sin(t * 9.0)
-        shake = amp * 0.12 * math.sin(t * 11.0 + 0.4)
-        wave = amp * 0.55 * abs(math.sin(t * 7.5 + phase))
+        bob = amp * 0.08 * math.sin(t * 9.0)
+        shake = amp * 0.1 * math.sin(t * 11.0 + 0.4)
+        wave = amp * 0.35 * abs(math.sin(t * 6.5 + phase))
         return {
-            "spine_01": (0.04 + bob * 0.3, 0.0, shake * 0.35),
-            "spine_02": (0.06 + bob * 0.5, 0.0, shake * 0.45),
-            "neck_01": (-0.05 + bob * 0.7, 0.0, shake * 0.8),
-            "head": (-0.06 + bob, 0.0, shake),
-            "clavicle.l": (0.08, 0.12 + wave * 0.15, 0.1),
-            "upperarm.l": (-0.85 - wave * 0.35, 0.55 + 0.2 * math.sin(t * 8.0), 0.35),
-            "lowerarm.l": (-0.9, 0.2, 0.15),
-            "hand.l": (0.3, 0.25, 0.3),
-            "clavicle.r": (0.08, -0.12 - wave * 0.15, -0.1),
-            "upperarm.r": (-0.85 - wave * 0.35, -0.55 - 0.2 * math.sin(t * 8.0 + 1.0), -0.35),
-            "lowerarm.r": (-0.9, -0.2, -0.15),
-            "hand.r": (0.3, -0.25, -0.3),
+            "spine_01": (0.02 + bob * 0.2, 0.0, shake * 0.25),
+            "spine_02": (0.03 + bob * 0.35, 0.0, shake * 0.35),
+            "neck_01": (-0.04 + bob * 0.55, 0.0, shake * 0.7),
+            "head": (-0.05 + bob, 0.0, shake),
+            "clavicle.l": (0.05, 0.08 + wave * 0.1, 0.06),
+            "upperarm.l": (-0.55 - wave * 0.25, 0.35 + 0.15 * math.sin(t * 7.0), 0.25),
+            "lowerarm.l": (-0.7, 0.15, 0.1),
+            "hand.l": (0.25, 0.2, 0.25),
+            "clavicle.r": (0.05, -0.08 - wave * 0.1, -0.06),
+            "upperarm.r": (-0.55 - wave * 0.25, -0.35 - 0.15 * math.sin(t * 7.0 + 1.0), -0.25),
+            "lowerarm.r": (-0.7, -0.15, -0.1),
+            "hand.r": (0.25, -0.2, -0.25),
+        }
+
+    return deltas
+
+
+def _bench_wave_only(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
+    """Arm wave only — do not touch spine (absolute sit owns torso/legs)."""
+    def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
+        t = frame / FPS + phase
+        wave = 0.4 * abs(math.sin(t * 6.8 + phase))
+        alt = 0.2 * math.sin(t * 8.5 + phase * 1.3)
+        return {
+            "clavicle.l": (0.04, 0.1, 0.06),
+            "upperarm.l": (-0.5 - wave * 0.3, 0.4 + alt, 0.3),
+            "lowerarm.l": (-0.75 - 0.15 * wave, 0.12, 0.08),
+            "hand.l": (0.2, 0.2, 0.25),
+            "clavicle.r": (0.04, -0.1, -0.06),
+            "upperarm.r": (-0.5 - wave * 0.3, -0.4 - alt, -0.3),
+            "lowerarm.r": (-0.75 - 0.15 * wave, -0.12, -0.08),
+            "hand.r": (0.2, -0.2, -0.25),
+        }
+
+    return deltas
+
+
+def _bench_talk_only(phase: float = 0.0, amp: float = 1.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
+    def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
+        t = frame / FPS + phase
+        bob = amp * 0.07 * math.sin(t * 8.5)
+        turn = amp * 0.1 * math.sin(t * 3.2 + 0.5)
+        return {
+            "spine_01": (0.02 + bob * 0.15, 0.0, turn * 0.2),
+            "spine_02": (0.03 + bob * 0.25, 0.0, turn * 0.3),
+            "neck_01": (-0.06 + bob * 0.5, 0.0, turn * 0.7),
+            "head": (-0.05 + bob, 0.0, turn),
         }
 
     return deltas
@@ -817,11 +852,12 @@ def build_45() -> int:
 
     key_ball(ball, range(1, frames + 1, 2), path)
 
-    cam = setup_new_cam("Cam45", lens=30)
+    cam = setup_new_cam("Cam45", lens=28)
+    # Keep GK + ball readable through punch (contact ~f68)
     _cam_dense(
         cam, 1, frames,
-        Vector((shoot_pos.x - 4.0, -14.0, 4.0)), Vector((gx + 10.0, -11.0, 3.6)),
-        Vector((shoot_pos.x - 8.0, 1.0, 1.4)), Vector((gx + 6.0, -2.0, 1.6)),
+        Vector((gx + 18.0, -16.0, 4.2)), Vector((gx + 8.0, -13.0, 3.5)),
+        Vector((gx + 12.0, 0.5, 1.5)), Vector((gx + 5.0, -2.0, 1.7)),
         step=2,
     )
     finish_cam(cam)
@@ -881,8 +917,8 @@ def build_46() -> int:
             add_nla_hold(arm, "fight_idle", 1, frames, af=8)
             add_pose_strip(
                 arm, f"ShaolinBenchStand{i}", frames,
-                _happy_excited_fn(i * 0.7, amp=1.35), BENCH_EXCITE_BONES,
-                step=2, clamp=1.5,
+                _happy_excited_fn(i * 0.7, amp=1.25), BENCH_EXCITE_BONES,
+                step=2, clamp=1.4,
             )
         else:
             arm, root = spawn_player(
@@ -897,7 +933,7 @@ def build_46() -> int:
             # Slight seat bounce while cheering
             keys = []
             for f in range(1, frames + 1, 3):
-                z = sit_pos.z + 0.04 * abs(math.sin(f * 0.35 + i))
+                z = sit_pos.z + 0.03 * abs(math.sin(f * 0.4 + i * 0.9))
                 keys.append((f, Vector((sit_pos.x, sit_pos.y, z))))
             keys.append((frames, sit_pos.copy()))
             animate_root(root, keys, pair_yaw)
@@ -906,19 +942,19 @@ def build_46() -> int:
                 arm, f"ShaolinBenchSit{i}", frames, _chair_sit_deltas, SIT_BONES,
                 step=4, clamp=1.7, absolute=True,
             )
+            # Head chatter only — do not override sit torso with big spine deltas
             add_talk_strip(
                 arm, f"ShaolinBenchTalk{i}", frames,
-                _happy_excited_fn(0.5 + i * 0.55, amp=1.15), TALK_BONES, step=2,
+                _bench_talk_only(0.5 + i * 0.7, amp=1.1 + 0.08 * (i % 3)), TALK_BONES, step=2,
             )
-            # Arms over sit — separate strip for wave (absolute would fight sit)
             add_pose_strip(
                 arm, f"ShaolinBenchWave{i}", frames,
-                _happy_excited_fn(i * 0.9, amp=1.0),
+                _bench_wave_only(i * 1.1),
                 [
                     "clavicle.l", "upperarm.l", "lowerarm.l", "hand.l",
                     "clavicle.r", "upperarm.r", "lowerarm.r", "hand.r",
                 ],
-                step=2, clamp=1.4,
+                step=2, clamp=1.3,
             )
 
     cam = setup_new_cam("Cam46", lens=28)
