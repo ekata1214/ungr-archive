@@ -216,21 +216,22 @@ def _happy_fn() -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
 
 
 def _phone_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    """Absolute two-hand phone hold in front of face (not overhead).
+    """Absolute two-hand phone hold toward camera (in front of chest).
 
-    upperarm −X + deep elbow fold brings both hands together at ~face height.
+    Probed: upperarm L=(+1.0,+0.8,−0.8) / R mirror puts hands at lower Y
+    than pelvis (visible from front cam). Negative-X upperarm hid arms behind.
     """
     t = frame / FPS
-    tap = 0.06 * math.sin(t * 14.0)
+    tap = 0.05 * math.sin(t * 14.0)
     return {
-        "clavicle.l": (0.08, 0.14, 0.1),
-        "upperarm.l": (-1.15, 0.28, 0.35),
-        "lowerarm.l": (-1.75, 0.18, 0.22),
-        "hand.l": (0.55, 0.22, 0.28),
-        "clavicle.r": (0.08, -0.14, -0.1),
-        "upperarm.r": (-1.1, -0.25, -0.32),
-        "lowerarm.r": (-1.7 + tap, -0.16, -0.2),
-        "hand.r": (0.5 + tap * 0.2, -0.2, -0.25),
+        "clavicle.l": (0.08, 0.12, 0.1),
+        "upperarm.l": (1.0, 0.8, -0.75),
+        "lowerarm.l": (-0.45 - 0.1 * abs(tap), 0.12, 0.1),
+        "hand.l": (0.35, 0.2, 0.25),
+        "clavicle.r": (0.08, -0.12, -0.1),
+        "upperarm.r": (1.0, -0.8, 0.75),
+        "lowerarm.r": (-0.4 + tap, -0.12, -0.1),
+        "hand.r": (0.35 + tap * 0.3, -0.2, -0.25),
         "spine_01": (0.05, 0.0, 0.0),
         "spine_02": (0.08, 0.0, 0.0),
         "neck_01": (0.28, 0.0, 0.02 * math.sin(t * 2.0)),
