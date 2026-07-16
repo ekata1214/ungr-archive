@@ -127,18 +127,18 @@ def _talk_fn(amp: float = 1.0, phase: float = 0.0, look_up: float = 0.0) -> Call
 def _chair_sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     """Absolute chair sit (use add_pose_strip(..., absolute=True)).
 
-    L knee stays +X of pelvis / R stays −X (no crossed shins). Mild fold so
-    legs hang forward of the bench without bird-leg thigh twist.
+    L knee on +X / R on −X of pelvis (no crossed shins — that looked 左右逆).
+    Probed footspan ~1.4 with feet toward camera.
     """
     u = 1.0
     return {
-        "thigh.l": (0.35 * u, -0.35 * u, -0.85 * u),
-        "calf.l": (0.7 * u, 0.06 * u, 0.0),
-        "foot.l": (-0.2 * u, 0.08 * u, 0.04 * u),
-        "thigh.r": (0.35 * u, 0.35 * u, 0.85 * u),
-        "calf.r": (0.7 * u, -0.06 * u, 0.0),
-        "foot.r": (-0.2 * u, -0.08 * u, -0.04 * u),
-        "pelvis": (0.18 * u, 0.0, 0.0),
+        "thigh.l": (0.3 * u, -0.7 * u, -1.1 * u),
+        "calf.l": (0.35 * u, 0.08 * u, 0.0),
+        "foot.l": (-0.15 * u, 0.1 * u, 0.05 * u),
+        "thigh.r": (0.3 * u, 0.7 * u, 1.1 * u),
+        "calf.r": (0.35 * u, -0.08 * u, 0.0),
+        "foot.r": (-0.15 * u, -0.1 * u, -0.05 * u),
+        "pelvis": (0.2 * u, 0.0, 0.0),
         "spine_01": (-0.04 * u, 0.0, 0.0),
         "spine_02": (-0.02 * u, 0.0, 0.0),
         "neck_01": (-0.1 * u, 0.0, 0.0),
