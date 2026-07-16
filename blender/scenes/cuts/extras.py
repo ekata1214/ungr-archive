@@ -546,8 +546,9 @@ def build_42() -> int:
     _clear_all_nla(sh_arm)
 
     f_approach, f_drop, f_spin0, f_spin1, f_up = 24, 36, 40, 150, 168
-    # Tip onto upper back (~100°) so legs stay in air — readable windmill
-    tip = math.pi * 0.55
+    # Tip onto back; root is at FEET so raise Z while tipped or torso buries
+    tip = math.pi * 0.48
+    spin_z = 1.45  # feet elevated → shoulders near pitch, legs kick in air
 
     sh_keys_eul: list = []
     for f in range(1, frames + 1, 2):
@@ -557,19 +558,19 @@ def build_42() -> int:
             eul = Euler((0.0, 0.0, yaw0), "XYZ")
         elif f <= f_drop:
             t = ease((f - f_approach) / max(1, f_drop - f_approach))
-            p = Vector((center.x, center.y, 0.35 * t))
+            p = Vector((center.x, center.y, spin_z * t))
             eul = Euler((tip * t, 0.0, yaw0), "XYZ")
         elif f <= f_spin1:
             spins = (f - f_spin0) * 0.42
             p = Vector((
-                center.x + 0.2 * math.cos(spins),
-                center.y + 0.2 * math.sin(spins),
-                0.42 + 0.08 * abs(math.sin(spins * 2.0)),
+                center.x + 0.15 * math.cos(spins),
+                center.y + 0.15 * math.sin(spins),
+                spin_z + 0.06 * abs(math.sin(spins * 2.0)),
             ))
-            eul = Euler((tip + 0.12 * math.sin(spins * 2.0), 0.18 * math.cos(spins), yaw0 + spins), "XYZ")
+            eul = Euler((tip + 0.1 * math.sin(spins * 2.0), 0.15 * math.cos(spins), yaw0 + spins), "XYZ")
         elif f <= f_up:
             t = ease((f - f_spin1) / max(1, f_up - f_spin1))
-            p = Vector((center.x, center.y, 0.42 * (1.0 - t)))
+            p = Vector((center.x, center.y, spin_z * (1.0 - t)))
             eul = Euler((tip * (1.0 - t), 0.0, yaw0 + (f_spin1 - f_spin0) * 0.42), "XYZ")
         else:
             t = ease((f - f_up) / max(1, frames - f_up))
@@ -588,15 +589,21 @@ def build_42() -> int:
         step=2, clamp=1.8, absolute=True,
     )
 
+    # Force-hide ball (hide_ball alone can leave a leftover sphere in some blend states)
+    ball = bpy.data.objects.get("Ball")
+    if ball:
+        ball.hide_render = True
+        ball.hide_viewport = True
+
     cam = setup_new_cam("Cam42", lens=28)
 
     def cam_pos(f: int) -> Vector:
         if f_drop <= f <= f_up:
             ang = (f - f_drop) * 0.09
             return Vector((
-                center.x + 7.5 * math.cos(ang),
-                center.y + 7.5 * math.sin(ang) - 0.5,
-                3.8,
+                center.x + 8.0 * math.cos(ang),
+                center.y + 8.0 * math.sin(ang) - 0.4,
+                4.2,
             ))
         if f < f_drop:
             p = _lerp(start, center, ease((f - 1) / max(1, f_approach - 1)))
@@ -605,7 +612,7 @@ def build_42() -> int:
 
     def cam_tgt(f: int) -> Vector:
         if f_drop <= f <= f_up:
-            return Vector((center.x, center.y, 1.1))
+            return Vector((center.x, center.y, 1.35))
         if f < f_drop:
             p = _lerp(start, center, ease((f - 1) / max(1, f_approach - 1)))
             return Vector((p.x, p.y, 1.2))
@@ -616,7 +623,6 @@ def build_42() -> int:
     kf_cam(cam, frames, cam_pos(frames), cam_tgt(frames))
     finish_cam(cam)
     return frames
-
 
 # ---------------------------------------------------------------------------
 # 43 / 44 — France stomping like 41, phone clamped between both hands; 2 cams
