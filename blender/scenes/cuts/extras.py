@@ -168,9 +168,10 @@ def _angry_stomping(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float
 def _phone_clamp_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     """Absolute pose: stomp legs + hands meeting at chest around the phone.
 
-    Upperarm Y must follow L=+Y / R=−Y (same as france phone / trauma). The previous
-    opposite signs crossed the arms so each hand sat on the wrong side of the body
-    and read as L/R-reversed. Use with add_pose_strip(..., absolute=True, clamp≥3.2).
+    Upperarm Y must follow L=+Y / R=−Y (same as france phone / trauma). Opposite
+    signs crossed the arms so each hand sat on the wrong side of the body.
+    Hand X≈π flips the wrist so thumbs point up when palms clamp the phone.
+    Use with add_pose_strip(..., absolute=True, clamp≥π).
     """
     stomp = _angry_stomping(0.2)(frame)
     # Keep stomp thigh/calf motion as incremental-ish absolute (small)
@@ -185,11 +186,11 @@ def _phone_clamp_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
         "clavicle.l": (0.08, 0.12, 0.08),
         "upperarm.l": (-1.3, 0.7, 0.25),
         "lowerarm.l": (-2.0, 0.2, 0.25),
-        "hand.l": (0.35, -0.4, 1.2),
+        "hand.l": (math.pi, -0.4, 1.0),
         "clavicle.r": (0.08, -0.12, -0.08),
         "upperarm.r": (-1.3, -0.7, -0.25),
         "lowerarm.r": (-2.0, -0.2, -0.25),
-        "hand.r": (0.35, 0.4, -1.2),
+        "hand.r": (math.pi, 0.4, -1.0),
         "spine_01": (0.06 + stomp.get("spine_01", (0, 0, 0))[0] * 0.3, 0.0, 0.0),
         "spine_02": (0.08, 0.0, 0.0),
         "neck_01": (-0.06, 0.0, 0.0),
@@ -650,7 +651,7 @@ def _build_france_phone_stomp(cam_mode: str) -> int:
     # Absolute arm pose (clamp ≥ π) — hands meet at chest, palms in, correct L/R
     add_pose_strip(
         arm, f"FrancePhoneStomp_{cam_mode}", frames, _phone_clamp_deltas, PHONE_STOMP_BONES,
-        step=2, clamp=3.2, absolute=True,
+        step=2, clamp=3.3, absolute=True,
     )
 
     phone_mat = mat_rgba("Phone_Mat", (0.02, 0.02, 0.025, 1.0), 0.35)
