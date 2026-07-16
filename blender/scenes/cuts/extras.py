@@ -132,23 +132,40 @@ def _talk_fn(amp: float = 1.0, phase: float = 0.0, look_up: float = 0.0) -> Call
 def _chair_sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     """Absolute chair sit (use add_pose_strip(..., absolute=True)).
 
-    L knee on +X / R on −X of pelvis (no crossed shins — that looked 左右逆).
-    Probed footspan ~1.4 with feet toward camera.
+    L knee on +X / R on −X. Milder splay + bent calves so mesh soles clear
+    the pitch (old extreme Z splay buried one foot and read as 左右逆).
     """
-    u = 1.0
     return {
-        "thigh.l": (0.3 * u, -0.7 * u, -1.1 * u),
-        "calf.l": (0.35 * u, 0.08 * u, 0.0),
-        "foot.l": (-0.15 * u, 0.1 * u, 0.05 * u),
-        "thigh.r": (0.3 * u, 0.7 * u, 1.1 * u),
-        "calf.r": (0.35 * u, -0.08 * u, 0.0),
-        "foot.r": (-0.15 * u, -0.1 * u, -0.05 * u),
-        "pelvis": (0.2 * u, 0.0, 0.0),
-        "spine_01": (-0.04 * u, 0.0, 0.0),
-        "spine_02": (-0.02 * u, 0.0, 0.0),
-        "neck_01": (-0.1 * u, 0.0, 0.0),
-        "head": (-0.08 * u, 0.0, 0.0),
+        "thigh.l": (0.45, -0.5, -1.05),
+        "calf.l": (0.85, 0.08, 0.0),
+        "foot.l": (0.35, 0.08, 0.05),
+        "thigh.r": (0.45, 0.5, 1.05),
+        "calf.r": (0.85, -0.08, 0.0),
+        "foot.r": (0.35, -0.08, -0.05),
+        "pelvis": (0.2, 0.0, 0.0),
+        "spine_01": (-0.04, 0.0, 0.0),
+        "spine_02": (-0.02, 0.0, 0.0),
+        "neck_01": (-0.1, 0.0, 0.0),
+        "head": (-0.08, 0.0, 0.0),
     }
+
+
+def _bench_sit_talk_deltas(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
+    """Absolute sit + mild head talk in one strip (no talk REPLACE after sit)."""
+    base = _chair_sit_deltas(1)
+
+    def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
+        t = frame / FPS + phase
+        bob = 0.05 * math.sin(t * 6.5)
+        turn = 0.1 * math.sin(t * 2.4 + phase)
+        out = dict(base)
+        out["spine_01"] = (-0.04 + bob * 0.1, 0.0, turn * 0.15)
+        out["spine_02"] = (-0.02 + bob * 0.15, 0.0, turn * 0.2)
+        out["neck_01"] = (-0.1 + bob * 0.4, 0.0, turn * 0.6)
+        out["head"] = (-0.08 + bob, 0.0, turn)
+        return out
+
+    return deltas
 
 
 def _angry_stomping(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
@@ -403,9 +420,13 @@ def build_39() -> int:
         _clear_all_nla(arm)
         animate_root(root, [(1, pos), (frames, pos)], pair_yaw)
         add_nla_hold(arm, "idle", 1, frames, af=10)
-        add_pose_strip(arm, f"NLBenchSit{i}", frames, _chair_sit_deltas, SIT_BONES, step=4, clamp=1.7, absolute=True)
+        # One absolute sit+talk strip — stacked talk REPLACE buried/twisted sit legs.
         pair_phase = (i // 2) * 1.3 + (0.0 if i % 2 == 0 else 0.9)
-        add_talk_strip(arm, f"NLBenchTalk{i}", frames, _talk_fn(0.85 + 0.1 * (i % 2), pair_phase), TALK_BONES, step=3)
+        add_pose_strip(
+            arm, f"NLBenchSit{i}", frames,
+            _bench_sit_talk_deltas(pair_phase), SIT_BONES,
+            step=3, clamp=1.7, absolute=True,
+        )
 
     cam = setup_new_cam("Cam39", lens=28)
     # 3/4 side — front-on made forward thighs read as creepy V / 左右逆
@@ -754,20 +775,8 @@ def _bench_sit_cheer_deltas(phase: float = 0.0) -> Callable[[int], Dict[str, Tup
     Legs: more thigh tip + calf bend than shared _chair_sit so ankles/toes stay ≥0
     (old chair sit buried feet at z≈−0.24).
     """
-    # Cam-facing sit; mesh soles just above pitch (meshZmin≈+0.01 at root z=-0.85).
-    base = {
-        "thigh.l": (0.45, -0.5, -1.05),
-        "calf.l": (0.85, 0.08, 0.0),
-        "foot.l": (0.35, 0.08, 0.05),
-        "thigh.r": (0.45, 0.5, 1.05),
-        "calf.r": (0.85, -0.08, 0.0),
-        "foot.r": (0.35, -0.08, -0.05),
-        "pelvis": (0.2, 0.0, 0.0),
-        "spine_01": (-0.04, 0.0, 0.0),
-        "spine_02": (-0.02, 0.0, 0.0),
-        "neck_01": (-0.1, 0.0, 0.0),
-        "head": (-0.08, 0.0, 0.0),
-    }
+    # Same grounded chair sit as cut 39 (shared _chair_sit_deltas).
+    base = dict(_chair_sit_deltas(1))
     style = int(phase * 10) % 3
 
     def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:

@@ -77,36 +77,6 @@ def _ball_arc(p0: Vector, p1: Vector, u: float, arc: float = 1.2) -> Vector:
     return p
 
 
-def _toddle_deltas(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
-    def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-        t = frame / FPS + phase
-        sway = 0.18 * math.sin(t * 3.2)
-        tip = 0.12 + 0.06 * abs(math.sin(t * 3.2))
-        step = 0.35 * math.sin(t * 3.2)
-        return {
-            "pelvis": (tip, 0.0, sway * 0.4),
-            "spine_01": (0.08 + tip * 0.3, 0.0, sway * 0.5),
-            "spine_02": (0.1, 0.0, sway * 0.6),
-            "neck_01": (0.12, 0.0, sway * 0.3),
-            "head": (0.1, 0.0, sway * 0.2),
-            "thigh.l": (0.25 + max(0.0, step) * 0.5, 0.08, 0.1),
-            "calf.l": (-0.35 - max(0.0, step) * 0.3, 0.0, 0.0),
-            "thigh.r": (0.25 + max(0.0, -step) * 0.5, -0.08, -0.1),
-            "calf.r": (-0.35 - max(0.0, -step) * 0.3, 0.0, 0.0),
-            "upperarm.l": (-0.25, 0.35 + sway, 0.2),
-            "upperarm.r": (-0.25, -0.35 + sway, -0.2),
-        }
-
-    return deltas
-
-
-TODDLE_BONES = [
-    "pelvis", "spine_01", "spine_02", "neck_01", "head",
-    "thigh.l", "calf.l", "thigh.r", "calf.r",
-    "upperarm.l", "upperarm.r",
-]
-
-
 def _head_hold_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     t = frame / FPS
     bob = 0.04 * math.sin(t * 4.0)
@@ -150,6 +120,7 @@ def _header_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
 # 47 — Norway toddling / trudging walk
 # ---------------------------------------------------------------------------
 def build_47() -> int:
+    """Slow trudging walk — real run cycle scaled down (not frozen idle legs)."""
     frames = 168
     remove_players()
     _show_pitch()
@@ -157,25 +128,32 @@ def build_47() -> int:
     hide_ball()
     start = Vector((-8.0, 1.0, 0.0))
     end = Vector((10.0, -0.5, 0.0))
-    yaw = math.atan2(1.0, 0.0)  # roughly +X via atan2(dx,-dy) with dy~0 → π/2
 
     arm, root = spawn_player(
         "Norway", NORWAY_RED, start, yaw_face_pos_x(),
-        actions=["idle", "run"], split=(NORWAY_RED, NORWAY_WHITE, 0.42),
+        actions=["run"], split=(NORWAY_RED, NORWAY_WHITE, 0.42),
     )
     _clear_all_nla(arm)
     keys = []
     for f in range(1, frames + 1, 2):
-        t = ease((f - 1) / max(1, frames - 1))
-        # slow trudge — ease makes it feel tired
-        u = t * 0.85 + 0.15 * math.sin(t * math.pi)
-        p = _lerp(start, end, u)
-        p.z = 0.04 * abs(math.sin(f * 0.22))
+        t = (f - 1) / max(1, frames - 1)
+        # Near-linear slow trudge (no ease that freezes mid-stride)
+        p = _lerp(start, end, t)
+        p.y += 0.12 * math.sin(t * math.pi * 2.0)
+        p.z = 0.03 * abs(math.sin(f * 0.35))
         keys.append((f, p))
     keys.append((frames, end.copy()))
     animate_root(root, keys, yaw_face_pos_x())
-    add_nla_hold(arm, "idle", 1, frames, af=8)
-    add_pose_strip(arm, "NorwayToddle", frames, _toddle_deltas(), TODDLE_BONES, step=2, clamp=1.2)
+    add_nla_loop(arm, "run", 1, frames)
+    # Slow the run cycle so it reads as a tired toddle, not a sprint
+    ad = arm.animation_data
+    if ad:
+        for track in ad.nla_tracks:
+            for strip in track.strips:
+                if strip.action:
+                    alen = max(1.0, strip.action.frame_range[1] - strip.action.frame_range[0])
+                    strip.scale = 0.38
+                    strip.repeat = max(1.0, (frames + 1) / (alen * strip.scale))
 
     cam = setup_new_cam("Cam47", lens=32)
     _cam_dense(

@@ -216,22 +216,22 @@ def _happy_fn() -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
 
 
 def _phone_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
+    """Absolute two-hand phone hold in front of chest (upperarm +X = arms up)."""
     t = frame / FPS
-    tap = 0.05 * math.sin(t * 14.0)
-    # Raise arms in front of face; wrists so palms face each other / screen (not "reverse")
+    tap = 0.06 * math.sin(t * 14.0)
     return {
-        "clavicle.l": (0.05, 0.08, 0.06),
-        "upperarm.l": (-0.4, 0.25, 0.35),
-        "lowerarm.l": (-0.7, 0.12, 0.15),
-        "hand.l": (0.4, 0.45, 0.55),
-        "clavicle.r": (0.04, -0.06, -0.05),
-        "upperarm.r": (-0.35, -0.2, -0.28),
-        "lowerarm.r": (-0.55 + tap, -0.08, -0.1),
-        "hand.r": (0.3 + tap * 0.3, -0.35, -0.35),
-        "spine_01": (0.04, 0.0, 0.0),
-        "spine_02": (0.05, 0.0, 0.0),
-        "neck_01": (0.1, 0.0, 0.0),
-        "head": (0.14, 0.0, 0.04 * math.sin(t * 2.0)),
+        "clavicle.l": (0.1, 0.12, 0.1),
+        "upperarm.l": (0.95, 0.28, 0.55),
+        "lowerarm.l": (-1.15, 0.18, 0.22),
+        "hand.l": (0.85, -0.35, -0.45),
+        "clavicle.r": (0.1, -0.12, -0.1),
+        "upperarm.r": (0.85 + tap * 0.08, -0.22, -0.5),
+        "lowerarm.r": (-1.05 + tap, -0.12, -0.18),
+        "hand.r": (0.7 + tap * 0.25, 0.3, 0.35),
+        "spine_01": (0.05, 0.0, 0.0),
+        "spine_02": (0.07, 0.0, 0.0),
+        "neck_01": (0.28, 0.0, 0.02 * math.sin(t * 2.0)),
+        "head": (0.32, 0.0, 0.03 * math.sin(t * 2.2)),
     }
 
 
@@ -379,12 +379,16 @@ def build_20() -> int:
     _clear_extras("Phone_")
     set_frame_range(frames)
     hide_ball()
-    pos = Vector((-10.0, 2.0, 0.0))
+    # Slight root lift so idle foot mesh clears pitch
+    pos = Vector((-10.0, 2.0, 0.08))
     arm, root = spawn_france("France", pos, yaw_face_neg_y(), actions=["idle"])
     _clear_all_nla(arm)
     animate_root(root, [(1, pos), (frames, pos)], yaw_face_neg_y())
     add_nla_hold(arm, "idle", 1, frames, af=12)
-    add_pose_strip(arm, "FrancePhonePose", frames, _phone_deltas, PHONE_ARM_BONES, step=2, clamp=1.3)
+    add_pose_strip(
+        arm, "FrancePhonePose", frames, _phone_deltas, PHONE_ARM_BONES,
+        step=2, clamp=1.6, absolute=True,
+    )
 
     phone_mat = mat_rgba("Phone_Mat", (0.02, 0.02, 0.025, 1.0), 0.35)
     # Palm-sized black rectangle (サイゼ風の薄い黒プレート)
