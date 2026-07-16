@@ -203,12 +203,12 @@ def _windmill_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     b = math.cos(ph)
     return {
         # Big V: thighs open hard, calves bent; alternate which leg is higher
-        "thigh.l": (1.55 + 0.35 * a, 1.05, 0.65 + 0.25 * b),
-        "calf.l": (-1.55, 0.15, 0.0),
-        "foot.l": (0.45, 0.1, 0.2),
-        "thigh.r": (1.55 - 0.35 * a, -1.05, -0.65 - 0.25 * b),
-        "calf.r": (-1.55, -0.15, 0.0),
-        "foot.r": (0.45, -0.1, -0.2),
+        "thigh.l": (1.65 + 0.25 * a, 1.25, 0.85 + 0.2 * b),
+        "calf.l": (-1.35, 0.2, 0.0),
+        "foot.l": (0.5, 0.15, 0.25),
+        "thigh.r": (1.65 - 0.25 * a, -1.25, -0.85 - 0.2 * b),
+        "calf.r": (-1.35, -0.2, 0.0),
+        "foot.r": (0.5, -0.15, -0.25),
         "pelvis": (0.2, 0.0, 0.1 * a),
         "clavicle.l": (0.25, 0.35, 0.25),
         "upperarm.l": (-0.2 - 1.0 * b, 1.35, 0.7),
