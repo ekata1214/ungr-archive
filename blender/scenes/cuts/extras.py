@@ -543,10 +543,10 @@ def build_42() -> int:
     )
     _clear_all_nla(sh_arm)
 
-    f_approach, f_drop, f_spin0, f_spin1, f_up = 24, 36, 40, 150, 168
+    f_approach, f_drop, f_spin0, f_spin1, f_up = 20, 32, 36, 155, 168
     # Negative pitch = tip onto BACK (positive was face-plant). Root at feet → raise Z.
-    tip = -math.pi * 0.52
-    spin_z = 1.55
+    tip = -math.pi * 0.38
+    spin_z = 1.15
 
     sh_keys_eul: list = []
     for f in range(1, frames + 1, 2):
@@ -559,17 +559,17 @@ def build_42() -> int:
             p = Vector((center.x, center.y, spin_z * t))
             eul = Euler((tip * t, 0.0, yaw0), "XYZ")
         elif f <= f_spin1:
-            spins = (f - f_spin0) * 0.48
+            spins = (f - f_spin0) * 0.52
             p = Vector((
-                center.x + 0.12 * math.cos(spins),
-                center.y + 0.12 * math.sin(spins),
-                spin_z + 0.05 * abs(math.sin(spins * 2.0)),
+                center.x + 0.1 * math.cos(spins),
+                center.y + 0.1 * math.sin(spins),
+                spin_z + 0.1 * abs(math.sin(spins * 2.0)),
             ))
-            eul = Euler((tip + 0.08 * math.sin(spins * 2.0), 0.12 * math.cos(spins), yaw0 + spins), "XYZ")
+            eul = Euler((tip + 0.15 * math.sin(spins), 0.25 * math.sin(spins * 2.0), yaw0 + spins), "XYZ")
         elif f <= f_up:
             t = ease((f - f_spin1) / max(1, f_up - f_spin1))
             p = Vector((center.x, center.y, spin_z * (1.0 - t)))
-            eul = Euler((tip * (1.0 - t), 0.0, yaw0 + (f_spin1 - f_spin0) * 0.48), "XYZ")
+            eul = Euler((tip * (1.0 - t), 0.0, yaw0 + (f_spin1 - f_spin0) * 0.52), "XYZ")
         else:
             t = ease((f - f_up) / max(1, frames - f_up))
             p = Vector((center.x - 1.5 * t, center.y, 0.0))
@@ -593,24 +593,24 @@ def build_42() -> int:
         ball.hide_render = True
         ball.hide_viewport = True
 
-    cam = setup_new_cam("Cam42", lens=28)
+    cam = setup_new_cam("Cam42", lens=30)
 
     def cam_pos(f: int) -> Vector:
         if f_drop <= f <= f_up:
-            ang = (f - f_drop) * 0.09
+            ang = (f - f_drop) * 0.07
             return Vector((
-                center.x + 8.0 * math.cos(ang),
-                center.y + 8.0 * math.sin(ang) - 0.4,
-                4.2,
+                center.x + 9.5 * math.cos(ang),
+                center.y - 5.5 + 2.0 * math.sin(ang),
+                2.6,
             ))
         if f < f_drop:
             p = _lerp(start, center, ease((f - 1) / max(1, f_approach - 1)))
-            return Vector((p.x + 2.0, p.y - 9.0, 3.2))
-        return Vector((center.x - 2.0, center.y - 9.0, 3.0))
+            return Vector((p.x + 3.0, p.y - 8.0, 2.8))
+        return Vector((center.x + 4.0, center.y - 8.0, 2.6))
 
     def cam_tgt(f: int) -> Vector:
         if f_drop <= f <= f_up:
-            return Vector((center.x, center.y, 1.35))
+            return Vector((center.x, center.y, 1.4))
         if f < f_drop:
             p = _lerp(start, center, ease((f - 1) / max(1, f_approach - 1)))
             return Vector((p.x, p.y, 1.2))
