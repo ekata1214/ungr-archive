@@ -168,9 +168,10 @@ def _angry_stomping(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float
 def _phone_clamp_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     """Absolute pose: stomp legs + hands meeting at chest around the phone.
 
-    Upperarm Y must follow L=+Y / R=−Y (same as france phone / trauma). Opposite
-    signs crossed the arms so each hand sat on the wrong side of the body.
-    Hand X≈π flips the wrist so thumbs point up when palms clamp the phone.
+    Upperarm Y: L=+Y / R=−Y (uncrossed). Hand X≈π lifts thumbs.
+    Hand L/R must NOT use simple Y/Z mirrors — mirrored eulers put a
+    right-hand orientation on the left arm (reads as swapped). Left hand
+    keeps same-sign Y/Z as a tuned absolute (π, +1, −1.2).
     Use with add_pose_strip(..., absolute=True, clamp≥π).
     """
     stomp = _angry_stomping(0.2)(frame)
@@ -183,13 +184,13 @@ def _phone_clamp_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
         "foot.l": (0.05, 0.0, 0.0),
         "foot.r": (0.05, 0.0, 0.0),
         "pelvis": (0.08, 0.0, 0.0),
-        "clavicle.l": (0.08, 0.12, 0.08),
-        "upperarm.l": (-1.3, 0.7, 0.25),
-        "lowerarm.l": (-2.0, 0.2, 0.25),
-        "hand.l": (math.pi, -0.4, 1.0),
-        "clavicle.r": (0.08, -0.12, -0.08),
-        "upperarm.r": (-1.3, -0.7, -0.25),
-        "lowerarm.r": (-2.0, -0.2, -0.25),
+        "clavicle.l": (0.06, 0.1, 0.06),
+        "upperarm.l": (-1.05, 0.55, 0.4),
+        "lowerarm.l": (-1.85, 0.15, 0.3),
+        "hand.l": (math.pi, 1.0, -1.2),
+        "clavicle.r": (0.06, -0.1, -0.06),
+        "upperarm.r": (-1.05, -0.55, -0.4),
+        "lowerarm.r": (-1.85, -0.15, -0.3),
         "hand.r": (math.pi, 0.4, -1.0),
         "spine_01": (0.06 + stomp.get("spine_01", (0, 0, 0))[0] * 0.3, 0.0, 0.0),
         "spine_02": (0.08, 0.0, 0.0),
@@ -658,8 +659,8 @@ def _build_france_phone_stomp(cam_mode: str) -> int:
     palm = (0.07, 0.014, 0.12)
     phone = add_box("Phone_01", palm, Vector((0, 0, 0)), phone_mat)
     # Between palms — slightly larger so clamp reads on close cam
-    parent_phone_to_hand(phone, arm, "hand.l", loc=Vector((0.03, 0.03, 0.0)), palm_size=palm)
-    phone.rotation_euler = Euler((0.15, 0.0, 1.57), "XYZ")
+    parent_phone_to_hand(phone, arm, "hand.l", loc=Vector((0.025, 0.04, 0.0)), palm_size=palm)
+    phone.rotation_euler = Euler((0.2, 0.1, 1.57), "XYZ")
     phone.scale = Vector(palm)
 
     cam = setup_new_cam(f"CamFranceStomp_{cam_mode}", lens=34 if cam_mode == "A" else 42)
@@ -671,10 +672,11 @@ def _build_france_phone_stomp(cam_mode: str) -> int:
             step=3,
         )
     else:
+        # Frontal-ish close on the phone clamp (not high top-down on the neck)
         _cam_dense(
             cam, 1, frames,
-            Vector((-5.6, -5.5, 4.2)), Vector((-5.75, -5.0, 4.15)),
-            Vector((-6.0, 1.0, 3.25)), Vector((-6.0, 1.05, 3.3)),
+            Vector((-6.0, -6.2, 3.0)), Vector((-5.85, -5.8, 2.95)),
+            Vector((-6.0, 1.0, 2.85)), Vector((-6.0, 1.05, 2.9)),
             step=2,
         )
     finish_cam(cam)
