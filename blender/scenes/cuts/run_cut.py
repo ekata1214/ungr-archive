@@ -38,6 +38,7 @@ def _all_builders() -> Dict[str, callable]:
     from cuts.france import BUILDERS as F  # noqa: E402
     from cuts.argentina import BUILDERS as A  # noqa: E402
     from cuts.extras import BUILDERS as E  # noqa: E402
+    from cuts.wave2 import BUILDERS as W  # noqa: E402
 
     out: Dict[str, callable] = {}
     out.update(N)
@@ -45,6 +46,7 @@ def _all_builders() -> Dict[str, callable]:
     out.update(F)
     out.update(A)
     out.update(E)
+    out.update(W)
     return out
 
 
