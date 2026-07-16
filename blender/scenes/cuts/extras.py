@@ -710,58 +710,88 @@ def _shot_arc(p0: Vector, p1: Vector, u: float, arc: float = 2.2) -> Vector:
     return p
 
 
-def _happy_excited_fn(phase: float = 0.0, amp: float = 1.2) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
-    """Bench celebration — head bob + arms raised (keep mild so sit stays intact)."""
+def _stand_cheer_deltas(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
+    """Absolute upright cheer — arms overhead (upperarm +X), no fight_idle lean."""
+
     def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
         t = frame / FPS + phase
-        bob = amp * 0.08 * math.sin(t * 9.0)
-        shake = amp * 0.1 * math.sin(t * 11.0 + 0.4)
-        wave = amp * 0.35 * abs(math.sin(t * 6.5 + phase))
+        bob = 0.06 * math.sin(t * 9.0)
+        shake = 0.1 * math.sin(t * 11.0 + phase)
+        wave = 0.22 * abs(math.sin(t * 7.0 + phase))
+        alt = 0.12 * math.sin(t * 8.5 + phase * 1.1)
+        # Prefer one-arm-up on odd phases for variety
+        one_arm = (int(phase * 10) % 2) == 1
+        lx = 1.05 + wave
+        rx = (0.35 + 0.1 * wave) if one_arm else (1.05 + wave)
         return {
-            "spine_01": (0.02 + bob * 0.2, 0.0, shake * 0.25),
-            "spine_02": (0.03 + bob * 0.35, 0.0, shake * 0.35),
-            "neck_01": (-0.04 + bob * 0.55, 0.0, shake * 0.7),
-            "head": (-0.05 + bob, 0.0, shake),
-            "clavicle.l": (0.05, 0.08 + wave * 0.1, 0.06),
-            "upperarm.l": (-0.55 - wave * 0.25, 0.35 + 0.15 * math.sin(t * 7.0), 0.25),
-            "lowerarm.l": (-0.7, 0.15, 0.1),
-            "hand.l": (0.25, 0.2, 0.25),
-            "clavicle.r": (0.05, -0.08 - wave * 0.1, -0.06),
-            "upperarm.r": (-0.55 - wave * 0.25, -0.35 - 0.15 * math.sin(t * 7.0 + 1.0), -0.25),
-            "lowerarm.r": (-0.7, -0.15, -0.1),
-            "hand.r": (0.25, -0.2, -0.25),
+            "pelvis": (0.0, 0.0, 0.0),
+            "spine_01": (0.02 + bob * 0.2, 0.0, shake * 0.2),
+            "spine_02": (0.03 + bob * 0.3, 0.0, shake * 0.25),
+            "neck_01": (-0.08 + bob * 0.5, 0.0, shake * 0.6),
+            "head": (-0.06 + bob, 0.0, shake),
+            "clavicle.l": (0.06, 0.05, 0.08),
+            "upperarm.l": (lx, -0.15 + alt * 0.3, 0.75),
+            "lowerarm.l": (-0.45 - 0.1 * wave, 0.05, 0.05),
+            "hand.l": (0.12, 0.05, 0.08),
+            "clavicle.r": (0.06, -0.05, -0.08),
+            "upperarm.r": (rx, 0.15 - alt * 0.3, -0.75 if not one_arm else -0.35),
+            "lowerarm.r": (-0.45 - 0.1 * wave, -0.05, -0.05),
+            "hand.r": (0.12, -0.05, -0.08),
+            "thigh.l": (0.05 * abs(math.sin(t * 6.0)), 0.04, 0.05),
+            "thigh.r": (0.05 * abs(math.sin(t * 6.0 + 1.2)), -0.04, -0.05),
+            "calf.l": (-0.08 * abs(math.sin(t * 6.0)), 0.0, 0.0),
+            "calf.r": (-0.08 * abs(math.sin(t * 6.0 + 1.2)), 0.0, 0.0),
         }
 
     return deltas
 
 
 def _bench_sit_cheer_deltas(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
-    """Absolute chair sit + mild head bob + arm wave in one REPLACE strip.
+    """Absolute chair sit + overhead cheer arms in one REPLACE strip.
 
-    Do not stack add_talk_strip / relative arm strips after absolute sit — those
-    REPLACE idle-based spine/arms and wipe the sit torso (lean-back over the bench).
+    Do not stack talk/wave REPLACE strips after absolute sit — they wipe sit spine.
+    Upperarm uses +X so hands go up (negative X made a sideways arm-chain).
     """
     base = _chair_sit_deltas(1)
+    style = int(phase * 10) % 3
 
     def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
         t = frame / FPS + phase
         bob = 0.05 * math.sin(t * 8.0)
         turn = 0.08 * math.sin(t * 3.1 + phase)
-        wave = 0.28 * abs(math.sin(t * 6.5 + phase))
-        alt = 0.14 * math.sin(t * 8.2 + phase * 1.2)
+        wave = 0.2 * abs(math.sin(t * 6.8 + phase))
+        alt = 0.1 * math.sin(t * 8.2 + phase * 1.2)
         out = dict(base)
         out["spine_01"] = (-0.04 + bob * 0.15, 0.0, turn * 0.15)
         out["spine_02"] = (-0.02 + bob * 0.25, 0.0, turn * 0.2)
         out["neck_01"] = (-0.1 + bob * 0.45, 0.0, turn * 0.55)
         out["head"] = (-0.08 + bob, 0.0, turn)
-        out["clavicle.l"] = (0.04, 0.08, 0.05)
-        out["upperarm.l"] = (-0.45 - wave * 0.22, 0.35 + alt, 0.22)
-        out["lowerarm.l"] = (-0.65 - 0.12 * wave, 0.1, 0.06)
-        out["hand.l"] = (0.18, 0.15, 0.2)
-        out["clavicle.r"] = (0.04, -0.08, -0.05)
-        out["upperarm.r"] = (-0.45 - wave * 0.22, -0.35 - alt, -0.22)
-        out["lowerarm.r"] = (-0.65 - 0.12 * wave, -0.1, -0.06)
-        out["hand.r"] = (0.18, -0.15, -0.2)
+        out["clavicle.l"] = (0.05, 0.04, 0.06)
+        out["clavicle.r"] = (0.05, -0.04, -0.06)
+        if style == 0:
+            # both arms up
+            out["upperarm.l"] = (1.0 + wave, -0.15 + alt, 0.75)
+            out["lowerarm.l"] = (-0.4 - 0.1 * wave, 0.05, 0.05)
+            out["hand.l"] = (0.12, 0.05, 0.08)
+            out["upperarm.r"] = (1.0 + wave, 0.15 - alt, -0.75)
+            out["lowerarm.r"] = (-0.4 - 0.1 * wave, -0.05, -0.05)
+            out["hand.r"] = (0.12, -0.05, -0.08)
+        elif style == 1:
+            # left up, right gesture
+            out["upperarm.l"] = (1.15 + wave, -0.1 + alt, 0.7)
+            out["lowerarm.l"] = (-0.35, 0.05, 0.05)
+            out["hand.l"] = (0.15, 0.05, 0.08)
+            out["upperarm.r"] = (0.35 + 0.15 * wave, -0.35 - alt, -0.25)
+            out["lowerarm.r"] = (-0.85, -0.1, -0.05)
+            out["hand.r"] = (0.15, -0.12, -0.08)
+        else:
+            # right up, left gesture
+            out["upperarm.l"] = (0.35 + 0.15 * wave, 0.35 + alt, 0.25)
+            out["lowerarm.l"] = (-0.85, 0.1, 0.05)
+            out["hand.l"] = (0.15, 0.12, 0.08)
+            out["upperarm.r"] = (1.15 + wave, 0.1 - alt, -0.7)
+            out["lowerarm.r"] = (-0.35, -0.05, -0.05)
+            out["hand.r"] = (0.15, -0.05, -0.08)
         return out
 
     return deltas
@@ -774,9 +804,8 @@ BENCH_SIT_CHEER_BONES = list(dict.fromkeys(
     ]
 ))
 
-BENCH_EXCITE_BONES = list(dict.fromkeys(
-    [
-        "spine_01", "spine_02", "neck_01", "head",
+BENCH_STAND_CHEER_BONES = list(dict.fromkeys(
+    SIT_BONES + [
         "clavicle.l", "upperarm.l", "lowerarm.l", "hand.l",
         "clavicle.r", "upperarm.r", "lowerarm.r", "hand.r",
     ]
@@ -908,22 +937,22 @@ def build_46() -> int:
                 SHAOLIN_ORANGE,
                 stand_pos,
                 pair_yaw,
-                actions=["idle", "fight_idle"],
+                actions=["idle"],
                 split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
             )
             _clear_all_nla(arm)
             keys = []
             for f in range(1, frames + 1, 2):
-                phase = f * 0.5 + i * 1.1
-                z = 0.18 * abs(math.sin(phase))
+                phase = f * 0.45 + i * 1.1
+                z = 0.22 * abs(math.sin(phase))
                 keys.append((f, Vector((stand_pos.x, stand_pos.y, z))))
             keys.append((frames, stand_pos.copy()))
             animate_root(root, keys, pair_yaw)
-            add_nla_hold(arm, "fight_idle", 1, frames, af=8)
+            add_nla_hold(arm, "idle", 1, frames, af=8)
             add_pose_strip(
                 arm, f"ShaolinBenchStand{i}", frames,
-                _happy_excited_fn(i * 0.7, amp=1.25), BENCH_EXCITE_BONES,
-                step=2, clamp=1.4,
+                _stand_cheer_deltas(i * 0.9), BENCH_STAND_CHEER_BONES,
+                step=2, clamp=1.6, absolute=True,
             )
         else:
             arm, root = spawn_player(
