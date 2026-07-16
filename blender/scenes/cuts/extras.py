@@ -751,8 +751,23 @@ def _bench_sit_cheer_deltas(phase: float = 0.0) -> Callable[[int], Dict[str, Tup
 
     Do not stack talk/wave REPLACE strips after absolute sit — they wipe sit spine.
     Upperarm uses +X so hands go up (negative X made a sideways arm-chain).
+    Legs: more thigh tip + calf bend than shared _chair_sit so ankles/toes stay ≥0
+    (old chair sit buried feet at z≈−0.24).
     """
-    base = _chair_sit_deltas(1)
+    # Cam-facing sit; ankles ~z=0.02–0.08, toes slightly tipped up (not buried).
+    base = {
+        "thigh.l": (0.55, -0.62, -0.95),
+        "calf.l": (0.75, 0.08, 0.0),
+        "foot.l": (0.6, 0.08, 0.05),
+        "thigh.r": (0.55, 0.62, 0.95),
+        "calf.r": (0.75, -0.08, 0.0),
+        "foot.r": (0.6, -0.08, -0.05),
+        "pelvis": (0.2, 0.0, 0.0),
+        "spine_01": (-0.04, 0.0, 0.0),
+        "spine_02": (-0.02, 0.0, 0.0),
+        "neck_01": (-0.1, 0.0, 0.0),
+        "head": (-0.08, 0.0, 0.0),
+    }
     style = int(phase * 10) % 3
 
     def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
