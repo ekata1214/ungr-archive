@@ -168,10 +168,9 @@ def _angry_stomping(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float
 def _phone_clamp_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     """Absolute pose: stomp legs + hands meeting at chest around the phone.
 
-    Upperarm Y: L=+Y / R=−Y (uncrossed). Hand X≈π lifts thumbs.
-    Hand L/R must NOT use simple Y/Z mirrors — mirrored eulers put a
-    right-hand orientation on the left arm (reads as swapped). Left hand
-    keeps same-sign Y/Z as a tuned absolute (π, +1, −1.2).
+    Upperarm Y: L=+Y / R=−Y (uncrossed). Hand X≈π/2 with mirrored Y/Z so
+    thumb tips point up and inward (toward the phone). Explicit thumb bone
+    eulers make the grip read correctly on close cam.
     Use with add_pose_strip(..., absolute=True, clamp≥π).
     """
     stomp = _angry_stomping(0.2)(frame)
@@ -187,11 +186,17 @@ def _phone_clamp_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
         "clavicle.l": (0.06, 0.1, 0.06),
         "upperarm.l": (-1.05, 0.55, 0.4),
         "lowerarm.l": (-1.85, 0.15, 0.3),
-        "hand.l": (math.pi, 1.0, -1.2),
+        "hand.l": (math.pi * 0.5, -1.2, -0.8),
+        "thumb_01.l": (0.35, -0.85, -0.45),
+        "thumb_02.l": (0.25, -0.1, 0.0),
+        "thumb_03.l": (0.2, 0.0, 0.0),
         "clavicle.r": (0.06, -0.1, -0.06),
         "upperarm.r": (-1.05, -0.55, -0.4),
         "lowerarm.r": (-1.85, -0.15, -0.3),
-        "hand.r": (math.pi, 0.4, -1.0),
+        "hand.r": (math.pi * 0.5, 1.2, 0.8),
+        "thumb_01.r": (0.35, 0.85, 0.45),
+        "thumb_02.r": (0.25, 0.1, 0.0),
+        "thumb_03.r": (0.2, 0.0, 0.0),
         "spine_01": (0.06 + stomp.get("spine_01", (0, 0, 0))[0] * 0.3, 0.0, 0.0),
         "spine_02": (0.08, 0.0, 0.0),
         "neck_01": (-0.06, 0.0, 0.0),
@@ -242,7 +247,10 @@ BREAK_BONES = STOMP_BONES + [
     "clavicle.l", "upperarm.l", "lowerarm.l", "hand.l",
     "clavicle.r", "upperarm.r", "lowerarm.r", "hand.r",
 ]
-PHONE_STOMP_BONES = list(dict.fromkeys(STOMP_BONES + PHONE_ARM_BONES))
+PHONE_STOMP_BONES = list(dict.fromkeys(STOMP_BONES + PHONE_ARM_BONES + [
+    "thumb_01.l", "thumb_02.l", "thumb_03.l",
+    "thumb_01.r", "thumb_02.r", "thumb_03.r",
+]))
 
 
 def _animate_root_yaw(
