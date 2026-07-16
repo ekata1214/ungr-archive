@@ -384,7 +384,7 @@ def build_20() -> int:
     set_frame_range(frames)
     hide_ball()
     # Root lift so idle foot mesh clears pitch
-    pos = Vector((-10.0, 2.0, 0.14))
+    pos = Vector((-10.0, 2.0, 0.22))
     arm, root = spawn_france("France", pos, yaw_face_neg_y(), actions=["idle"])
     _clear_all_nla(arm)
     animate_root(root, [(1, pos), (frames, pos)], yaw_face_neg_y())
