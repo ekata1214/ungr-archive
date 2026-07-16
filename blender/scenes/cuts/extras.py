@@ -380,11 +380,12 @@ def build_39() -> int:
         pair_phase = (i // 2) * 1.3 + (0.0 if i % 2 == 0 else 0.9)
         add_talk_strip(arm, f"NLBenchTalk{i}", frames, _talk_fn(0.85 + 0.1 * (i % 2), pair_phase), TALK_BONES, step=3)
 
-    cam = setup_new_cam("Cam39", lens=26)
+    cam = setup_new_cam("Cam39", lens=28)
+    # 3/4 side — front-on made forward thighs read as creepy V / 左右逆
     _cam_dense(
         cam, 1, frames,
-        Vector((-10.0, bench_y - 16.0, 6.5)), Vector((8.0, bench_y - 14.0, 5.8)),
-        Vector((0.0, bench_y, 2.4)), Vector((0.0, bench_y, 2.5)),
+        Vector((-16.0, bench_y - 11.0, 3.8)), Vector((-12.0, bench_y - 13.5, 4.2)),
+        Vector((-2.0, bench_y, 1.7)), Vector((2.0, bench_y, 1.8)),
         step=2,
     )
     finish_cam(cam)
