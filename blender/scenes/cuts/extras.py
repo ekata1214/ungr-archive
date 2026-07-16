@@ -433,10 +433,10 @@ def build_40() -> int:
     ball = clear_ball_anim()
 
     def path(f: int) -> Vector:
-        # Always directly ahead of the player along travel — never off to the side
+        # Clearly past the lead foot — not under the torso / beside the hips
         p = player_at(f)
         fd = face_dir(f)
-        ahead = 1.35 + 0.15 * abs(math.sin(f * 0.55))
+        ahead = 2.15 + 0.2 * abs(math.sin(f * 0.55))
         loc = p + fd * ahead
         loc.z = BALL_GROUND_Z
         return loc
