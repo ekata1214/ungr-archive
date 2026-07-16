@@ -127,18 +127,18 @@ def _talk_fn(amp: float = 1.0, phase: float = 0.0, look_up: float = 0.0) -> Call
 def _chair_sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     """Absolute chair sit (use add_pose_strip(..., absolute=True)).
 
-    Probed on this mannequin: thigh (-0.6,-0.5,-0.7) keeps rest foot/knee span
-    with knees toward camera; +X thigh alone = creepy wide splits.
+    Previous L/R thigh YZ put each knee on the opposite hip (crossed “きもい” sit).
+    Probed uncrossed: L stays +X of pelvis, R stays −X, knees toward camera.
     """
     u = 1.0
     return {
-        "thigh.l": (-0.6 * u, -0.5 * u, -0.7 * u),
-        "calf.l": (1.55 * u, 0.0, 0.0),
-        "foot.l": (-0.15 * u, 0.0, 0.0),
-        "thigh.r": (-0.6 * u, 0.5 * u, 0.7 * u),
-        "calf.r": (1.55 * u, 0.0, 0.0),
-        "foot.r": (-0.15 * u, 0.0, 0.0),
-        "pelvis": (0.2 * u, 0.0, 0.0),
+        "thigh.l": (0.45 * u, 1.15 * u, -0.25 * u),
+        "calf.l": (0.55 * u, 0.12 * u, 0.0),
+        "foot.l": (-0.25 * u, 0.08 * u, 0.0),
+        "thigh.r": (0.45 * u, -1.15 * u, 0.25 * u),
+        "calf.r": (0.55 * u, -0.12 * u, 0.0),
+        "foot.r": (-0.25 * u, -0.08 * u, 0.0),
+        "pelvis": (0.22 * u, 0.0, 0.0),
         "spine_01": (-0.04 * u, 0.0, 0.0),
         "spine_02": (-0.02 * u, 0.0, 0.0),
         "neck_01": (-0.12 * u, 0.0, 0.0),
