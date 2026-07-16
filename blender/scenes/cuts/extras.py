@@ -400,11 +400,12 @@ def build_40() -> int:
     remove_players()
     _show_pitch()
     set_frame_range(frames)
-    # Start already in-frame, midfield
+    # Start already in-frame, midfield — run toward +X
     start = Vector((-12.0, 1.0, 0.0))
     end = Vector((25.0, -1.2, 0.0))
     move = (end - start).normalized()
-    yaw = math.atan2(move.y, move.x)
+    # Mannequin yaw=0 faces −Y; face travel dir: atan2(dx, −dy) (not atan2(dy, dx))
+    yaw = math.atan2(move.x, -move.y)
 
     arm, root = spawn_player(
         "Norway", NORWAY_RED, start, yaw, actions=["run"], split=(NORWAY_RED, NORWAY_WHITE, 0.42)
@@ -414,8 +415,15 @@ def build_40() -> int:
     def player_at(f: int) -> Vector:
         t = (f - 1) / max(1, frames - 1)
         p = _lerp(start, end, ease(t))
-        p.y += 1.4 * math.sin(t * math.pi * 3.0)
+        # Mild weave — keep ball readable in front
+        p.y += 0.55 * math.sin(t * math.pi * 3.0)
         return p
+
+    def face_dir(f: int) -> Vector:
+        a = player_at(max(1, f - 1))
+        b = player_at(min(frames, f + 1))
+        d = Vector((b.x - a.x, b.y - a.y, 0.0))
+        return d.normalized() if d.length > 1e-4 else move
 
     keys = [(f, player_at(f)) for f in range(1, frames + 1, 2)]
     keys.append((frames, player_at(frames)))
@@ -425,7 +433,13 @@ def build_40() -> int:
     ball = clear_ball_anim()
 
     def path(f: int) -> Vector:
-        return ball_ahead_of(player_at(f), move, f, arm=arm)
+        # Always directly ahead of the player along travel — never off to the side
+        p = player_at(f)
+        fd = face_dir(f)
+        ahead = 1.35 + 0.15 * abs(math.sin(f * 0.55))
+        loc = p + fd * ahead
+        loc.z = BALL_GROUND_Z
+        return loc
 
     # Key every frame from 1 so first frame is not empty
     key_ball(ball, range(1, frames + 1), path)
