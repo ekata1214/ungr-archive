@@ -126,8 +126,8 @@ def build_47() -> int:
     _show_pitch()
     set_frame_range(frames)
     hide_ball()
-    start = Vector((-8.0, 1.0, 0.0))
-    end = Vector((10.0, -0.5, 0.0))
+    start = Vector((-8.0, 1.0, 0.12))
+    end = Vector((10.0, -0.5, 0.12))
 
     arm, root = spawn_player(
         "Norway", NORWAY_RED, start, yaw_face_pos_x(),
@@ -140,7 +140,7 @@ def build_47() -> int:
         # Near-linear slow trudge (no ease that freezes mid-stride)
         p = _lerp(start, end, t)
         p.y += 0.12 * math.sin(t * math.pi * 2.0)
-        p.z = 0.03 * abs(math.sin(f * 0.35))
+        p.z = 0.12 + 0.03 * abs(math.sin(f * 0.35))
         keys.append((f, p))
     keys.append((frames, end.copy()))
     animate_root(root, keys, yaw_face_pos_x())
@@ -152,7 +152,7 @@ def build_47() -> int:
             for strip in track.strips:
                 if strip.action:
                     alen = max(1.0, strip.action.frame_range[1] - strip.action.frame_range[0])
-                    strip.scale = 0.38
+                    strip.scale = 0.28
                     strip.repeat = max(1.0, (frames + 1) / (alen * strip.scale))
 
     cam = setup_new_cam("Cam47", lens=32)

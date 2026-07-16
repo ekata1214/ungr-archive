@@ -132,16 +132,16 @@ def _talk_fn(amp: float = 1.0, phase: float = 0.0, look_up: float = 0.0) -> Call
 def _chair_sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     """Absolute chair sit (use add_pose_strip(..., absolute=True)).
 
-    L knee on +X / R on −X. Milder splay + bent calves so mesh soles clear
-    the pitch (old extreme Z splay buried one foot and read as 左右逆).
+    L knee +X / R −X, moderate splay (span≈2.85). Pair with seat_gap≥2.7 so
+    neighbors don't clip. Calves bent so mesh soles clear pitch (zmin≈0.03).
     """
     return {
-        "thigh.l": (0.45, -0.5, -1.05),
-        "calf.l": (0.85, 0.08, 0.0),
-        "foot.l": (0.35, 0.08, 0.05),
-        "thigh.r": (0.45, 0.5, 1.05),
-        "calf.r": (0.85, -0.08, 0.0),
-        "foot.r": (0.35, -0.08, -0.05),
+        "thigh.l": (0.4, -0.3, -0.9),
+        "calf.l": (0.8, 0.06, 0.0),
+        "foot.l": (0.25, 0.06, 0.0),
+        "thigh.r": (0.4, 0.3, 0.9),
+        "calf.r": (0.8, -0.06, 0.0),
+        "foot.r": (0.25, -0.06, 0.0),
         "pelvis": (0.2, 0.0, 0.0),
         "spine_01": (-0.04, 0.0, 0.0),
         "spine_02": (-0.02, 0.0, 0.0),
@@ -392,7 +392,7 @@ def build_39() -> int:
     seat_m = mat_rgba("Bench_SeatMat", (0.12, 0.12, 0.13, 1.0), 0.75)
     leg_m = mat_rgba("Bench_LegMat", (0.2, 0.2, 0.22, 1.0), 0.7)
     n_players = 10
-    seat_gap = 2.0
+    seat_gap = 2.75  # wider than foot span (~2.85) so shins don't interpenetrate
     bench_len = (n_players - 1) * seat_gap + 2.4
     bench_y = 22.0
     seat_z = 1.35
@@ -406,7 +406,7 @@ def build_39() -> int:
     for i in range(n_players):
         x = start_x + i * seat_gap
         # Face mostly forward — large pair yaw twisted sit legs in camera view
-        pair_yaw = yaw + (0.08 if i % 2 == 0 else -0.08)
+        pair_yaw = yaw + (0.06 if i % 2 == 0 else -0.06)
         # Root so pelvis ≈ bench seat (absolute sit pose, not idle-delta)
         pos = Vector((x, bench_y - 0.05, -0.85))
         arm, root = spawn_player(
@@ -732,7 +732,7 @@ def _shot_arc(p0: Vector, p1: Vector, u: float, arc: float = 2.2) -> Vector:
 
 
 def _stand_cheer_deltas(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
-    """Absolute upright cheer — arms overhead (upperarm +X), no fight_idle lean."""
+    """Absolute upright cheer — arms overhead; leave legs at rest (no twisted thighs)."""
 
     def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
         t = frame / FPS + phase
@@ -740,7 +740,6 @@ def _stand_cheer_deltas(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[f
         shake = 0.1 * math.sin(t * 11.0 + phase)
         wave = 0.22 * abs(math.sin(t * 7.0 + phase))
         alt = 0.12 * math.sin(t * 8.5 + phase * 1.1)
-        # Prefer one-arm-up on odd phases for variety
         one_arm = (int(phase * 10) % 2) == 1
         lx = 1.05 + wave
         rx = (0.35 + 0.1 * wave) if one_arm else (1.05 + wave)
@@ -758,10 +757,12 @@ def _stand_cheer_deltas(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[f
             "upperarm.r": (rx, 0.15 - alt * 0.3, -0.75 if not one_arm else -0.35),
             "lowerarm.r": (-0.45 - 0.1 * wave, -0.05, -0.05),
             "hand.r": (0.12, -0.05, -0.08),
-            "thigh.l": (0.05 * abs(math.sin(t * 6.0)), 0.04, 0.05),
-            "thigh.r": (0.05 * abs(math.sin(t * 6.0 + 1.2)), -0.04, -0.05),
-            "calf.l": (-0.08 * abs(math.sin(t * 6.0)), 0.0, 0.0),
-            "calf.r": (-0.08 * abs(math.sin(t * 6.0 + 1.2)), 0.0, 0.0),
+            "thigh.l": (0.0, 0.0, 0.0),
+            "thigh.r": (0.0, 0.0, 0.0),
+            "calf.l": (0.0, 0.0, 0.0),
+            "calf.r": (0.0, 0.0, 0.0),
+            "foot.l": (0.0, 0.0, 0.0),
+            "foot.r": (0.0, 0.0, 0.0),
         }
 
     return deltas
@@ -937,7 +938,7 @@ def build_46() -> int:
     seat_m = mat_rgba("Bench_SeatMat", (0.12, 0.12, 0.13, 1.0), 0.75)
     leg_m = mat_rgba("Bench_LegMat", (0.2, 0.2, 0.22, 1.0), 0.7)
     n_players = 8
-    seat_gap = 2.05
+    seat_gap = 2.75
     bench_len = (n_players - 1) * seat_gap + 2.4
     bench_y = 22.0
     seat_z = 1.35
@@ -950,12 +951,12 @@ def build_46() -> int:
     start_x = -((n_players - 1) * seat_gap) * 0.5
     for i in range(n_players):
         x = start_x + i * seat_gap
-        pair_yaw = yaw + (0.1 if i % 2 == 0 else -0.1)
+        pair_yaw = yaw + (0.06 if i % 2 == 0 else -0.06)
         sit_pos = Vector((x, bench_y - 0.05, -0.85))
         # Two standing celebrators at the ends of the bench
         standing = i in (0, n_players - 1)
         if standing:
-            stand_pos = Vector((x + (0.8 if i == 0 else -0.8), bench_y - 1.6, 0.0))
+            stand_pos = Vector((x + (0.8 if i == 0 else -0.8), bench_y - 1.6, 0.12))
             arm, root = spawn_player(
                 f"Shaolin_Bench_{i}",
                 SHAOLIN_ORANGE,
