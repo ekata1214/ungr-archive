@@ -127,22 +127,22 @@ def _talk_fn(amp: float = 1.0, phase: float = 0.0, look_up: float = 0.0) -> Call
 def _chair_sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     """Absolute chair sit (use add_pose_strip(..., absolute=True)).
 
-    Keep L knee on +X / R on −X of pelvis (previous values crossed = きもい).
-    Prefer small thigh.Y (avoid bird-leg twist) and −Z fold toward camera.
+    L knee stays +X of pelvis / R stays −X (no crossed shins). Mild fold so
+    legs hang forward of the bench without bird-leg thigh twist.
     """
     u = 1.0
     return {
-        "thigh.l": (0.3 * u, -0.7 * u, -1.1 * u),
-        "calf.l": (0.35 * u, 0.08 * u, 0.0),
-        "foot.l": (-0.15 * u, 0.1 * u, 0.05 * u),
-        "thigh.r": (0.3 * u, 0.7 * u, 1.1 * u),
-        "calf.r": (0.35 * u, -0.08 * u, 0.0),
-        "foot.r": (-0.15 * u, -0.1 * u, -0.05 * u),
-        "pelvis": (0.2 * u, 0.0, 0.0),
+        "thigh.l": (0.35 * u, -0.35 * u, -0.85 * u),
+        "calf.l": (0.7 * u, 0.06 * u, 0.0),
+        "foot.l": (-0.2 * u, 0.08 * u, 0.04 * u),
+        "thigh.r": (0.35 * u, 0.35 * u, 0.85 * u),
+        "calf.r": (0.7 * u, -0.06 * u, 0.0),
+        "foot.r": (-0.2 * u, -0.08 * u, -0.04 * u),
+        "pelvis": (0.18 * u, 0.0, 0.0),
         "spine_01": (-0.04 * u, 0.0, 0.0),
         "spine_02": (-0.02 * u, 0.0, 0.0),
-        "neck_01": (-0.12 * u, 0.0, 0.0),
-        "head": (-0.1 * u, 0.0, 0.0),
+        "neck_01": (-0.1 * u, 0.0, 0.0),
+        "head": (-0.08 * u, 0.0, 0.0),
     }
 
 
@@ -361,7 +361,8 @@ def build_39() -> int:
     start_x = -((n_players - 1) * seat_gap) * 0.5
     for i in range(n_players):
         x = start_x + i * seat_gap
-        pair_yaw = yaw + (0.18 if i % 2 == 0 else -0.18)
+        # Face mostly forward — large pair yaw twisted sit legs in camera view
+        pair_yaw = yaw + (0.08 if i % 2 == 0 else -0.08)
         # Root so pelvis ≈ bench seat (absolute sit pose, not idle-delta)
         pos = Vector((x, bench_y - 0.05, -0.85))
         arm, root = spawn_player(
