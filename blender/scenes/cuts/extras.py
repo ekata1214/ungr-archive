@@ -735,43 +735,48 @@ def _happy_excited_fn(phase: float = 0.0, amp: float = 1.2) -> Callable[[int], D
     return deltas
 
 
-def _bench_wave_only(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
-    """Arm wave only — do not touch spine (absolute sit owns torso/legs)."""
+def _bench_sit_cheer_deltas(phase: float = 0.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
+    """Absolute chair sit + mild head bob + arm wave in one REPLACE strip.
+
+    Do not stack add_talk_strip / relative arm strips after absolute sit — those
+    REPLACE idle-based spine/arms and wipe the sit torso (lean-back over the bench).
+    """
+    base = _chair_sit_deltas(1)
+
     def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
         t = frame / FPS + phase
-        wave = 0.4 * abs(math.sin(t * 6.8 + phase))
-        alt = 0.2 * math.sin(t * 8.5 + phase * 1.3)
-        return {
-            "clavicle.l": (0.04, 0.1, 0.06),
-            "upperarm.l": (-0.5 - wave * 0.3, 0.4 + alt, 0.3),
-            "lowerarm.l": (-0.75 - 0.15 * wave, 0.12, 0.08),
-            "hand.l": (0.2, 0.2, 0.25),
-            "clavicle.r": (0.04, -0.1, -0.06),
-            "upperarm.r": (-0.5 - wave * 0.3, -0.4 - alt, -0.3),
-            "lowerarm.r": (-0.75 - 0.15 * wave, -0.12, -0.08),
-            "hand.r": (0.2, -0.2, -0.25),
-        }
+        bob = 0.05 * math.sin(t * 8.0)
+        turn = 0.08 * math.sin(t * 3.1 + phase)
+        wave = 0.28 * abs(math.sin(t * 6.5 + phase))
+        alt = 0.14 * math.sin(t * 8.2 + phase * 1.2)
+        out = dict(base)
+        out["spine_01"] = (-0.04 + bob * 0.15, 0.0, turn * 0.15)
+        out["spine_02"] = (-0.02 + bob * 0.25, 0.0, turn * 0.2)
+        out["neck_01"] = (-0.1 + bob * 0.45, 0.0, turn * 0.55)
+        out["head"] = (-0.08 + bob, 0.0, turn)
+        out["clavicle.l"] = (0.04, 0.08, 0.05)
+        out["upperarm.l"] = (-0.45 - wave * 0.22, 0.35 + alt, 0.22)
+        out["lowerarm.l"] = (-0.65 - 0.12 * wave, 0.1, 0.06)
+        out["hand.l"] = (0.18, 0.15, 0.2)
+        out["clavicle.r"] = (0.04, -0.08, -0.05)
+        out["upperarm.r"] = (-0.45 - wave * 0.22, -0.35 - alt, -0.22)
+        out["lowerarm.r"] = (-0.65 - 0.12 * wave, -0.1, -0.06)
+        out["hand.r"] = (0.18, -0.15, -0.2)
+        return out
 
     return deltas
 
 
-def _bench_talk_only(phase: float = 0.0, amp: float = 1.0) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
-    def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-        t = frame / FPS + phase
-        bob = amp * 0.07 * math.sin(t * 8.5)
-        turn = amp * 0.1 * math.sin(t * 3.2 + 0.5)
-        return {
-            "spine_01": (0.02 + bob * 0.15, 0.0, turn * 0.2),
-            "spine_02": (0.03 + bob * 0.25, 0.0, turn * 0.3),
-            "neck_01": (-0.06 + bob * 0.5, 0.0, turn * 0.7),
-            "head": (-0.05 + bob, 0.0, turn),
-        }
-
-    return deltas
-
+BENCH_SIT_CHEER_BONES = list(dict.fromkeys(
+    SIT_BONES + [
+        "clavicle.l", "upperarm.l", "lowerarm.l", "hand.l",
+        "clavicle.r", "upperarm.r", "lowerarm.r", "hand.r",
+    ]
+))
 
 BENCH_EXCITE_BONES = list(dict.fromkeys(
-    SIT_BONES + [
+    [
+        "spine_01", "spine_02", "neck_01", "head",
         "clavicle.l", "upperarm.l", "lowerarm.l", "hand.l",
         "clavicle.r", "upperarm.r", "lowerarm.r", "hand.r",
     ]
@@ -938,23 +943,12 @@ def build_46() -> int:
             keys.append((frames, sit_pos.copy()))
             animate_root(root, keys, pair_yaw)
             add_nla_hold(arm, "idle", 1, frames, af=10)
+            # One absolute strip: sit + cheer. Extra REPLACE strips wipe sit spine.
             add_pose_strip(
-                arm, f"ShaolinBenchSit{i}", frames, _chair_sit_deltas, SIT_BONES,
-                step=4, clamp=1.7, absolute=True,
-            )
-            # Head chatter only — do not override sit torso with big spine deltas
-            add_talk_strip(
-                arm, f"ShaolinBenchTalk{i}", frames,
-                _bench_talk_only(0.5 + i * 0.7, amp=1.1 + 0.08 * (i % 3)), TALK_BONES, step=2,
-            )
-            add_pose_strip(
-                arm, f"ShaolinBenchWave{i}", frames,
-                _bench_wave_only(i * 1.1),
-                [
-                    "clavicle.l", "upperarm.l", "lowerarm.l", "hand.l",
-                    "clavicle.r", "upperarm.r", "lowerarm.r", "hand.r",
-                ],
-                step=2, clamp=1.3,
+                arm, f"ShaolinBenchSitCheer{i}", frames,
+                _bench_sit_cheer_deltas(i * 1.05),
+                BENCH_SIT_CHEER_BONES,
+                step=2, clamp=1.7, absolute=True,
             )
 
     cam = setup_new_cam("Cam46", lens=28)
