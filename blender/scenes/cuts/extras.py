@@ -196,34 +196,32 @@ def _phone_clamp_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
 
 
 def _windmill_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    """Breakdance windmill — wide V-legs + opposite arm sweep, phase-locked."""
+    """Breakdance windmill — wide open V-legs kicking opposite, arms sweeping."""
     t = frame / FPS
-    # Propeller phase: legs swap high/low each half-turn
-    ph = t * 12.0
+    ph = t * 11.0
     a = math.sin(ph)
     b = math.cos(ph)
     return {
-        # Legs: open V, one kicked high / one lower, alternating
-        "thigh.l": (1.35 + 0.55 * a, 0.75 + 0.2 * b, 0.55),
-        "calf.l": (-1.45, 0.1, 0.0),
-        "foot.l": (0.35, 0.0, 0.15),
-        "thigh.r": (1.35 - 0.55 * a, -0.75 - 0.2 * b, -0.55),
-        "calf.r": (-1.45, -0.1, 0.0),
-        "foot.r": (0.35, 0.0, -0.15),
-        "pelvis": (0.15, 0.0, 0.08 * a),
-        # Arms: opposite of legs — windmill support / swing
-        "clavicle.l": (0.2, 0.3, 0.2),
-        "upperarm.l": (-0.4 - 0.9 * b, 1.2, 0.55),
-        "lowerarm.l": (-0.85, 0.25, 0.15),
-        "hand.l": (0.2, 0.3, 0.25),
-        "clavicle.r": (0.2, -0.3, -0.2),
-        "upperarm.r": (-0.4 + 0.9 * b, -1.2, -0.55),
-        "lowerarm.r": (-0.85, -0.25, -0.15),
-        "hand.r": (0.2, -0.3, -0.25),
-        "spine_01": (0.25, 0.0, 0.12 * a),
-        "spine_02": (0.2, 0.0, 0.1 * b),
-        "neck_01": (0.1, 0.0, 0.0),
-        "head": (0.15, 0.0, 0.0),
+        # Big V: thighs open hard, calves bent; alternate which leg is higher
+        "thigh.l": (1.55 + 0.35 * a, 1.05, 0.65 + 0.25 * b),
+        "calf.l": (-1.55, 0.15, 0.0),
+        "foot.l": (0.45, 0.1, 0.2),
+        "thigh.r": (1.55 - 0.35 * a, -1.05, -0.65 - 0.25 * b),
+        "calf.r": (-1.55, -0.15, 0.0),
+        "foot.r": (0.45, -0.1, -0.2),
+        "pelvis": (0.2, 0.0, 0.1 * a),
+        "clavicle.l": (0.25, 0.35, 0.25),
+        "upperarm.l": (-0.2 - 1.0 * b, 1.35, 0.7),
+        "lowerarm.l": (-1.0, 0.3, 0.2),
+        "hand.l": (0.25, 0.35, 0.3),
+        "clavicle.r": (0.25, -0.35, -0.25),
+        "upperarm.r": (-0.2 + 1.0 * b, -1.35, -0.7),
+        "lowerarm.r": (-1.0, -0.3, -0.2),
+        "hand.r": (0.25, -0.35, -0.3),
+        "spine_01": (0.3, 0.0, 0.15 * a),
+        "spine_02": (0.25, 0.0, 0.12 * b),
+        "neck_01": (0.12, 0.0, 0.0),
+        "head": (0.18, 0.0, 0.0),
     }
 
 
@@ -546,9 +544,9 @@ def build_42() -> int:
     _clear_all_nla(sh_arm)
 
     f_approach, f_drop, f_spin0, f_spin1, f_up = 24, 36, 40, 150, 168
-    # Tip onto back; root is at FEET so raise Z while tipped or torso buries
-    tip = math.pi * 0.48
-    spin_z = 1.45  # feet elevated → shoulders near pitch, legs kick in air
+    # Negative pitch = tip onto BACK (positive was face-plant). Root at feet → raise Z.
+    tip = -math.pi * 0.52
+    spin_z = 1.55
 
     sh_keys_eul: list = []
     for f in range(1, frames + 1, 2):
@@ -561,17 +559,17 @@ def build_42() -> int:
             p = Vector((center.x, center.y, spin_z * t))
             eul = Euler((tip * t, 0.0, yaw0), "XYZ")
         elif f <= f_spin1:
-            spins = (f - f_spin0) * 0.42
+            spins = (f - f_spin0) * 0.48
             p = Vector((
-                center.x + 0.15 * math.cos(spins),
-                center.y + 0.15 * math.sin(spins),
-                spin_z + 0.06 * abs(math.sin(spins * 2.0)),
+                center.x + 0.12 * math.cos(spins),
+                center.y + 0.12 * math.sin(spins),
+                spin_z + 0.05 * abs(math.sin(spins * 2.0)),
             ))
-            eul = Euler((tip + 0.1 * math.sin(spins * 2.0), 0.15 * math.cos(spins), yaw0 + spins), "XYZ")
+            eul = Euler((tip + 0.08 * math.sin(spins * 2.0), 0.12 * math.cos(spins), yaw0 + spins), "XYZ")
         elif f <= f_up:
             t = ease((f - f_spin1) / max(1, f_up - f_spin1))
             p = Vector((center.x, center.y, spin_z * (1.0 - t)))
-            eul = Euler((tip * (1.0 - t), 0.0, yaw0 + (f_spin1 - f_spin0) * 0.42), "XYZ")
+            eul = Euler((tip * (1.0 - t), 0.0, yaw0 + (f_spin1 - f_spin0) * 0.48), "XYZ")
         else:
             t = ease((f - f_up) / max(1, frames - f_up))
             p = Vector((center.x - 1.5 * t, center.y, 0.0))
