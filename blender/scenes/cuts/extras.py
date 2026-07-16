@@ -195,29 +195,41 @@ def _phone_clamp_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     }
 
 
-def _breakdance_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    """Limbs out for headspin / windmill silhouette."""
+def _windmill_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
+    """Breakdance windmill — wide V-legs + opposite arm sweep, phase-locked."""
     t = frame / FPS
-    flap = 0.45 * math.sin(t * 18.0)
+    # Propeller phase: legs swap high/low each half-turn
+    ph = t * 12.0
+    a = math.sin(ph)
+    b = math.cos(ph)
     return {
-        "clavicle.l": (0.15, 0.25, 0.2),
-        "upperarm.l": (-1.3 + flap * 0.3, 0.7, 0.8),
-        "lowerarm.l": (-0.3, 0.15, 0.2),
-        "hand.l": (0.15, 0.1, 0.1),
-        "clavicle.r": (0.15, -0.25, -0.2),
-        "upperarm.r": (-1.3 - flap * 0.3, -0.7, -0.8),
-        "lowerarm.r": (-0.3, -0.15, -0.2),
-        "hand.r": (0.15, -0.1, -0.1),
-        "spine_01": (0.15, 0.0, flap * 0.2),
-        "spine_02": (0.2, 0.0, flap * 0.25),
-        "thigh.l": (1.1 + flap * 0.2, 0.45, 0.35),
-        "calf.l": (-1.2, 0.0, 0.0),
-        "thigh.r": (1.1 - flap * 0.2, -0.45, -0.35),
-        "calf.r": (-1.2, 0.0, 0.0),
-        "pelvis": (0.1, 0.0, 0.0),
-        "neck_01": (0.15, 0.0, 0.0),
-        "head": (0.2, 0.0, 0.0),
+        # Legs: open V, one kicked high / one lower, alternating
+        "thigh.l": (1.35 + 0.55 * a, 0.75 + 0.2 * b, 0.55),
+        "calf.l": (-1.45, 0.1, 0.0),
+        "foot.l": (0.35, 0.0, 0.15),
+        "thigh.r": (1.35 - 0.55 * a, -0.75 - 0.2 * b, -0.55),
+        "calf.r": (-1.45, -0.1, 0.0),
+        "foot.r": (0.35, 0.0, -0.15),
+        "pelvis": (0.15, 0.0, 0.08 * a),
+        # Arms: opposite of legs — windmill support / swing
+        "clavicle.l": (0.2, 0.3, 0.2),
+        "upperarm.l": (-0.4 - 0.9 * b, 1.2, 0.55),
+        "lowerarm.l": (-0.85, 0.25, 0.15),
+        "hand.l": (0.2, 0.3, 0.25),
+        "clavicle.r": (0.2, -0.3, -0.2),
+        "upperarm.r": (-0.4 + 0.9 * b, -1.2, -0.55),
+        "lowerarm.r": (-0.85, -0.25, -0.15),
+        "hand.r": (0.2, -0.3, -0.25),
+        "spine_01": (0.25, 0.0, 0.12 * a),
+        "spine_02": (0.2, 0.0, 0.1 * b),
+        "neck_01": (0.1, 0.0, 0.0),
+        "head": (0.15, 0.0, 0.0),
     }
+
+
+def _breakdance_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
+    """Alias — windmill is the breakdance move for cut 42."""
+    return _windmill_deltas(frame)
 
 
 STOMP_BONES = [
@@ -511,119 +523,93 @@ def build_41() -> int:
 
 
 # ---------------------------------------------------------------------------
-# 42 — Clear floor breakdance (body flat + spin) then steal
+# 42 — Shaolin windmill breakdance (solo showcase)
 # ---------------------------------------------------------------------------
 def build_42() -> int:
-    frames = 200
+    """少林だけ：ドロップ → ウインドミル連続回転 → 起き上がり。"""
+    frames = 180
     remove_players()
     _show_pitch()
     set_frame_range(frames)
-    fr_start = Vector((-18.0, 1.2, 0.0))
-    fr_mid = Vector((-4.0, 0.6, 0.0))
-    sh_start = Vector((10.0, -SIDE_GAP, 0.0))
-    steal_at = Vector((-1.5, 0.2, 0.0))
-    sh_end = Vector((-30.0, -0.8, 0.0))
-    ATTACK = Vector((-1.0, 0.0, 0.0))
-    yaw_fr = math.atan2(ATTACK.y, ATTACK.x)
-    yaw_sh0 = yaw_face_pos_x()
+    hide_ball()
 
-    fr_arm, fr_root = spawn_france("France", fr_start, yaw_fr, actions=["run", "idle", "fight_idle"])
+    center = Vector((-2.0, 0.5, 0.0))
+    start = Vector((8.0, -1.5, 0.0))
+    approach_dir = (center - start).normalized()
+    yaw0 = math.atan2(approach_dir.x, -approach_dir.y)
+
     sh_arm, sh_root = spawn_player(
-        "Shaolin", SHAOLIN_ORANGE, sh_start, yaw_sh0,
-        actions=["run", "fight_idle", "fight_kick", "jump_full"],
+        "Shaolin", SHAOLIN_ORANGE, start, yaw0,
+        actions=["run", "fight_idle", "jump_full"],
         split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
     )
-    _clear_all_nla(fr_arm)
     _clear_all_nla(sh_arm)
 
-    f_approach, f_drop, f_spin0, f_steal, f_up, f_exit = 28, 40, 44, 130, 145, 158
+    f_approach, f_drop, f_spin0, f_spin1, f_up = 24, 36, 40, 150, 168
+    # Tip onto upper back (~100°) so legs stay in air — readable windmill
+    tip = math.pi * 0.55
 
-    fr_keys = []
-    for f in range(1, f_steal + 1, 2):
-        t = ease((f - 1) / max(1, f_steal - 1))
-        fr_keys.append((f, _lerp(fr_start, fr_mid, t)))
-    fr_keys += [(f_steal, fr_mid), (frames, fr_mid + Vector((2.0, 1.0, 0.0)))]
-    animate_root(fr_root, fr_keys, yaw_fr)
-    add_nla_loop(fr_arm, "run", 1, f_steal - 1)
-    add_nla_hold(fr_arm, "fight_idle", f_steal, frames, af=6)
-
-    # Readable breakdance: crouch + continuous Z-spin (keep torso upright so orange reads)
     sh_keys_eul: list = []
     for f in range(1, frames + 1, 2):
         if f <= f_approach:
             t = ease((f - 1) / max(1, f_approach - 1))
-            p = _lerp(sh_start, steal_at, t)
-            eul = Euler((0.0, 0.0, yaw_sh0), "XYZ")
+            p = _lerp(start, center, t)
+            eul = Euler((0.0, 0.0, yaw0), "XYZ")
         elif f <= f_drop:
             t = ease((f - f_approach) / max(1, f_drop - f_approach))
-            p = Vector((steal_at.x, steal_at.y, -0.55 * t))
-            eul = Euler((0.35 * t, 0.0, yaw_sh0), "XYZ")  # slight lean into spin
-        elif f <= f_steal:
-            spins = (f - f_spin0) * 0.78  # many full turns, upright
-            bob = 0.12 * abs(math.sin((f - f_spin0) * 0.55))
-            p = Vector((steal_at.x, steal_at.y, -0.55 + bob))
-            eul = Euler((0.35, 0.0, yaw_sh0 + spins), "XYZ")
+            p = Vector((center.x, center.y, 0.35 * t))
+            eul = Euler((tip * t, 0.0, yaw0), "XYZ")
+        elif f <= f_spin1:
+            spins = (f - f_spin0) * 0.42
+            p = Vector((
+                center.x + 0.2 * math.cos(spins),
+                center.y + 0.2 * math.sin(spins),
+                0.42 + 0.08 * abs(math.sin(spins * 2.0)),
+            ))
+            eul = Euler((tip + 0.12 * math.sin(spins * 2.0), 0.18 * math.cos(spins), yaw0 + spins), "XYZ")
         elif f <= f_up:
-            t = ease((f - f_steal) / max(1, f_up - f_steal))
-            p = Vector((steal_at.x, steal_at.y, -0.55 * (1.0 - t)))
-            eul = Euler((0.35 * (1.0 - t), 0.0, math.atan2(ATTACK.y, ATTACK.x)), "XYZ")
-        elif f <= f_exit:
-            t = ease((f - f_up) / max(1, f_exit - f_up))
-            p = _lerp(steal_at, _lerp(steal_at, sh_end, 0.35), t)
-            eul = Euler((0.0, 0.0, math.atan2(ATTACK.y, ATTACK.x)), "XYZ")
+            t = ease((f - f_spin1) / max(1, f_up - f_spin1))
+            p = Vector((center.x, center.y, 0.42 * (1.0 - t)))
+            eul = Euler((tip * (1.0 - t), 0.0, yaw0 + (f_spin1 - f_spin0) * 0.42), "XYZ")
         else:
-            t = ease((f - f_exit) / max(1, frames - f_exit))
-            p = _lerp(_lerp(steal_at, sh_end, 0.35), sh_end, t)
-            eul = Euler((0.0, 0.0, math.atan2(ATTACK.y, ATTACK.x)), "XYZ")
+            t = ease((f - f_up) / max(1, frames - f_up))
+            p = Vector((center.x - 1.5 * t, center.y, 0.0))
+            eul = Euler((0.0, 0.0, math.atan2(-1.0, 0.0)), "XYZ")
         sh_keys_eul.append((f, p, eul))
-    sh_keys_eul.append((frames, sh_end, Euler((0.0, 0.0, math.atan2(ATTACK.y, ATTACK.x)), "XYZ")))
+    sh_keys_eul.append(
+        (frames, Vector((center.x - 1.5, center.y, 0.0)), Euler((0.0, 0.0, math.atan2(-1.0, 0.0)), "XYZ"))
+    )
     _animate_root_euler(sh_root, sh_keys_eul)
 
     add_nla_loop(sh_arm, "run", 1, f_drop - 1)
-    add_nla_hold(sh_arm, "fight_idle", f_drop, f_steal + 2, af=4)
-    add_pose_strip(sh_arm, "ShaolinBreakPose", frames, _breakdance_deltas, BREAK_BONES, step=2, clamp=1.6, absolute=True)
-    add_nla_once(sh_arm, "fight_kick", f_steal - 4, f_steal + 14)
-    add_nla_loop(sh_arm, "run", f_exit, frames)
+    add_nla_hold(sh_arm, "fight_idle", f_drop, frames, af=4)
+    add_pose_strip(
+        sh_arm, "ShaolinWindmill", frames, _windmill_deltas, BREAK_BONES,
+        step=2, clamp=1.8, absolute=True,
+    )
 
-    ball = clear_ball_anim()
-
-    def sh_loc(f: int) -> Vector:
-        loc = steal_at
-        for kf, p, _e in sh_keys_eul:
-            if kf <= f:
-                loc = p
-            else:
-                break
-        return loc
-
-    def path(f: int) -> Vector:
-        if f < f_steal:
-            loc = fr_start
-            for kf, p in fr_keys:
-                if kf <= f:
-                    loc = p
-                else:
-                    break
-            return ball_ahead_of(loc, ATTACK, f, arm=fr_arm)
-        return ball_ahead_of(sh_loc(f), ATTACK, f, arm=sh_arm)
-
-    key_ball(ball, range(1, frames + 1, 2), path)
-
-    cam = setup_new_cam("Cam42", lens=30)
+    cam = setup_new_cam("Cam42", lens=28)
 
     def cam_pos(f: int) -> Vector:
         if f_drop <= f <= f_up:
-            c = steal_at
-            ang = (f - f_drop) * 0.11
-            return Vector((c.x + 6.0 * math.cos(ang), c.y + 6.0 * math.sin(ang) - 0.3, 3.4))
-        b = path(f)
-        return Vector((b.x - 3.5, b.y - 10.0, 3.5))
+            ang = (f - f_drop) * 0.09
+            return Vector((
+                center.x + 7.5 * math.cos(ang),
+                center.y + 7.5 * math.sin(ang) - 0.5,
+                3.8,
+            ))
+        if f < f_drop:
+            p = _lerp(start, center, ease((f - 1) / max(1, f_approach - 1)))
+            return Vector((p.x + 2.0, p.y - 9.0, 3.2))
+        return Vector((center.x - 2.0, center.y - 9.0, 3.0))
 
     def cam_tgt(f: int) -> Vector:
         if f_drop <= f <= f_up:
-            return Vector((steal_at.x, steal_at.y, 1.2))
-        b = path(f)
-        return Vector((b.x + 1.0, b.y * 0.25, max(1.0, b.z + 0.5)))
+            return Vector((center.x, center.y, 1.1))
+        if f < f_drop:
+            p = _lerp(start, center, ease((f - 1) / max(1, f_approach - 1)))
+            return Vector((p.x, p.y, 1.2))
+        return Vector((center.x, center.y, 1.3))
 
     for f in range(1, frames + 1, 2):
         kf_cam(cam, f, cam_pos(f), cam_tgt(f))
