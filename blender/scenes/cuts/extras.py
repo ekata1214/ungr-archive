@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Extra cuts 38–44 — commentators, NL bench, dribble, stomp, breakdance, France phone-stomp."""
+"""Extra cuts 38–46 — desk, benches, dribble, stomp, windmill, phone-stomp, Arg GK, Shaolin bench."""
 
 from __future__ import annotations
 
@@ -18,8 +18,11 @@ from animate_soccer_match import (  # noqa: E402
 )
 
 from cuts.common import (  # noqa: E402
+    ARG_LIGHT,
+    ARG_WHITE,
     COMMENTATOR_WHITE,
     FPS,
+    GOAL_H,
     NETHERLANDS_DARK,
     NETHERLANDS_ORANGE,
     NORWAY_RED,
@@ -42,6 +45,7 @@ from cuts.common import (  # noqa: E402
     ease,
     finish_cam,
     force_linear,
+    goal_l_x,
     hide_ball,
     key_ball,
     kf_cam,
@@ -52,6 +56,7 @@ from cuts.common import (  # noqa: E402
     setup_new_cam,
     spawn_france,
     spawn_player,
+    yaw_face_neg_x,
     yaw_face_neg_y,
     yaw_face_pos_x,
 )
@@ -699,6 +704,234 @@ def build_44() -> int:
     return _build_france_phone_stomp("B")
 
 
+def _shot_arc(p0: Vector, p1: Vector, u: float, arc: float = 2.2) -> Vector:
+    p = _lerp(p0, p1, u)
+    p.z = p0.z + (p1.z - p0.z) * u + arc * math.sin(u * math.pi) * (1.0 - 0.35 * u)
+    return p
+
+
+def _happy_excited_fn(phase: float = 0.0, amp: float = 1.2) -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
+    """Bench celebration — big head/torso bob + arms up."""
+    def deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
+        t = frame / FPS + phase
+        bob = amp * 0.1 * math.sin(t * 9.0)
+        shake = amp * 0.12 * math.sin(t * 11.0 + 0.4)
+        wave = amp * 0.55 * abs(math.sin(t * 7.5 + phase))
+        return {
+            "spine_01": (0.04 + bob * 0.3, 0.0, shake * 0.35),
+            "spine_02": (0.06 + bob * 0.5, 0.0, shake * 0.45),
+            "neck_01": (-0.05 + bob * 0.7, 0.0, shake * 0.8),
+            "head": (-0.06 + bob, 0.0, shake),
+            "clavicle.l": (0.08, 0.12 + wave * 0.15, 0.1),
+            "upperarm.l": (-0.85 - wave * 0.35, 0.55 + 0.2 * math.sin(t * 8.0), 0.35),
+            "lowerarm.l": (-0.9, 0.2, 0.15),
+            "hand.l": (0.3, 0.25, 0.3),
+            "clavicle.r": (0.08, -0.12 - wave * 0.15, -0.1),
+            "upperarm.r": (-0.85 - wave * 0.35, -0.55 - 0.2 * math.sin(t * 8.0 + 1.0), -0.35),
+            "lowerarm.r": (-0.9, -0.2, -0.15),
+            "hand.r": (0.3, -0.25, -0.3),
+        }
+
+    return deltas
+
+
+BENCH_EXCITE_BONES = list(dict.fromkeys(
+    SIT_BONES + [
+        "clavicle.l", "upperarm.l", "lowerarm.l", "hand.l",
+        "clavicle.r", "upperarm.r", "lowerarm.r", "hand.r",
+    ]
+))
+
+
+# ---------------------------------------------------------------------------
+# 45 — Argentina GK punches away an incoming shot
+# ---------------------------------------------------------------------------
+def build_45() -> int:
+    """アルゼンチンGKが飛んでくるボールをパンチで弾く。"""
+    frames = 156
+    remove_players()
+    _show_pitch()
+    set_frame_range(frames)
+
+    gx = goal_l_x()
+    gk_home = Vector((gx + 3.5, 0.0, 0.0))
+    gk_yaw = yaw_face_pos_x()
+    # Shooter from midfield toward Goal_L (−X)
+    shoot_pos = Vector((gx + 28.0, 2.2, 0.0))
+    shoot_yaw = yaw_face_neg_x()
+    attack = Vector((-1.0, 0.0, 0.0))
+
+    sh_arm, sh_root = spawn_player(
+        "Shaolin_Shooter", SHAOLIN_ORANGE, shoot_pos, shoot_yaw,
+        actions=["idle", "fight_kick", "fight_idle"],
+        split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
+    )
+    gk_arm, gk_root = spawn_player(
+        "Argentina_GK", ARG_LIGHT, gk_home, gk_yaw,
+        actions=["idle", "fight_idle", "fight_punch", "jump_full"],
+        split=(ARG_LIGHT, ARG_WHITE, 0.42),
+    )
+    _clear_all_nla(sh_arm)
+    _clear_all_nla(gk_arm)
+
+    f_kick, f_punch, f_land = 36, 68, 82
+    punch_pos = gk_home + Vector((1.2, -2.8, 0.0))
+
+    animate_root(sh_root, [(1, shoot_pos), (frames, shoot_pos)], shoot_yaw)
+    animate_root(
+        gk_root,
+        [
+            (1, gk_home),
+            (f_punch - 14, gk_home),
+            (f_punch, punch_pos + Vector((0.0, 0.0, 0.55))),
+            (f_land, punch_pos),
+            (frames, punch_pos),
+        ],
+        gk_yaw,
+    )
+
+    add_nla_hold(sh_arm, "idle", 1, f_kick - 8, af=10)
+    add_nla_once(sh_arm, "fight_kick", f_kick - 7, f_kick + 14)
+    add_nla_hold(sh_arm, "fight_idle", f_kick + 15, frames, af=6)
+
+    add_nla_loop(gk_arm, "idle", 1, f_punch - 18)
+    add_nla_once(gk_arm, "jump_full", f_punch - 17, f_punch - 2)
+    add_nla_once(gk_arm, "fight_punch", f_punch - 1, f_punch + 14)
+    add_nla_hold(gk_arm, "fight_idle", f_punch + 15, frames, af=5)
+
+    ball = clear_ball_anim()
+    start_b = ball_ahead_of(shoot_pos, attack, f_kick, arm=sh_arm)
+    contact = Vector((punch_pos.x + 1.5, punch_pos.y + 0.4, GOAL_H * 0.55))
+    deflect = Vector((gx + 22.0, -14.0, BALL_GROUND_Z + 0.35))
+
+    def path(f: int) -> Vector:
+        if f < f_kick:
+            return Vector((start_b.x, start_b.y, BALL_GROUND_Z))
+        if f <= f_punch:
+            u = ease((f - f_kick) / max(1, f_punch - f_kick))
+            return _shot_arc(start_b, contact, u, 2.4)
+        if f <= f_punch + 40:
+            u = ease((f - f_punch) / 40.0)
+            return _shot_arc(contact, deflect, u, 1.6)
+        return deflect.copy()
+
+    key_ball(ball, range(1, frames + 1, 2), path)
+
+    cam = setup_new_cam("Cam45", lens=30)
+    _cam_dense(
+        cam, 1, frames,
+        Vector((shoot_pos.x - 4.0, -14.0, 4.0)), Vector((gx + 10.0, -11.0, 3.6)),
+        Vector((shoot_pos.x - 8.0, 1.0, 1.4)), Vector((gx + 6.0, -2.0, 1.6)),
+        step=2,
+    )
+    finish_cam(cam)
+    return frames
+
+
+# ---------------------------------------------------------------------------
+# 46 — Shaolin bench celebrating / making a fuss
+# ---------------------------------------------------------------------------
+def build_46() -> int:
+    """少林チームのベンチが騒いでいる様子。"""
+    frames = 168
+    remove_players()
+    _show_pitch()
+    set_frame_range(frames)
+    hide_ball()
+    _clear_extras("Bench_")
+
+    seat_m = mat_rgba("Bench_SeatMat", (0.12, 0.12, 0.13, 1.0), 0.75)
+    leg_m = mat_rgba("Bench_LegMat", (0.2, 0.2, 0.22, 1.0), 0.7)
+    n_players = 8
+    seat_gap = 2.05
+    bench_len = (n_players - 1) * seat_gap + 2.4
+    bench_y = 22.0
+    seat_z = 1.35
+    add_box("Bench_Seat", (bench_len, 0.85, 0.14), Vector((0.0, bench_y, seat_z)), seat_m)
+    add_box("Bench_Back", (bench_len, 0.12, 0.85), Vector((0.0, bench_y + 0.42, seat_z + 0.55)), seat_m)
+    add_box("Bench_LegL", (0.18, 0.7, seat_z), Vector((-bench_len * 0.45, bench_y, seat_z * 0.5)), leg_m)
+    add_box("Bench_LegR", (0.18, 0.7, seat_z), Vector((bench_len * 0.45, bench_y, seat_z * 0.5)), leg_m)
+
+    yaw = yaw_face_neg_y()
+    start_x = -((n_players - 1) * seat_gap) * 0.5
+    for i in range(n_players):
+        x = start_x + i * seat_gap
+        pair_yaw = yaw + (0.1 if i % 2 == 0 else -0.1)
+        sit_pos = Vector((x, bench_y - 0.05, -0.85))
+        # Two standing celebrators at the ends of the bench
+        standing = i in (0, n_players - 1)
+        if standing:
+            stand_pos = Vector((x + (0.8 if i == 0 else -0.8), bench_y - 1.6, 0.0))
+            arm, root = spawn_player(
+                f"Shaolin_Bench_{i}",
+                SHAOLIN_ORANGE,
+                stand_pos,
+                pair_yaw,
+                actions=["idle", "fight_idle"],
+                split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
+            )
+            _clear_all_nla(arm)
+            keys = []
+            for f in range(1, frames + 1, 2):
+                phase = f * 0.5 + i * 1.1
+                z = 0.18 * abs(math.sin(phase))
+                keys.append((f, Vector((stand_pos.x, stand_pos.y, z))))
+            keys.append((frames, stand_pos.copy()))
+            animate_root(root, keys, pair_yaw)
+            add_nla_hold(arm, "fight_idle", 1, frames, af=8)
+            add_pose_strip(
+                arm, f"ShaolinBenchStand{i}", frames,
+                _happy_excited_fn(i * 0.7, amp=1.35), BENCH_EXCITE_BONES,
+                step=2, clamp=1.5,
+            )
+        else:
+            arm, root = spawn_player(
+                f"Shaolin_Bench_{i}",
+                SHAOLIN_ORANGE,
+                sit_pos,
+                pair_yaw,
+                actions=["idle"],
+                split=(SHAOLIN_ORANGE, SHAOLIN_WHITE, 0.42),
+            )
+            _clear_all_nla(arm)
+            # Slight seat bounce while cheering
+            keys = []
+            for f in range(1, frames + 1, 3):
+                z = sit_pos.z + 0.04 * abs(math.sin(f * 0.35 + i))
+                keys.append((f, Vector((sit_pos.x, sit_pos.y, z))))
+            keys.append((frames, sit_pos.copy()))
+            animate_root(root, keys, pair_yaw)
+            add_nla_hold(arm, "idle", 1, frames, af=10)
+            add_pose_strip(
+                arm, f"ShaolinBenchSit{i}", frames, _chair_sit_deltas, SIT_BONES,
+                step=4, clamp=1.7, absolute=True,
+            )
+            add_talk_strip(
+                arm, f"ShaolinBenchTalk{i}", frames,
+                _happy_excited_fn(0.5 + i * 0.55, amp=1.15), TALK_BONES, step=2,
+            )
+            # Arms over sit — separate strip for wave (absolute would fight sit)
+            add_pose_strip(
+                arm, f"ShaolinBenchWave{i}", frames,
+                _happy_excited_fn(i * 0.9, amp=1.0),
+                [
+                    "clavicle.l", "upperarm.l", "lowerarm.l", "hand.l",
+                    "clavicle.r", "upperarm.r", "lowerarm.r", "hand.r",
+                ],
+                step=2, clamp=1.4,
+            )
+
+    cam = setup_new_cam("Cam46", lens=28)
+    _cam_dense(
+        cam, 1, frames,
+        Vector((-14.0, bench_y - 12.0, 3.9)), Vector((-8.0, bench_y - 14.0, 4.3)),
+        Vector((-1.0, bench_y - 0.5, 1.8)), Vector((1.5, bench_y - 0.3, 1.95)),
+        step=2,
+    )
+    finish_cam(cam)
+    return frames
+
+
 BUILDERS: Dict[str, Callable[[], int]] = {
     "38": build_38,
     "39": build_39,
@@ -707,4 +940,6 @@ BUILDERS: Dict[str, Callable[[], int]] = {
     "42": build_42,
     "43": build_43,
     "44": build_44,
+    "45": build_45,
+    "46": build_46,
 }

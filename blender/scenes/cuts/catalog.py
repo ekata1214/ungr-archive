@@ -271,6 +271,18 @@ CATALOG: List[Tuple[str, str, str, str]] = [
         "フランス選手一人が地団駄、両手の間に小さい長方形（携帯）を挟む・寄り画角",
         "extra",
     ),
+    (
+        "45",
+        "cut_45_argentina_gk_punch",
+        "アルゼンチンGKが飛んでくるボールを弾く様子",
+        "extra",
+    ),
+    (
+        "46",
+        "cut_46_shaolin_bench_cheer",
+        "少林チームのベンチが騒いでる様子",
+        "extra",
+    ),
 ]
 
 
