@@ -216,26 +216,26 @@ def _happy_fn() -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
 
 
 def _phone_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    """Absolute two-hand phone hold toward camera (in front of chest).
+    """Absolute two-hand phone hold in front of chest (facing −Y cam).
 
-    Probed: upperarm L=(+1.0,+0.8,−0.8) / R mirror puts hands at lower Y
-    than pelvis (visible from front cam). Negative-X upperarm hid arms behind.
+    Probed: +X upperarm with large +Y / −Z brings hands together ahead of
+    spine_02 (span≈0.28, midZ≈chest). Old wide +Y/−Z alone left hands ~1m apart.
     """
     t = frame / FPS
-    tap = 0.05 * math.sin(t * 14.0)
+    tap = 0.04 * math.sin(t * 14.0)
     return {
         "clavicle.l": (0.08, 0.12, 0.1),
-        "upperarm.l": (1.0, 0.8, -0.75),
-        "lowerarm.l": (-0.45 - 0.1 * abs(tap), 0.12, 0.1),
-        "hand.l": (0.35, 0.2, 0.25),
+        "upperarm.l": (0.98, 0.79, -0.93),
+        "lowerarm.l": (0.17 - 0.08 * abs(tap), -0.46, 0.17),
+        "hand.l": (0.56, -1.15, -0.10),
         "clavicle.r": (0.08, -0.12, -0.1),
-        "upperarm.r": (1.0, -0.8, 0.75),
-        "lowerarm.r": (-0.4 + tap, -0.12, -0.1),
-        "hand.r": (0.35 + tap * 0.3, -0.2, -0.25),
-        "spine_01": (0.05, 0.0, 0.0),
-        "spine_02": (0.08, 0.0, 0.0),
-        "neck_01": (0.28, 0.0, 0.02 * math.sin(t * 2.0)),
-        "head": (0.34, 0.0, 0.03 * math.sin(t * 2.2)),
+        "upperarm.r": (0.98, -0.79, 0.93),
+        "lowerarm.r": (0.17 + tap, 0.46, -0.17),
+        "hand.r": (0.56 + tap * 0.2, 1.15, 0.10),
+        "spine_01": (0.06, 0.0, 0.0),
+        "spine_02": (0.1, 0.0, 0.0),
+        "neck_01": (0.25, 0.0, 0.02 * math.sin(t * 2.0)),
+        "head": (0.32, 0.0, 0.03 * math.sin(t * 2.2)),
     }
 
 
@@ -383,15 +383,15 @@ def build_20() -> int:
     _clear_extras("Phone_")
     set_frame_range(frames)
     hide_ball()
-    # Root lift so idle foot mesh clears pitch
-    pos = Vector((-10.0, 2.0, 0.22))
+    # Root lift so idle foot mesh clears pitch (zmin≈0.01 at z=0.18)
+    pos = Vector((-10.0, 2.0, 0.18))
     arm, root = spawn_france("France", pos, yaw_face_neg_y(), actions=["idle"])
     _clear_all_nla(arm)
     animate_root(root, [(1, pos), (frames, pos)], yaw_face_neg_y())
     add_nla_hold(arm, "idle", 1, frames, af=12)
     add_pose_strip(
         arm, "FrancePhonePose", frames, _phone_deltas, PHONE_ARM_BONES,
-        step=2, clamp=1.6, absolute=True,
+        step=2, clamp=1.7, absolute=True,
     )
 
     phone_mat = mat_rgba("Phone_Mat", (0.02, 0.02, 0.025, 1.0), 0.35)

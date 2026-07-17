@@ -120,7 +120,7 @@ def _header_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
 # 47 — Norway toddling / trudging walk
 # ---------------------------------------------------------------------------
 def build_47() -> int:
-    """Slow trudging walk — real run cycle scaled down (not frozen idle legs)."""
+    """Slow trudging toddle — real walk cycle (walk.001), not a scaled sprint."""
     frames = 168
     remove_players()
     _show_pitch()
@@ -131,7 +131,7 @@ def build_47() -> int:
 
     arm, root = spawn_player(
         "Norway", NORWAY_RED, start, yaw_face_pos_x(),
-        actions=["run"], split=(NORWAY_RED, NORWAY_WHITE, 0.42),
+        actions=["walk"], split=(NORWAY_RED, NORWAY_WHITE, 0.42),
     )
     _clear_all_nla(arm)
     keys = []
@@ -139,20 +139,20 @@ def build_47() -> int:
         t = (f - 1) / max(1, frames - 1)
         # Near-linear slow trudge (no ease that freezes mid-stride)
         p = _lerp(start, end, t)
-        p.y += 0.12 * math.sin(t * math.pi * 2.0)
-        p.z = 0.12 + 0.03 * abs(math.sin(f * 0.35))
+        p.y += 0.08 * math.sin(t * math.pi * 2.0)
+        p.z = 0.12 + 0.02 * abs(math.sin(f * 0.28))
         keys.append((f, p))
     keys.append((frames, end.copy()))
     animate_root(root, keys, yaw_face_pos_x())
-    add_nla_loop(arm, "run", 1, frames)
-    # Slow the run cycle so it reads as a tired toddle, not a sprint
+    add_nla_loop(arm, "walk", 1, frames)
+    # Slightly slow the walk cycle so it reads as a tired toddle
     ad = arm.animation_data
     if ad:
         for track in ad.nla_tracks:
             for strip in track.strips:
                 if strip.action:
                     alen = max(1.0, strip.action.frame_range[1] - strip.action.frame_range[0])
-                    strip.scale = 0.28
+                    strip.scale = 0.72
                     strip.repeat = max(1.0, (frames + 1) / (alen * strip.scale))
 
     cam = setup_new_cam("Cam47", lens=32)

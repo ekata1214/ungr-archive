@@ -130,23 +130,24 @@ def _talk_fn(amp: float = 1.0, phase: float = 0.0, look_up: float = 0.0) -> Call
 
 
 def _chair_sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    """Absolute chair sit (use add_pose_strip(..., absolute=True)).
+    """Absolute chair sit facing −Y (use add_pose_strip(..., absolute=True)).
 
-    L knee +X / R −X, moderate splay (span≈2.85). Pair with seat_gap≥2.7 so
-    neighbors don't clip. Calves bent so mesh soles clear pitch (zmin≈0.03).
+    Probed: L thigh −Z swings knees/feet forward (toward camera); small |X|/|Y|
+    avoids the old wide V-splay (span≈2.85). Neg calf plants soles (zmin≈0.02).
+    Foot span ≈0.85 — seat_gap≈2.0 is enough.
     """
     return {
-        "thigh.l": (0.4, -0.3, -0.9),
-        "calf.l": (0.8, 0.06, 0.0),
-        "foot.l": (0.25, 0.06, 0.0),
-        "thigh.r": (0.4, 0.3, 0.9),
-        "calf.r": (0.8, -0.06, 0.0),
-        "foot.r": (0.25, -0.06, 0.0),
-        "pelvis": (0.2, 0.0, 0.0),
-        "spine_01": (-0.04, 0.0, 0.0),
+        "thigh.l": (0.2, -0.25, -1.1),
+        "calf.l": (-0.7, 0.03, 0.0),
+        "foot.l": (0.55, 0.0, 0.04),
+        "thigh.r": (0.2, 0.25, 1.1),
+        "calf.r": (-0.7, -0.03, 0.0),
+        "foot.r": (0.55, 0.0, -0.04),
+        "pelvis": (0.22, 0.0, 0.0),
+        "spine_01": (-0.03, 0.0, 0.0),
         "spine_02": (-0.02, 0.0, 0.0),
-        "neck_01": (-0.1, 0.0, 0.0),
-        "head": (-0.08, 0.0, 0.0),
+        "neck_01": (-0.08, 0.0, 0.0),
+        "head": (-0.05, 0.0, 0.0),
     }
 
 
@@ -159,10 +160,10 @@ def _bench_sit_talk_deltas(phase: float = 0.0) -> Callable[[int], Dict[str, Tupl
         bob = 0.05 * math.sin(t * 6.5)
         turn = 0.1 * math.sin(t * 2.4 + phase)
         out = dict(base)
-        out["spine_01"] = (-0.04 + bob * 0.1, 0.0, turn * 0.15)
+        out["spine_01"] = (-0.03 + bob * 0.1, 0.0, turn * 0.15)
         out["spine_02"] = (-0.02 + bob * 0.15, 0.0, turn * 0.2)
-        out["neck_01"] = (-0.1 + bob * 0.4, 0.0, turn * 0.6)
-        out["head"] = (-0.08 + bob, 0.0, turn)
+        out["neck_01"] = (-0.08 + bob * 0.4, 0.0, turn * 0.6)
+        out["head"] = (-0.05 + bob, 0.0, turn)
         return out
 
     return deltas
@@ -392,7 +393,7 @@ def build_39() -> int:
     seat_m = mat_rgba("Bench_SeatMat", (0.12, 0.12, 0.13, 1.0), 0.75)
     leg_m = mat_rgba("Bench_LegMat", (0.2, 0.2, 0.22, 1.0), 0.7)
     n_players = 10
-    seat_gap = 2.75  # wider than foot span (~2.85) so shins don't interpenetrate
+    seat_gap = 2.0  # foot span ≈0.85 with forward chair sit
     bench_len = (n_players - 1) * seat_gap + 2.4
     bench_y = 22.0
     seat_z = 1.35
@@ -787,10 +788,10 @@ def _bench_sit_cheer_deltas(phase: float = 0.0) -> Callable[[int], Dict[str, Tup
         wave = 0.2 * abs(math.sin(t * 6.8 + phase))
         alt = 0.1 * math.sin(t * 8.2 + phase * 1.2)
         out = dict(base)
-        out["spine_01"] = (-0.04 + bob * 0.15, 0.0, turn * 0.15)
+        out["spine_01"] = (-0.03 + bob * 0.15, 0.0, turn * 0.15)
         out["spine_02"] = (-0.02 + bob * 0.25, 0.0, turn * 0.2)
-        out["neck_01"] = (-0.1 + bob * 0.45, 0.0, turn * 0.55)
-        out["head"] = (-0.08 + bob, 0.0, turn)
+        out["neck_01"] = (-0.08 + bob * 0.45, 0.0, turn * 0.55)
+        out["head"] = (-0.05 + bob, 0.0, turn)
         out["clavicle.l"] = (0.05, 0.04, 0.06)
         out["clavicle.r"] = (0.05, -0.04, -0.06)
         if style == 0:
@@ -938,7 +939,7 @@ def build_46() -> int:
     seat_m = mat_rgba("Bench_SeatMat", (0.12, 0.12, 0.13, 1.0), 0.75)
     leg_m = mat_rgba("Bench_LegMat", (0.2, 0.2, 0.22, 1.0), 0.7)
     n_players = 8
-    seat_gap = 2.75
+    seat_gap = 2.0
     bench_len = (n_players - 1) * seat_gap + 2.4
     bench_y = 22.0
     seat_z = 1.35
@@ -956,7 +957,7 @@ def build_46() -> int:
         # Two standing celebrators at the ends of the bench
         standing = i in (0, n_players - 1)
         if standing:
-            stand_pos = Vector((x + (0.8 if i == 0 else -0.8), bench_y - 1.6, 0.12))
+            stand_pos = Vector((x + (0.8 if i == 0 else -0.8), bench_y - 1.6, 0.15))
             arm, root = spawn_player(
                 f"Shaolin_Bench_{i}",
                 SHAOLIN_ORANGE,
@@ -969,7 +970,8 @@ def build_46() -> int:
             keys = []
             for f in range(1, frames + 1, 2):
                 phase = f * 0.45 + i * 1.1
-                z = 0.22 * abs(math.sin(phase))
+                # Small hop on a cleared root — avoid burying identity-leg soles
+                z = stand_pos.z + 0.08 * abs(math.sin(phase))
                 keys.append((f, Vector((stand_pos.x, stand_pos.y, z))))
             keys.append((frames, stand_pos.copy()))
             animate_root(root, keys, pair_yaw)
