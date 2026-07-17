@@ -216,26 +216,26 @@ def _happy_fn() -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
 
 
 def _phone_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
-    """Absolute two-hand phone hold in front of chest (facing −Y cam).
+    """Absolute two-hand phone hold at chest height (facing −Y cam).
 
-    Probed: bent elbows (lowerarm X≈−1.05) with hands meeting ahead of spine_02
-    (span≈0.03–0.3, midZ≈chest). Straight-arm holds read as arms stuck out.
+    Probed: bent elbows with hands meeting at spine_02 height (midZ≈chest,
+    span≈0.02). Older holds sat the phone at the pelvis.
     """
     t = frame / FPS
     tap = 0.04 * math.sin(t * 14.0)
     return {
         "clavicle.l": (0.08, 0.12, 0.1),
-        "upperarm.l": (1.15, 0.64, -1.15),
-        "lowerarm.l": (-1.05 - 0.06 * abs(tap), -0.44, -0.4),
-        "hand.l": (1.13, 0.8, 0.4),
+        "upperarm.l": (1.17, 0.52, -1.24),
+        "lowerarm.l": (-0.92 - 0.05 * abs(tap), -0.67, 0.22),
+        "hand.l": (0.64, 0.62, -0.42),
         "clavicle.r": (0.08, -0.12, -0.1),
-        "upperarm.r": (1.15, -0.64, 1.15),
-        "lowerarm.r": (-1.05 + tap, 0.44, 0.4),
-        "hand.r": (1.13 + tap * 0.15, -0.8, -0.4),
+        "upperarm.r": (1.17, -0.52, 1.24),
+        "lowerarm.r": (-0.92 + tap, 0.67, -0.22),
+        "hand.r": (0.64 + tap * 0.15, -0.62, 0.42),
         "spine_01": (0.06, 0.0, 0.0),
         "spine_02": (0.1, 0.0, 0.0),
-        "neck_01": (0.25, 0.0, 0.02 * math.sin(t * 2.0)),
-        "head": (0.32, 0.0, 0.03 * math.sin(t * 2.2)),
+        "neck_01": (0.22, 0.0, 0.02 * math.sin(t * 2.0)),
+        "head": (0.28, 0.0, 0.03 * math.sin(t * 2.2)),
     }
 
 
