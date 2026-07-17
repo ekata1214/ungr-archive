@@ -427,8 +427,8 @@ def render_cut_video(slug: str, frames: int) -> Path:
 def save_cut_blend(slug: str) -> Path:
     BLEND_DIR.mkdir(parents=True, exist_ok=True)
     path = BLEND_DIR / f"{slug}.blend"
-    bpy.ops.wm.save_as_mainfile(filepath=str(path))
-    # also copy under artifacts
+    # copy=True keeps the session filepath on the base blend (avoid polluting it)
+    bpy.ops.wm.save_as_mainfile(filepath=str(path), copy=True)
     ART_DIR.mkdir(parents=True, exist_ok=True)
     art = ART_DIR / f"{slug}.blend"
     art.write_bytes(path.read_bytes())

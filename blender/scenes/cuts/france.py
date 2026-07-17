@@ -218,20 +218,20 @@ def _happy_fn() -> Callable[[int], Dict[str, Tuple[float, float, float]]]:
 def _phone_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     """Absolute two-hand phone hold in front of chest (facing −Y cam).
 
-    Probed: +X upperarm with large +Y / −Z brings hands together ahead of
-    spine_02 (span≈0.28, midZ≈chest). Old wide +Y/−Z alone left hands ~1m apart.
+    Probed: bent elbows (lowerarm X≈−1.05) with hands meeting ahead of spine_02
+    (span≈0.03–0.3, midZ≈chest). Straight-arm holds read as arms stuck out.
     """
     t = frame / FPS
     tap = 0.04 * math.sin(t * 14.0)
     return {
         "clavicle.l": (0.08, 0.12, 0.1),
-        "upperarm.l": (0.98, 0.79, -0.93),
-        "lowerarm.l": (0.17 - 0.08 * abs(tap), -0.46, 0.17),
-        "hand.l": (0.56, -1.15, -0.10),
+        "upperarm.l": (1.15, 0.64, -1.15),
+        "lowerarm.l": (-1.05 - 0.06 * abs(tap), -0.44, -0.4),
+        "hand.l": (1.13, 0.8, 0.4),
         "clavicle.r": (0.08, -0.12, -0.1),
-        "upperarm.r": (0.98, -0.79, 0.93),
-        "lowerarm.r": (0.17 + tap, 0.46, -0.17),
-        "hand.r": (0.56 + tap * 0.2, 1.15, 0.10),
+        "upperarm.r": (1.15, -0.64, 1.15),
+        "lowerarm.r": (-1.05 + tap, 0.44, 0.4),
+        "hand.r": (1.13 + tap * 0.15, -0.8, -0.4),
         "spine_01": (0.06, 0.0, 0.0),
         "spine_02": (0.1, 0.0, 0.0),
         "neck_01": (0.25, 0.0, 0.02 * math.sin(t * 2.0)),
@@ -391,7 +391,7 @@ def build_20() -> int:
     add_nla_hold(arm, "idle", 1, frames, af=12)
     add_pose_strip(
         arm, "FrancePhonePose", frames, _phone_deltas, PHONE_ARM_BONES,
-        step=2, clamp=1.7, absolute=True,
+        step=2, clamp=1.8, absolute=True,
     )
 
     phone_mat = mat_rgba("Phone_Mat", (0.02, 0.02, 0.025, 1.0), 0.35)

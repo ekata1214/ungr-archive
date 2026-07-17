@@ -165,6 +165,10 @@ def _duplicate_character(
 def assign_action(arm_obj: bpy.types.Object, action_name: str) -> None:
     action = bpy.data.actions.get(action_name)
     if not action:
+        # Allow "walk" → "walk.001" style suffixes from prior appends
+        cands = [a for a in bpy.data.actions if a.name == action_name or a.name.startswith(f"{action_name}.")]
+        action = sorted(cands, key=lambda a: a.name)[0] if cands else None
+    if not action:
         raise KeyError(f"Action not found: {action_name}")
     arm_obj.animation_data_create()
     arm_obj.animation_data.action = action

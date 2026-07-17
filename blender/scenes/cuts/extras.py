@@ -132,17 +132,17 @@ def _talk_fn(amp: float = 1.0, phase: float = 0.0, look_up: float = 0.0) -> Call
 def _chair_sit_deltas(frame: int) -> Dict[str, Tuple[float, float, float]]:
     """Absolute chair sit facing −Y (use add_pose_strip(..., absolute=True)).
 
-    Probed: L thigh −Z swings knees/feet forward (toward camera); small |X|/|Y|
-    avoids the old wide V-splay (span≈2.85). Neg calf plants soles (zmin≈0.02).
-    Foot span ≈0.85 — seat_gap≈2.0 is enough.
+    Probed: L thigh −Z swings knees/feet forward toward camera; +Y keeps L foot
+    on +X (no crossed ankles). Mild +calf X/Y plants soles without the old
+    wide V-splay (span≈1.0, zmin≈0.02).
     """
     return {
-        "thigh.l": (0.2, -0.25, -1.1),
-        "calf.l": (-0.7, 0.03, 0.0),
-        "foot.l": (0.55, 0.0, 0.04),
-        "thigh.r": (0.2, 0.25, 1.1),
-        "calf.r": (-0.7, -0.03, 0.0),
-        "foot.r": (0.55, 0.0, -0.04),
+        "thigh.l": (0.2, 0.2, -1.0),
+        "calf.l": (0.3, 0.4, 0.0),
+        "foot.l": (0.55, 0.0, 0.05),
+        "thigh.r": (0.2, -0.2, 1.0),
+        "calf.r": (0.3, -0.4, 0.0),
+        "foot.r": (0.55, 0.0, -0.05),
         "pelvis": (0.22, 0.0, 0.0),
         "spine_01": (-0.03, 0.0, 0.0),
         "spine_02": (-0.02, 0.0, 0.0),

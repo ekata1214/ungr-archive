@@ -855,6 +855,8 @@ def main() -> None:
         from cuts.run_cut import main_from_argv  # noqa: E402
 
         main_from_argv(sys.argv)
+        # Cut builds save their own .blend copies; do not overwrite the base file.
+        return
     if "--animate-match" in sys.argv:
         from animate_soccer_match import animate_soccer_match_500f  # noqa: E402
 

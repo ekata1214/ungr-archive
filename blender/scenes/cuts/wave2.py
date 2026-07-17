@@ -126,8 +126,9 @@ def build_47() -> int:
     _show_pitch()
     set_frame_range(frames)
     hide_ball()
-    start = Vector((-8.0, 1.0, 0.12))
-    end = Vector((10.0, -0.5, 0.12))
+    # Keep root near ground — walk plants a foot; high Z reads as floating jog
+    start = Vector((-8.0, 1.0, 0.06))
+    end = Vector((10.0, -0.5, 0.06))
 
     arm, root = spawn_player(
         "Norway", NORWAY_RED, start, yaw_face_pos_x(),
@@ -137,22 +138,21 @@ def build_47() -> int:
     keys = []
     for f in range(1, frames + 1, 2):
         t = (f - 1) / max(1, frames - 1)
-        # Near-linear slow trudge (no ease that freezes mid-stride)
         p = _lerp(start, end, t)
-        p.y += 0.08 * math.sin(t * math.pi * 2.0)
-        p.z = 0.12 + 0.02 * abs(math.sin(f * 0.28))
+        p.y += 0.06 * math.sin(t * math.pi * 2.0)
+        p.z = 0.06
         keys.append((f, p))
     keys.append((frames, end.copy()))
     animate_root(root, keys, yaw_face_pos_x())
     add_nla_loop(arm, "walk", 1, frames)
-    # Slightly slow the walk cycle so it reads as a tired toddle
+    # Slow walk cycle for トボトボ (tired toddle), not a brisk march
     ad = arm.animation_data
     if ad:
         for track in ad.nla_tracks:
             for strip in track.strips:
                 if strip.action:
                     alen = max(1.0, strip.action.frame_range[1] - strip.action.frame_range[0])
-                    strip.scale = 0.72
+                    strip.scale = 0.55
                     strip.repeat = max(1.0, (frames + 1) / (alen * strip.scale))
 
     cam = setup_new_cam("Cam47", lens=32)
