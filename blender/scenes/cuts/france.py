@@ -407,11 +407,12 @@ def build_20() -> int:
         phone.keyframe_insert(data_path="scale", frame=f)
     force_linear(phone)
 
-    cam = setup_new_cam("Cam20", lens=42)
+    cam = setup_new_cam("Cam20", lens=38)
+    # Wider bust: head + both hands on phone; pull back so lower legs stay in frame
     _cam_dense(
         cam, 1, frames,
-        Vector((-9.2, -5.2, 3.55)), Vector((-9.4, -4.8, 3.45)),
-        Vector((-10.0, 1.85, 2.55)), Vector((-10.0, 1.8, 2.5)),
+        Vector((-8.5, -5.5, 3.4)), Vector((-8.7, -5.2, 3.3)),
+        Vector((-10.0, 1.7, 3.1)), Vector((-10.0, 1.65, 3.05)),
         step=2,
     )
     finish_cam(cam)

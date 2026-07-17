@@ -152,7 +152,7 @@ def build_47() -> int:
             for strip in track.strips:
                 if strip.action:
                     alen = max(1.0, strip.action.frame_range[1] - strip.action.frame_range[0])
-                    strip.scale = 0.55
+                    strip.scale = 0.42
                     strip.repeat = max(1.0, (frames + 1) / (alen * strip.scale))
 
     cam = setup_new_cam("Cam47", lens=32)

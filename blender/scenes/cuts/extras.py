@@ -409,7 +409,8 @@ def build_39() -> int:
         # Face mostly forward — large pair yaw twisted sit legs in camera view
         pair_yaw = yaw + (0.06 if i % 2 == 0 else -0.06)
         # Root so pelvis ≈ bench seat (absolute sit pose, not idle-delta)
-        pos = Vector((x, bench_y - 0.05, -0.85))
+        # Seat front is ~bench_y-0.42; sit slightly into the seat depth
+        pos = Vector((x, bench_y + 0.05, -0.85))
         arm, root = spawn_player(
             f"Netherlands_{i}",
             NETHERLANDS_ORANGE,
@@ -953,11 +954,11 @@ def build_46() -> int:
     for i in range(n_players):
         x = start_x + i * seat_gap
         pair_yaw = yaw + (0.06 if i % 2 == 0 else -0.06)
-        sit_pos = Vector((x, bench_y - 0.05, -0.85))
+        sit_pos = Vector((x, bench_y + 0.05, -0.85))
         # Two standing celebrators at the ends of the bench
         standing = i in (0, n_players - 1)
         if standing:
-            stand_pos = Vector((x + (0.8 if i == 0 else -0.8), bench_y - 1.6, 0.15))
+            stand_pos = Vector((x + (0.8 if i == 0 else -0.8), bench_y - 1.6, 0.12))
             arm, root = spawn_player(
                 f"Shaolin_Bench_{i}",
                 SHAOLIN_ORANGE,
@@ -970,8 +971,8 @@ def build_46() -> int:
             keys = []
             for f in range(1, frames + 1, 2):
                 phase = f * 0.45 + i * 1.1
-                # Small hop on a cleared root — avoid burying identity-leg soles
-                z = stand_pos.z + 0.08 * abs(math.sin(phase))
+                # Tiny hop on a cleared root — avoid burying identity-leg soles
+                z = stand_pos.z + 0.04 * abs(math.sin(phase))
                 keys.append((f, Vector((stand_pos.x, stand_pos.y, z))))
             keys.append((frames, stand_pos.copy()))
             animate_root(root, keys, pair_yaw)
