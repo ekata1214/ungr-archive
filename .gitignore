@@ -1,1 +1,6 @@
 .DS_Store
+_learn_*/
+*.wav
+*.mp4
+*.mov
+.DS_Store
