@@ -1,0 +1,37 @@
+# 戦争とカルチャー台本 — 参考ソース
+
+## 音楽・軍歌・士気
+- 京都先端科学大学 人文論集「近代日本における軍歌『抜刀隊』の役割と各種メディアの動きについて」
+  https://lab.kuas.ac.jp/~jinbungakkai/pdf/2015/h2015_06.pdf
+- 大阪大学 博士論文「明治・昭和軍歌にみる近代的特徴」（リポジトリ）
+  https://ir.library.osaka-u.ac.jp/repo/ouka/all/61833/29184_Dissertation.pdf
+  DOI: https://doi.org/10.18910/61833
+
+## 現代戦 × SNS / 音楽（WarTok等）
+- Pilipets et al., networked soundscapes / WarTok (UvA-DARE PDF)
+  https://pure.uva.nl/ws/files/263213565/Pilipets_Geboers_Divon_Bo_sch_etal.pdf
+- Hunger, “Commercial-off-the-shelf” — drone images + popular music re-aestheticization
+  https://doi.org/10.70064/mt.v9i1.1171
+- “Songs of War” — popular music on social media in Ukraine war
+  https://doi.org/10.5429/2079-3871(2024)v14i2.4en
+- “War, social media and gender: an analysis of the use of TikTok by Ukrainian soldiers”
+  https://www.tandfonline.com/doi/full/10.1080/23337486.2025.2472100
+- Task & Purpose: Ukrainian soldiers / Nirvana (兵士×ポップ音楽の報道例)
+  https://taskandpurpose.com/news/ukraine-soldiers-troll-russian-army-nirvana/
+
+## 義勇兵・動機
+- RUSI: Why Foreign Volunteers Enlist in the Ukrainian International Legion
+  https://www.rusi.org/explore-our-research/publications/commentary/why-foreign-volunteers-enlist-ukrainian-international-legion
+- Bocchese et al.系の動機研究（アカデミア公開版）
+  https://www.academia.edu/126267566/From_across_the_globe_Understanding_the_motivations_of_pro_Ukraine_foreign_fighters
+- International Legion FAQ（給与の公式説明）
+  https://www.ildu.com.ua/faq/
+
+## 日本人義勇兵 Gangsta
+- 週刊女性PRIME「ウクライナ軍の日本人義勇兵がTwitterで伝える“戦場のリアル”」
+  https://www.jprime.jp/articles/-/25447
+
+## 注意（台本内のソフトラベル）
+- XXXTentacion「Look At Me!」合唱動画：部隊・所属未確認。個人の視聴体験として扱う。
+- Omegleの義勇兵：本人確認不可。個人体験として扱い、一般化するな。
+- 金銭動機：研究では規範・倫理動機が強い報告もある。個人発言と研究を分離。
