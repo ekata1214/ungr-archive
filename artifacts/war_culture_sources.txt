@@ -1,37 +1,32 @@
-# 戦争とカルチャー台本 — 参考ソース
+# 参考文献・引用元（戦争がもたらした思わぬカルチャー）
 
-## 音楽・軍歌・士気
-- 京都先端科学大学 人文論集「近代日本における軍歌『抜刀隊』の役割と各種メディアの動きについて」
-  https://lab.kuas.ac.jp/~jinbungakkai/pdf/2015/h2015_06.pdf
-- 大阪大学 博士論文「明治・昭和軍歌にみる近代的特徴」（リポジトリ）
-  https://ir.library.osaka-u.ac.jp/repo/ouka/all/61833/29184_Dissertation.pdf
-  DOI: https://doi.org/10.18910/61833
+1. 新潮社「考える人」岡田暁生・片山杜秀・吉田純子 対談「戦争と音楽」
+   - 前編: https://kangaeruhito.jp/interview/757038
+   - 後編: https://kangaeruhito.jp/interview/757068
+   - カテゴリ: https://kangaeruhito.jp/interviewcat/war_and_music
 
-## 現代戦 × SNS / 音楽（WarTok等）
-- Pilipets et al., networked soundscapes / WarTok (UvA-DARE PDF)
-  https://pure.uva.nl/ws/files/263213565/Pilipets_Geboers_Divon_Bo_sch_etal.pdf
-- Hunger, “Commercial-off-the-shelf” — drone images + popular music re-aestheticization
-  https://doi.org/10.70064/mt.v9i1.1171
-- “Songs of War” — popular music on social media in Ukraine war
-  https://doi.org/10.5429/2079-3871(2024)v14i2.4en
-- “War, social media and gender: an analysis of the use of TikTok by Ukrainian soldiers”
-  https://www.tandfonline.com/doi/full/10.1080/23337486.2025.2472100
-- Task & Purpose: Ukrainian soldiers / Nirvana (兵士×ポップ音楽の報道例)
-  https://taskandpurpose.com/news/ukraine-soldiers-troll-russian-army-nirvana/
+2. 週刊女性PRIME「ウクライナ軍の日本人義勇兵がTwitterで伝える“戦場のリアル”」（Gangsta氏）
+   https://www.jprime.jp/articles/-/25447
 
-## 義勇兵・動機
-- RUSI: Why Foreign Volunteers Enlist in the Ukrainian International Legion
-  https://www.rusi.org/explore-our-research/publications/commentary/why-foreign-volunteers-enlist-ukrainian-international-legion
-- Bocchese et al.系の動機研究（アカデミア公開版）
-  https://www.academia.edu/126267566/From_across_the_globe_Understanding_the_motivations_of_pro_Ukraine_foreign_fighters
-- International Legion FAQ（給与の公式説明）
-  https://www.ildu.com.ua/faq/
+3. ライブドアニュース等での同テーマ二次転載・まとめ（Gangsta氏関連）
+   ※一次確認は本人発信／上記週刊女性PRIMEを優先
 
-## 日本人義勇兵 Gangsta
-- 週刊女性PRIME「ウクライナ軍の日本人義勇兵がTwitterで伝える“戦場のリアル”」
-  https://www.jprime.jp/articles/-/25447
+4. Gangsta氏の負傷・復帰意志についての投稿引用まとめ
+   オレ的ゲーム速報＠刃 など二次まとめ（本人投稿の引用として扱い、断定表現は避ける）
 
-## 注意（台本内のソフトラベル）
-- XXXTentacion「Look At Me!」合唱動画：部隊・所属未確認。個人の視聴体験として扱う。
-- Omegleの義勇兵：本人確認不可。個人体験として扱い、一般化するな。
-- 金銭動機：研究では規範・倫理動機が強い報告もある。個人発言と研究を分離。
+5. 兵士×ポップ音楽の報道例（Nirvana）
+   https://taskandpurpose.com/news/ukraine-soldiers-troll-russian-army-nirvana/
+
+6. WarTok / 戦場音響研究（補足）
+   https://pure.uva.nl/ws/files/263213565/Pilipets_Geboers_Divon_Bo_sch_etal.pdf
+
+7. ドローン映像の再美学化（補足）
+   https://doi.org/10.70064/mt.v9i1.1171
+
+8. 義勇兵動機研究（補足・Omegle体験の一般化を防ぐ）
+   https://www.rusi.org/explore-our-research/publications/commentary/why-foreign-volunteers-enlist-ukrainian-international-legion
+
+## ソフトラベル
+- Look at Me!合唱動画：部隊・所属未確認
+- Omegle義勇兵：本人確認不可／金銭動機は個人発言であり研究全体とは分離
+- Gangsta氏の経歴・負傷詳細：本人発信および二次まとめベース。報道と食い違う可能性があるため断定しすぎない
