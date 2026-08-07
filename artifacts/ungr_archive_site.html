@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="マスではほとんど語られないけど、確実に誰かの人生を変えている作品達。僕達はそういう作品をずっとディグってきた。アングラアーカイブ。">
+  <meta name="description" content="UNGR ARCHIVE — タイムラインをハックし、深淵の記憶を植え付ける。映像制作とデジタルブランドのクリエイティブ・ラボ。">
   <meta name="theme-color" content="#000000">
   <title>UNGR ARCHIVE / アングラアーカイブ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -76,20 +76,20 @@
       z-index: -1;
       background:
         linear-gradient(90deg, var(--red) 0 5px, transparent 5px),
+        radial-gradient(circle at 82% 38%, transparent 18%, rgba(255,0,0,0.08) 18.5%, transparent 42%),
+        radial-gradient(circle at 82% 38%, transparent 28%, rgba(255,0,0,0.05) 28.5%, transparent 55%),
         linear-gradient(180deg, transparent 0%, transparent 72%, rgba(255, 0, 0, 0.12) 100%),
-        radial-gradient(ellipse 55% 40% at 100% 0%, rgba(255, 0, 0, 0.32), transparent 60%),
         #000;
     }
     .hero-bg::before {
       content: "";
       position: absolute;
       inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent 0 2px,
-        rgba(0, 0, 0, 0.45) 2px 3px
-      );
-      opacity: 0.4;
+      background:
+        repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,0.45) 2px 3px),
+        linear-gradient(125deg, transparent 55%, rgba(255,0,0,0.07) 55%, transparent 56%),
+        linear-gradient(35deg, transparent 60%, rgba(255,0,0,0.06) 60%, transparent 61%);
+      opacity: 0.55;
     }
     .hero-bg::after {
       content: "";
@@ -122,6 +122,25 @@
     .hero-top a:hover { color: var(--red); }
 
     .hero-main { padding-top: 4.25rem; }
+    .kit-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: 1rem;
+      opacity: 0;
+      animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.02s;
+    }
+    .kit-label::before {
+      content: "";
+      width: 2.2rem;
+      height: 3px;
+      background: var(--red);
+    }
     .brand {
       font-family: var(--font-display);
       font-weight: 400;
@@ -145,7 +164,7 @@
       animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.14s;
     }
     .hero-line {
-      max-width: 24rem;
+      max-width: 28rem;
       font-family: var(--font-jp);
       font-size: clamp(1rem, 2.4vw, 1.3rem);
       font-weight: 400;
@@ -156,10 +175,10 @@
       animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.24s;
     }
     .hero-sub {
-      max-width: 28rem;
+      max-width: 32rem;
       color: var(--muted);
       font-size: 0.9rem;
-      font-weight: 700;
+      font-weight: 500;
       letter-spacing: 0.06em;
       margin-bottom: 1.7rem;
       opacity: 0;
@@ -231,7 +250,7 @@
       font-size: clamp(1.35rem, 3.8vw, 2.05rem);
       line-height: 1.35;
       letter-spacing: 0.06em;
-      max-width: 16em;
+      max-width: 18em;
       margin-bottom: 1rem;
     }
     .sec-body {
@@ -302,8 +321,37 @@
     .theme p {
       color: var(--muted);
       font-size: 0.88rem;
-      font-weight: 700;
+      font-weight: 500;
       letter-spacing: 0.04em;
+    }
+
+    .work-list {
+      margin-top: 1.75rem;
+      border-top: 3px solid var(--line);
+    }
+    .work-list li {
+      list-style: none;
+      display: grid;
+      gap: 0.35rem 1.25rem;
+      padding: 1.15rem 0;
+      border-bottom: 3px solid var(--line);
+    }
+    @media (min-width: 700px) {
+      .work-list li {
+        grid-template-columns: 11rem 1fr;
+        align-items: baseline;
+      }
+    }
+    .work-list strong {
+      font-family: var(--font-display);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.95rem;
+    }
+    .work-list span {
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 500;
     }
 
     .links {
@@ -361,7 +409,7 @@
 
     @media (prefers-reduced-motion: reduce) {
       .grain { animation: none; }
-      .brand, .brand-ja, .hero-line, .hero-sub, .cta-row {
+      .kit-label, .brand, .brand-ja, .hero-line, .hero-sub, .cta-row {
         opacity: 1;
         animation: none;
       }
@@ -375,17 +423,18 @@
     <div class="hero-bg" aria-hidden="true"></div>
     <div class="wrap">
       <div class="hero-top">
-        <span>Underground archive</span>
+        <span>Video Production &amp; Digital Brand</span>
         <a href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">YouTube</a>
       </div>
       <div class="hero-main">
+        <p class="kit-label">Creative Media Kit</p>
         <h1 class="brand">UNGR<br>ARCHIVE</h1>
         <span class="brand-ja">アングラアーカイブ</span>
-        <p class="hero-line">マスではほとんど語られないけど、確実に誰かの人生を変えている作品達。</p>
-        <p class="hero-sub">僕達はそういう作品をずっとディグってきた。そのアーカイブとして始めたのが、このメディア。</p>
+        <p class="hero-line">タイムラインをハックし、深淵の記憶を植え付ける。</p>
+        <p class="hero-sub">インターネットの深淵で蠢くアンダーグラウンドの熱量を抽出し、脳裏に「バグ」のような記憶を残すクリエイティブ・ラボ。</p>
         <div class="cta-row">
-          <a class="cta" href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">Watch</a>
-          <a class="cta-ghost" href="#about">About</a>
+          <a class="cta" href="mailto:ungr.archive@gmail.com">Contact</a>
+          <a class="cta-ghost" href="#lab">Lab</a>
         </div>
       </div>
     </div>
@@ -394,61 +443,76 @@
   <main>
     <section id="about">
       <div class="wrap">
-        <p class="sec-label">About</p>
-        <h2 class="sec-title">綺麗に編集された歴史だけだと、歪みの出所が消える。</h2>
+        <p class="sec-label">01 Concept</p>
+        <h2 class="sec-title">単なる映像制作チームではない。</h2>
         <p class="sec-body">
-          アングラアーカイブがやりたいのは、汚れた入口まで含めた<strong>文化の地図</strong>を残すこと。
-          映画、音楽、ネット、グレーな流通。影響を認めることと、行為を勧めることを分ける。
+          マスではほとんど語られないけど、確実に誰かの人生を変えている作品達。
+          僕達はそういう作品をずっとディグってきた。そのアーカイブとして始めたのが、このメディア。
         </p>
         <p class="sec-body">
+          汚れた入口まで含めた<strong>文化の地図</strong>を残す。
           <strong>推奨ではなく、記述。美化ではなく、記録。</strong>
-          その姿勢だけは、このチャンネルの核だと思っています。
+          実写、3DCG、VFX、メディア運用を融合し、潜在する世界観を鋭利なまま提示する。
         </p>
       </div>
     </section>
 
-    <section id="axis">
+    <section id="lab">
       <div class="wrap">
-        <p class="sec-label">Axis</p>
-        <h2 class="sec-title">紹介で終わらない。</h2>
-        <p class="sec-body">自分で思考して、相手の思考をまずは受け取る。その積み重ねで、世界は少しずつ優しくなるんじゃないか。</p>
+        <p class="sec-label">02 Lab</p>
+        <h2 class="sec-title">エンタメで終わらせない。</h2>
+        <p class="sec-body">コンテンツは消費される玩具ではなく、物事を深く考えるための装置。作って終わりにせず、ターゲットへ直撃する導線まで設計する。</p>
         <div class="themes">
           <article class="theme">
             <h3>Dig</h3>
-            <p>マスで語られない作品を掘る。偶然の出会いも、ディグの入口として残す。</p>
+            <p>深淵のカルチャーを掘る。偶然の出会いも、入口として残す。</p>
           </article>
           <article class="theme">
-            <h3>Critique</h3>
-            <p>意味づけの矛盾。死の美化。戦争と音楽。流通と美学の癒着。</p>
+            <h3>Produce</h3>
+            <p>横型シネマから縦型ショートまで。ダークさと鮮烈な編集で世界観を純度高く出す。</p>
           </article>
           <article class="theme">
-            <h3>Archive</h3>
-            <p>未確認は未確認のまま。美化でも糾弾でもなく、影響の地図として固定する。</p>
+            <h3>Hack</h3>
+            <p>SNS運用、音響キュレーション、デジタルブランディング。タイムラインそのものを設計する。</p>
           </article>
         </div>
-        <p class="closing">ところでみんな、<span>人生を変えたアングラって何？</span><br>アングラアーカイブ。</p>
+        <ul class="work-list">
+          <li>
+            <strong>PV / MV</strong>
+            <span>縦型・横型。UA特有のダークさと、視覚を刺激する編集。</span>
+          </li>
+          <li>
+            <strong>Documentary</strong>
+            <span>アーティストのルーツや現場の熱量を、ディープな映像美で切り取る。</span>
+          </li>
+          <li>
+            <strong>SNS / Sound</strong>
+            <span>運用代行、店舗プレイリスト、一貫したビジュアル統括。</span>
+          </li>
+        </ul>
       </div>
     </section>
 
     <section id="watch">
       <div class="wrap">
-        <p class="sec-label">Connect</p>
-        <h2 class="sec-title">接続</h2>
-        <p class="sec-body">濃度の高いコメント、全部読んでます。感想も、体験も、匿名でどうぞ。</p>
+        <p class="sec-label">03 Connect</p>
+        <h2 class="sec-title">世界をハックするパートナーを募集。</h2>
+        <p class="sec-body">映像制作、SNS運用、インターネットとリアルを問わないアングラな企み。ご依頼・ご相談は下記まで。</p>
         <nav class="links" aria-label="外部リンク">
+          <a href="mailto:ungr.archive@gmail.com">
+            Email
+            <span>ungr.archive@gmail.com</span>
+          </a>
           <a href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">
             YouTube
             <span>@ungr.archive</span>
           </a>
           <a href="https://www.instagram.com/ungr.archive/" target="_blank" rel="noopener">
-            Instagram
-            <span>短尺・断片</span>
-          </a>
-          <a href="mailto:ungr.archive@gmail.com">
-            Contact
-            <span>ungr.archive@gmail.com</span>
+            Instagram / TikTok
+            <span>@ungr.archive</span>
           </a>
         </nav>
+        <p class="closing">ところでみんな、<span>人生を変えたアングラって何？</span><br>アングラアーカイブ。</p>
       </div>
     </section>
   </main>
@@ -456,7 +520,7 @@
   <footer>
     <div class="wrap inner">
       <p class="mark">UNGR ARCHIVE</p>
-      <p>© <span id="y"></span> アングラアーカイブ</p>
+      <p>© <span id="y"></span> DIRECTED BY UNGR ARCHIVE</p>
     </div>
   </footer>
   <script>
