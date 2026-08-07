@@ -2,7 +2,9 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - cursor/blender-shaolin-soccer-news-cg-9fa6
   workflow_dispatch:
 
 permissions:
