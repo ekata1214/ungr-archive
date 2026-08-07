@@ -3,24 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="UNGR ARCHIVE — タイムラインをハックし、深淵の記憶を植え付ける。映像制作とデジタルブランドのクリエイティブ・ラボ。">
+  <meta name="description" content="UNGR ARCHIVE / アングラアーカイブ — マスではほとんど語られないけど、確実に誰かの人生を変えている作品達。">
   <meta name="theme-color" content="#000000">
   <title>UNGR ARCHIVE / アングラアーカイブ</title>
+  <link rel="icon" href="assets/brand/favicon.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #000;
-      --bg-2: #0d0d0d;
       --ink: #f2f2f2;
       --muted: #8a8a8a;
       --red: #ff0000;
-      --red-deep: #b00000;
       --line: #2a2a2a;
       --font-display: "Archivo Black", "IBM Plex Sans JP", sans-serif;
-      --font-jp: "IBM Plex Sans JP", sans-serif;
       --font-body: "IBM Plex Sans JP", sans-serif;
+      --max: 1180px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,151 +36,164 @@
       font-feature-settings: "palt" 1;
     }
     a { color: inherit; }
-    ::selection {
-      background: var(--red);
-      color: #fff;
-    }
+    img { display: block; max-width: 100%; }
+    ::selection { background: var(--red); color: #fff; }
 
     .grain {
       pointer-events: none;
       position: fixed;
       inset: 0;
       z-index: 50;
-      opacity: 0.14;
+      opacity: 0.1;
       mix-blend-mode: soft-light;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      animation: grain-shift 0.7s steps(2) infinite;
-    }
-    @keyframes grain-shift {
-      0% { transform: translate(0, 0); }
-      50% { transform: translate(-1.2%, 1%); }
-      100% { transform: translate(1%, -0.6%); }
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
     .wrap {
-      width: min(1040px, calc(100% - 2rem));
+      width: min(var(--max), calc(100% - 2.5rem));
       margin-inline: auto;
     }
 
+    /* NAV */
+    .nav {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.15rem 0;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      text-decoration: none;
+    }
+    .logo img {
+      width: 2rem;
+      height: 2rem;
+      object-fit: contain;
+    }
+    .logo-word {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+      line-height: 1;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.25rem;
+      align-items: center;
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--muted);
+      transition: color 0.15s ease;
+    }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-links .nav-cta {
+      color: #fff;
+      background: var(--red);
+      padding: 0.55rem 0.85rem;
+      border: 2px solid var(--red);
+    }
+    .nav-links .nav-cta:hover {
+      background: transparent;
+      color: var(--red);
+    }
+
+    /* HERO — one composition, brand first */
     .hero {
       position: relative;
       min-height: 100svh;
       display: grid;
-      align-items: end;
-      padding: 1.1rem 0 2.1rem;
       isolation: isolate;
+      overflow: hidden;
     }
     .hero-bg {
       position: absolute;
       inset: 0;
       z-index: -1;
       background:
-        linear-gradient(90deg, var(--red) 0 5px, transparent 5px),
-        linear-gradient(105deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 42%, rgba(0,0,0,0.35) 100%),
-        linear-gradient(to top, #000 0%, transparent 45%),
-        url("assets/work/identity.jpg") center / cover no-repeat,
+        linear-gradient(90deg, #000 0%, rgba(0,0,0,0.88) 42%, rgba(0,0,0,0.35) 72%, rgba(0,0,0,0.55) 100%),
+        url("assets/brand/hero-figure.jpg") right center / cover no-repeat,
         #000;
-    }
-    .hero-bg::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,0.35) 2px 3px);
-      opacity: 0.35;
     }
     .hero-bg::after {
       content: "";
       position: absolute;
-      inset: auto 0 0 0;
-      height: 35%;
-      background: linear-gradient(to top, #000, transparent);
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,0.22) 3px 4px);
+      opacity: 0.35;
+      pointer-events: none;
     }
-
-    .hero-top {
-      position: absolute;
-      top: 1rem;
-      left: 0;
-      right: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-family: var(--font-display);
-      font-size: 0.68rem;
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      color: var(--muted);
+    .hero-grid {
+      display: grid;
+      align-items: end;
+      min-height: 100svh;
+      padding: 5.5rem 0 2.5rem;
+      gap: 2rem;
     }
-    .hero-top a {
-      text-decoration: none;
-      color: var(--ink);
-      border-bottom: 3px solid var(--red);
-      padding-bottom: 2px;
-    }
-    .hero-top a:hover { color: var(--red); }
-
-    .hero-main { padding-top: 4.25rem; }
-    .kit-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.65rem;
-      font-family: var(--font-display);
-      font-size: 0.72rem;
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      color: var(--ink);
-      margin-bottom: 1rem;
-      opacity: 0;
-      animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.02s;
-    }
-    .kit-label::before {
-      content: "";
-      width: 2.2rem;
-      height: 3px;
-      background: var(--red);
+    @media (min-width: 960px) {
+      .hero-grid {
+        grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.7fr);
+        align-items: center;
+        padding: 6.5rem 0 3.5rem;
+        gap: 2.5rem;
+      }
+      .hero-bg {
+        background:
+          linear-gradient(105deg, #000 0%, #000 48%, rgba(0,0,0,0.2) 68%, rgba(0,0,0,0.55) 100%),
+          url("assets/brand/hero-figure.jpg") 78% center / auto 92% no-repeat,
+          #000;
+      }
     }
     .brand {
       font-family: var(--font-display);
-      font-weight: 400;
-      font-size: clamp(3.8rem, 15vw, 8.8rem);
-      line-height: 0.86;
-      letter-spacing: -0.01em;
+      font-size: clamp(3.6rem, 12vw, 7.5rem);
+      line-height: 0.88;
+      letter-spacing: -0.015em;
       text-transform: uppercase;
       margin-bottom: 0.15rem;
       opacity: 0;
-      animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.04s;
+      animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.05s;
     }
     .brand-ja {
       display: block;
-      font-family: var(--font-jp);
       font-weight: 600;
-      font-size: clamp(0.9rem, 2.2vw, 1.05rem);
-      letter-spacing: 0.18em;
+      font-size: clamp(0.88rem, 1.8vw, 1rem);
+      letter-spacing: 0.2em;
       color: var(--red);
-      margin: 0.85rem 0 1.45rem;
+      margin: 0.85rem 0 1.35rem;
       opacity: 0;
-      animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.14s;
+      animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.15s;
     }
     .hero-line {
       max-width: 28rem;
-      font-family: var(--font-jp);
-      font-size: clamp(1.05rem, 2.5vw, 1.35rem);
+      font-size: clamp(1.05rem, 2.2vw, 1.3rem);
       font-weight: 600;
       line-height: 1.55;
-      letter-spacing: 0.04em;
-      margin-bottom: 0.75rem;
+      letter-spacing: 0.03em;
+      margin-bottom: 0.7rem;
       opacity: 0;
-      animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.24s;
+      animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.25s;
     }
     .hero-sub {
-      max-width: 32rem;
+      max-width: 30rem;
       color: var(--muted);
       font-size: 0.92rem;
-      font-weight: 400;
-      letter-spacing: 0.03em;
       line-height: 1.8;
-      margin-bottom: 1.7rem;
+      margin-bottom: 1.6rem;
       opacity: 0;
-      animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.34s;
+      animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.35s;
     }
     .cta-row {
       display: flex;
@@ -189,64 +201,68 @@
       gap: 0.75rem 1rem;
       align-items: center;
       opacity: 0;
-      animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.44s;
+      animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.45s;
     }
     .cta {
       display: inline-flex;
-      align-items: center;
       text-decoration: none;
       font-family: var(--font-display);
-      font-size: 0.95rem;
-      letter-spacing: 0.12em;
+      font-size: 0.92rem;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       background: var(--red);
       color: #fff;
-      padding: 0.95rem 1.35rem;
-      border: 3px solid var(--red);
-      border-radius: 0;
-      transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+      padding: 0.9rem 1.3rem;
+      border: 2px solid var(--red);
+      transition: background 0.15s ease, color 0.15s ease;
     }
-    .cta:hover {
-      background: #000;
-      color: var(--red);
-      transform: translateY(-1px);
-    }
+    .cta:hover { background: transparent; color: var(--red); }
     .cta-ghost {
       text-decoration: none;
       font-family: var(--font-display);
-      color: var(--ink);
-      font-size: 0.78rem;
-      letter-spacing: 0.18em;
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
-      border-bottom: 3px solid var(--line);
+      border-bottom: 2px solid var(--line);
       padding-bottom: 3px;
     }
-    .cta-ghost:hover {
-      color: var(--red);
-      border-color: var(--red);
+    .cta-ghost:hover { color: var(--red); border-color: var(--red); }
+
+    .hero-mark {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s;
+    }
+    @media (min-width: 960px) {
+      .hero-mark { display: flex; }
+    }
+    .hero-mark img {
+      width: min(280px, 100%);
+      filter: drop-shadow(0 20px 40px rgba(255,0,0,0.18));
     }
 
     @keyframes rise {
-      from { opacity: 0; transform: translateY(12px); }
+      from { opacity: 0; transform: translateY(14px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     section {
-      padding: 4.5rem 0;
-      border-top: 3px solid var(--line);
+      padding: 4.75rem 0;
+      border-top: 2px solid var(--line);
     }
     .sec-label {
       font-family: var(--font-display);
-      font-size: 0.78rem;
-      letter-spacing: 0.3em;
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
       text-transform: uppercase;
       color: var(--red);
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.7rem;
     }
     .sec-title {
-      font-family: var(--font-jp);
       font-weight: 700;
-      font-size: clamp(1.35rem, 3.6vw, 1.95rem);
+      font-size: clamp(1.35rem, 3.2vw, 1.9rem);
       line-height: 1.45;
       letter-spacing: 0.02em;
       max-width: 18em;
@@ -256,278 +272,266 @@
       max-width: 38rem;
       color: var(--muted);
       font-size: 0.95rem;
-      font-weight: 400;
       line-height: 1.9;
-      letter-spacing: 0.02em;
     }
-    .sec-body + .sec-body { margin-top: 1rem; }
-    .sec-body strong {
-      color: var(--ink);
-      font-weight: 700;
-    }
-    .closing {
-      margin-top: 1.75rem;
-      font-family: var(--font-jp);
-      font-weight: 600;
-      font-size: clamp(0.95rem, 2.2vw, 1.1rem);
-      letter-spacing: 0.03em;
-      color: var(--ink);
-      line-height: 1.65;
-    }
-    .closing span { color: var(--red); }
+    .sec-body + .sec-body { margin-top: 0.95rem; }
+    .sec-body strong { color: var(--ink); font-weight: 700; }
 
     .themes {
       display: grid;
-      gap: 0;
       margin-top: 2rem;
-      border-top: 3px solid var(--line);
+      border-top: 2px solid var(--line);
     }
-    @media (min-width: 760px) {
+    @media (min-width: 800px) {
       .themes { grid-template-columns: repeat(3, 1fr); }
     }
     .theme {
       padding: 1.35rem 0;
-      border-bottom: 3px solid var(--line);
+      border-bottom: 2px solid var(--line);
     }
-    @media (min-width: 760px) {
+    @media (min-width: 800px) {
       .theme {
-        padding: 1.4rem 1.15rem 1.4rem 0;
+        padding: 1.4rem 1.2rem 1.4rem 0;
         border-bottom: none;
-        border-right: 3px solid var(--line);
+        border-right: 2px solid var(--line);
       }
+      .theme:nth-child(2) { padding-left: 1.2rem; }
       .theme:last-child {
         border-right: none;
         padding-right: 0;
-        padding-left: 1.15rem;
+        padding-left: 1.2rem;
       }
-      .theme:nth-child(2) { padding-left: 1.15rem; }
     }
     .theme h3 {
       font-family: var(--font-display);
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 0.5rem;
-      color: var(--ink);
+      margin-bottom: 0.45rem;
     }
     .theme h3::before {
       content: "";
       display: inline-block;
-      width: 0.5rem;
-      height: 0.5rem;
+      width: 0.45rem;
+      height: 0.45rem;
       background: var(--red);
-      margin-right: 0.5rem;
+      margin-right: 0.45rem;
       vertical-align: 0.05em;
     }
     .theme p {
       color: var(--muted);
       font-size: 0.88rem;
-      font-weight: 400;
-      letter-spacing: 0.02em;
       line-height: 1.75;
     }
 
-    .work-list {
-      margin-top: 1.75rem;
-      border-top: 3px solid var(--line);
-    }
-    .work-list li {
-      list-style: none;
-      display: grid;
-      gap: 0.35rem 1.25rem;
-      padding: 1.15rem 0;
-      border-bottom: 3px solid var(--line);
-    }
-    @media (min-width: 700px) {
-      .work-list li {
-        grid-template-columns: 11rem 1fr;
-        align-items: baseline;
-      }
-    }
-    .work-list strong {
-      font-family: var(--font-display);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      font-size: 0.95rem;
-    }
-    .work-list span {
-      color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
-
-    .links {
-      display: grid;
-      margin-top: 1.6rem;
-      border-top: 3px solid var(--line);
-    }
-    .links a {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 1rem;
-      padding: 1.1rem 0;
-      text-decoration: none;
-      border-bottom: 3px solid var(--line);
-      font-family: var(--font-display);
-      font-size: clamp(1.35rem, 3.4vw, 1.9rem);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      transition: color 0.15s ease, padding-left 0.15s ease;
-    }
-    .links a span {
-      font-family: var(--font-body);
-      font-weight: 700;
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      text-transform: none;
-    }
-    .links a:hover {
-      color: var(--red);
-      padding-left: 0.35rem;
-    }
-
-    /* —— WORK / MEDIA —— */
     .work-head {
       display: flex;
       flex-wrap: wrap;
       gap: 1rem 1.5rem;
       justify-content: space-between;
       align-items: end;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.4rem;
     }
     .work-head .sec-title { margin-bottom: 0; }
     .work-all {
       font-family: var(--font-display);
-      font-size: 0.78rem;
-      letter-spacing: 0.18em;
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
       text-decoration: none;
-      border-bottom: 3px solid var(--red);
+      border-bottom: 2px solid var(--red);
       padding-bottom: 3px;
     }
     .work-all:hover { color: var(--red); }
 
     .piece {
-      margin-top: 2rem;
-      border-top: 3px solid var(--line);
-      padding-top: 1.35rem;
+      margin-top: 1.75rem;
+      border-top: 2px solid var(--line);
+      padding-top: 1.2rem;
     }
     .piece-meta {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem 1.25rem;
+      gap: 0.45rem 1.1rem;
       align-items: baseline;
-      margin-bottom: 0.85rem;
+      margin-bottom: 0.8rem;
     }
     .piece-meta .num {
       font-family: var(--font-display);
       color: var(--red);
       letter-spacing: 0.14em;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
     }
     .piece-meta h3 {
-      font-family: var(--font-jp);
       font-weight: 700;
-      font-size: 1.05rem;
-      letter-spacing: 0.04em;
+      font-size: 1.02rem;
+      letter-spacing: 0.03em;
     }
     .piece-meta p {
       width: 100%;
       color: var(--muted);
       font-size: 0.88rem;
-      font-weight: 400;
       line-height: 1.7;
-      max-width: 40rem;
+      max-width: 42rem;
     }
     .media-frame {
-      position: relative;
       width: 100%;
       background: #111;
-      border: 3px solid var(--line);
+      border: 2px solid var(--line);
       overflow: hidden;
       aspect-ratio: 16 / 9;
     }
-    .media-frame video,
-    .media-frame img {
-      display: block;
+    .media-frame video {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      display: block;
     }
+
     .strip {
       display: grid;
       gap: 0.75rem;
-      margin-top: 2rem;
-      border-top: 3px solid var(--line);
-      padding-top: 1.35rem;
+      margin-top: 1.75rem;
+      border-top: 2px solid var(--line);
+      padding-top: 1.2rem;
     }
-    @media (min-width: 760px) {
-      .strip { grid-template-columns: 1.1fr 0.9fr 1fr; gap: 0.85rem; }
+    @media (min-width: 800px) {
+      .strip { grid-template-columns: 1.15fr 0.85fr 1fr; gap: 0.9rem; }
     }
     .strip figure {
       margin: 0;
       position: relative;
       overflow: hidden;
-      border: 3px solid var(--line);
+      border: 2px solid var(--line);
       background: #111;
       aspect-ratio: 4 / 5;
     }
     .strip figure:first-child { aspect-ratio: 16 / 10; }
-    @media (min-width: 760px) {
-      .strip figure:first-child { grid-row: span 1; aspect-ratio: auto; min-height: 100%; }
-    }
     .strip img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: block;
-      filter: saturate(0.92) contrast(1.05);
-      transition: transform 0.45s ease, filter 0.45s ease;
+      transition: transform 0.45s ease;
     }
-    .strip figure:hover img {
-      transform: scale(1.03);
-      filter: saturate(1.05) contrast(1.08);
-    }
+    .strip figure:hover img { transform: scale(1.03); }
     .strip figcaption {
       position: absolute;
       left: 0.7rem;
-      bottom: 0.65rem;
+      bottom: 0.6rem;
       font-family: var(--font-display);
-      font-size: 0.68rem;
-      letter-spacing: 0.16em;
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
       color: #fff;
       text-shadow: 0 1px 8px #000;
     }
 
+    .band {
+      border-top: 2px solid var(--line);
+      background:
+        linear-gradient(90deg, rgba(0,0,0,0.55), rgba(0,0,0,0.2)),
+        url("assets/brand/brain-red.jpg") center / cover no-repeat;
+      min-height: 220px;
+      display: grid;
+      align-items: center;
+    }
+    .band .wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 2rem;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2.5rem 0;
+    }
+    .band p {
+      font-family: var(--font-display);
+      font-size: clamp(1.2rem, 3vw, 1.8rem);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      max-width: 14em;
+      line-height: 1.15;
+      text-shadow: 0 2px 18px rgba(0,0,0,0.45);
+    }
+    .band a {
+      text-decoration: none;
+      font-family: var(--font-display);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: #000;
+      color: #fff;
+      border: 2px solid #000;
+      padding: 0.85rem 1.15rem;
+      font-size: 0.8rem;
+    }
+    .band a:hover { background: transparent; color: #000; }
+
+    .links {
+      display: grid;
+      margin-top: 1.5rem;
+      border-top: 2px solid var(--line);
+    }
+    .links a {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 1.05rem 0;
+      text-decoration: none;
+      border-bottom: 2px solid var(--line);
+      font-family: var(--font-display);
+      font-size: clamp(1.25rem, 3vw, 1.75rem);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      transition: color 0.15s ease, padding-left 0.15s ease;
+    }
+    .links a span {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: none;
+    }
+    .links a:hover { color: var(--red); padding-left: 0.3rem; }
+
+    .closing {
+      margin-top: 1.6rem;
+      font-weight: 600;
+      font-size: clamp(0.95rem, 2vw, 1.08rem);
+      line-height: 1.65;
+    }
+    .closing span { color: var(--red); }
+
     footer {
-      padding: 1.5rem 0 2.25rem;
-      border-top: 3px solid var(--red);
+      padding: 1.4rem 0 2.1rem;
+      border-top: 2px solid var(--red);
       color: var(--muted);
       font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
+      font-weight: 600;
+      letter-spacing: 0.08em;
     }
     footer .inner {
       display: flex;
       flex-wrap: wrap;
       gap: 0.7rem 1.4rem;
       justify-content: space-between;
+      align-items: center;
     }
     footer .mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
       font-family: var(--font-display);
       color: var(--ink);
-      letter-spacing: 0.14em;
-      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+      font-size: 0.95rem;
+      text-transform: lowercase;
     }
+    footer .mark img { width: 1.35rem; height: 1.35rem; }
 
     @media (prefers-reduced-motion: reduce) {
-      .grain { animation: none; }
-      .kit-label, .brand, .brand-ja, .hero-line, .hero-sub, .cta-row {
-        opacity: 1;
-        animation: none;
+      .brand, .brand-ja, .hero-line, .hero-sub, .cta-row, .hero-mark {
+        opacity: 1; animation: none;
       }
     }
   </style>
@@ -538,19 +542,31 @@
   <header class="hero">
     <div class="hero-bg" aria-hidden="true"></div>
     <div class="wrap">
-      <div class="hero-top">
-        <span>Video Production &amp; Digital Brand</span>
-        <a href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">YouTube</a>
-      </div>
-      <div class="hero-main">
-        <p class="kit-label">Creative Media Kit</p>
-        <h1 class="brand">UNGR<br>ARCHIVE</h1>
-        <span class="brand-ja">アングラアーカイブ</span>
-        <p class="hero-line">タイムラインをハックし、深淵の記憶を植え付ける。</p>
-        <p class="hero-sub">インターネットの深淵で蠢くアンダーグラウンドの熱量を抽出し、脳裏に「バグ」のような記憶を残すクリエイティブ・ラボ。</p>
-        <div class="cta-row">
-          <a class="cta" href="mailto:ungr.archive@gmail.com">Contact</a>
-          <a class="cta-ghost" href="#work">Work</a>
+      <nav class="nav" aria-label="メイン">
+        <a class="logo" href="#top" id="top">
+          <img src="assets/brand/ua-mark.png" alt="">
+          <span class="logo-word">ua</span>
+        </a>
+        <div class="nav-links">
+          <a href="#work">Work</a>
+          <a href="#about">About</a>
+          <a class="nav-cta" href="mailto:ungr.archive@gmail.com">Contact</a>
+        </div>
+      </nav>
+
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <h1 class="brand">UNGR<br>ARCHIVE</h1>
+          <span class="brand-ja">アングラアーカイブ</span>
+          <p class="hero-line">マスではほとんど語られないけど、確実に誰かの人生を変えている作品達。</p>
+          <p class="hero-sub">僕達はそういう作品をずっとディグってきた。汚れた入口まで含めた文化の地図を、推奨ではなく記述で残す。</p>
+          <div class="cta-row">
+            <a class="cta" href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">Watch</a>
+            <a class="cta-ghost" href="#work">Work</a>
+          </div>
+        </div>
+        <div class="hero-mark" aria-hidden="true">
+          <img src="assets/brand/ua-mark.png" alt="">
         </div>
       </div>
     </div>
@@ -559,17 +575,29 @@
   <main>
     <section id="about">
       <div class="wrap">
-        <p class="sec-label">01 Concept</p>
-        <h2 class="sec-title">単なる映像制作チームではない。</h2>
+        <p class="sec-label">About</p>
+        <h2 class="sec-title">綺麗に編集された歴史だけだと、歪みの出所が消える。</h2>
         <p class="sec-body">
-          マスではほとんど語られないけど、確実に誰かの人生を変えている作品達。
-          僕達はそういう作品をずっとディグってきた。そのアーカイブとして始めたのが、このメディア。
+          アングラアーカイブは、<strong>推奨ではなく、記述。美化ではなく、記録。</strong>
+          映画、音楽、ネット、グレーな流通。影響を認めることと、行為を勧めることを分ける。
         </p>
         <p class="sec-body">
-          汚れた入口まで含めた<strong>文化の地図</strong>を残す。
-          <strong>推奨ではなく、記述。美化ではなく、記録。</strong>
-          実写、3DCG、VFX、メディア運用を融合し、潜在する世界観を鋭利なまま提示する。
+          自分で思考して、相手の思考をまずは受け取る。その積み重ねで、世界は少しずつ優しくなるんじゃないか。
         </p>
+        <div class="themes">
+          <article class="theme">
+            <h3>Dig</h3>
+            <p>マスで語られない作品を掘る。偶然の出会いも入口として残す。</p>
+          </article>
+          <article class="theme">
+            <h3>Critique</h3>
+            <p>意味づけの矛盾。死の美化。戦争と音楽。流通と美学の癒着。</p>
+          </article>
+          <article class="theme">
+            <h3>Archive</h3>
+            <p>未確認は未確認のまま。影響の地図として固定する。</p>
+          </article>
+        </div>
       </div>
     </section>
 
@@ -577,99 +605,67 @@
       <div class="wrap">
         <div class="work-head">
           <div>
-            <p class="sec-label">02 Work</p>
+            <p class="sec-label">Work</p>
             <h2 class="sec-title">映像と写真。</h2>
           </div>
           <a class="work-all" href="https://studio-command-eye.framer.website/" target="_blank" rel="noopener">Full Portfolio</a>
         </div>
-        <p class="sec-body">Media Kit掲載の実績。GALFY×ドン・キホーテ、PAT MARKETほか。続きはポートフォリオへ。</p>
+        <p class="sec-body">GALFY × ドン・キホーテ、PAT MARKETほか。続きはポートフォリオへ。</p>
 
         <article class="piece">
           <div class="piece-meta">
-            <span class="num">Case 01</span>
+            <span class="num">01</span>
             <h3>GALFY × ドン・キホーテ — PV</h3>
-            <p>アパレルブランドGALFYと大手百貨店ドン・キホーテのコラボ商品PV。ブランドPVの中で最も再生された本。</p>
+            <p>アパレルブランドGALFYとドン・キホーテのコラボ商品PV。</p>
           </div>
           <div class="media-frame">
-            <video
-              controls
-              playsinline
-              preload="metadata"
-              poster="assets/work/galfy-poster.jpg"
-              src="assets/work/galfy.mp4"
-            ></video>
+            <video controls playsinline preload="metadata" poster="assets/work/galfy-poster.jpg" src="assets/work/galfy.mp4"></video>
           </div>
         </article>
 
         <article class="piece">
           <div class="piece-meta">
-            <span class="num">Case 02</span>
+            <span class="num">02</span>
             <h3>PAT MARKET — Event PV / 3DCG</h3>
-            <p>原宿の古着屋PAT MARKETのイベントPV。カルチャーの震源地として世界観をCGで造形。過去最高集客。</p>
+            <p>原宿PAT MARKETのイベントPV。カルチャーの震源地として世界観をCGで造形。</p>
           </div>
           <div class="media-frame">
-            <video
-              controls
-              playsinline
-              preload="metadata"
-              poster="assets/work/pat-poster.jpg"
-              src="assets/work/pat.mp4"
-            ></video>
+            <video controls playsinline preload="metadata" poster="assets/work/pat-poster.jpg" src="assets/work/pat.mp4"></video>
           </div>
         </article>
 
         <div class="strip" aria-label="制作スチル">
           <figure>
-            <img src="assets/work/pv2.jpg" alt="縦型・横型PVスチル" loading="lazy">
+            <img src="assets/work/pv2.jpg" alt="PVスチル" loading="lazy">
             <figcaption>PV / Still</figcaption>
           </figure>
           <figure>
-            <img src="assets/work/pv1.jpg" alt="縦型ショートPVスチル" loading="lazy">
+            <img src="assets/work/pv1.jpg" alt="縦型スチル" loading="lazy">
             <figcaption>Vertical</figcaption>
           </figure>
           <figure>
-            <img src="assets/work/photo2.jpg" alt="フォトワークス" loading="lazy">
+            <img src="assets/work/photo2.jpg" alt="フォト" loading="lazy">
             <figcaption>Photo</figcaption>
           </figure>
         </div>
       </div>
     </section>
 
-    <section id="lab">
+    <div class="band">
       <div class="wrap">
-        <p class="sec-label">03 Lab</p>
-        <h2 class="sec-title">エンタメで終わらせない。</h2>
-        <p class="sec-body">コンテンツは消費される玩具ではなく、物事を深く考えるための装置。作って終わりにせず、ターゲットへ直撃する導線まで設計する。</p>
-        <div class="themes">
-          <article class="theme">
-            <h3>Dig</h3>
-            <p>深淵のカルチャーを掘る。偶然の出会いも、入口として残す。</p>
-          </article>
-          <article class="theme">
-            <h3>Produce</h3>
-            <p>横型シネマから縦型ショートまで。ダークさと鮮烈な編集で世界観を純度高く出す。</p>
-          </article>
-          <article class="theme">
-            <h3>Hack</h3>
-            <p>SNS運用、音響キュレーション、デジタルブランディング。タイムラインそのものを設計する。</p>
-          </article>
-        </div>
+        <p>Hack the timeline. Plant a memory.</p>
+        <a href="mailto:ungr.archive@gmail.com">Contact</a>
       </div>
-    </section>
+    </div>
 
-    <section id="watch">
+    <section id="connect">
       <div class="wrap">
-        <p class="sec-label">04 Connect</p>
-        <h2 class="sec-title">世界をハックするパートナーを募集。</h2>
-        <p class="sec-body">映像制作、SNS運用、インターネットとリアルを問わないアングラな企み。ご依頼・ご相談は下記まで。</p>
+        <p class="sec-label">Connect</p>
+        <h2 class="sec-title">接続</h2>
         <nav class="links" aria-label="外部リンク">
           <a href="https://studio-command-eye.framer.website/" target="_blank" rel="noopener">
             Portfolio
             <span>Video / 3DCG / Photo</span>
-          </a>
-          <a href="mailto:ungr.archive@gmail.com">
-            Email
-            <span>ungr.archive@gmail.com</span>
           </a>
           <a href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">
             YouTube
@@ -679,6 +675,10 @@
             Instagram / TikTok
             <span>@ungr.archive</span>
           </a>
+          <a href="mailto:ungr.archive@gmail.com">
+            Email
+            <span>ungr.archive@gmail.com</span>
+          </a>
         </nav>
         <p class="closing">ところでみんな、<span>人生を変えたアングラって何？</span><br>アングラアーカイブ。</p>
       </div>
@@ -687,8 +687,8 @@
 
   <footer>
     <div class="wrap inner">
-      <p class="mark">UNGR ARCHIVE</p>
-      <p>© <span id="y"></span> DIRECTED BY UNGR ARCHIVE</p>
+      <p class="mark"><img src="assets/brand/ua-mark.png" alt=""> ua</p>
+      <p>© <span id="y"></span> UNGR ARCHIVE</p>
     </div>
   </footer>
   <script>
