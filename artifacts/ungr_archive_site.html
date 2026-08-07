@@ -77,26 +77,23 @@
       z-index: -1;
       background:
         linear-gradient(90deg, var(--red) 0 5px, transparent 5px),
-        radial-gradient(circle at 82% 38%, transparent 18%, rgba(255,0,0,0.08) 18.5%, transparent 42%),
-        radial-gradient(circle at 82% 38%, transparent 28%, rgba(255,0,0,0.05) 28.5%, transparent 55%),
-        linear-gradient(180deg, transparent 0%, transparent 72%, rgba(255, 0, 0, 0.12) 100%),
+        linear-gradient(105deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 42%, rgba(0,0,0,0.35) 100%),
+        linear-gradient(to top, #000 0%, transparent 45%),
+        url("assets/work/identity.jpg") center / cover no-repeat,
         #000;
     }
     .hero-bg::before {
       content: "";
       position: absolute;
       inset: 0;
-      background:
-        repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,0.45) 2px 3px),
-        linear-gradient(125deg, transparent 55%, rgba(255,0,0,0.07) 55%, transparent 56%),
-        linear-gradient(35deg, transparent 60%, rgba(255,0,0,0.06) 60%, transparent 61%);
-      opacity: 0.55;
+      background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,0.35) 2px 3px);
+      opacity: 0.35;
     }
     .hero-bg::after {
       content: "";
       position: absolute;
       inset: auto 0 0 0;
-      height: 42%;
+      height: 35%;
       background: linear-gradient(to top, #000, transparent);
     }
 
@@ -391,6 +388,120 @@
       padding-left: 0.35rem;
     }
 
+    /* —— WORK / MEDIA —— */
+    .work-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 1.5rem;
+      justify-content: space-between;
+      align-items: end;
+      margin-bottom: 1.5rem;
+    }
+    .work-head .sec-title { margin-bottom: 0; }
+    .work-all {
+      font-family: var(--font-display);
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border-bottom: 3px solid var(--red);
+      padding-bottom: 3px;
+    }
+    .work-all:hover { color: var(--red); }
+
+    .piece {
+      margin-top: 2rem;
+      border-top: 3px solid var(--line);
+      padding-top: 1.35rem;
+    }
+    .piece-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.25rem;
+      align-items: baseline;
+      margin-bottom: 0.85rem;
+    }
+    .piece-meta .num {
+      font-family: var(--font-display);
+      color: var(--red);
+      letter-spacing: 0.14em;
+      font-size: 0.78rem;
+    }
+    .piece-meta h3 {
+      font-family: var(--font-jp);
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+    }
+    .piece-meta p {
+      width: 100%;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 400;
+      line-height: 1.7;
+      max-width: 40rem;
+    }
+    .media-frame {
+      position: relative;
+      width: 100%;
+      background: #111;
+      border: 3px solid var(--line);
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+    }
+    .media-frame video,
+    .media-frame img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .strip {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 2rem;
+      border-top: 3px solid var(--line);
+      padding-top: 1.35rem;
+    }
+    @media (min-width: 760px) {
+      .strip { grid-template-columns: 1.1fr 0.9fr 1fr; gap: 0.85rem; }
+    }
+    .strip figure {
+      margin: 0;
+      position: relative;
+      overflow: hidden;
+      border: 3px solid var(--line);
+      background: #111;
+      aspect-ratio: 4 / 5;
+    }
+    .strip figure:first-child { aspect-ratio: 16 / 10; }
+    @media (min-width: 760px) {
+      .strip figure:first-child { grid-row: span 1; aspect-ratio: auto; min-height: 100%; }
+    }
+    .strip img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: saturate(0.92) contrast(1.05);
+      transition: transform 0.45s ease, filter 0.45s ease;
+    }
+    .strip figure:hover img {
+      transform: scale(1.03);
+      filter: saturate(1.05) contrast(1.08);
+    }
+    .strip figcaption {
+      position: absolute;
+      left: 0.7rem;
+      bottom: 0.65rem;
+      font-family: var(--font-display);
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 1px 8px #000;
+    }
+
     footer {
       padding: 1.5rem 0 2.25rem;
       border-top: 3px solid var(--red);
@@ -439,7 +550,7 @@
         <p class="hero-sub">インターネットの深淵で蠢くアンダーグラウンドの熱量を抽出し、脳裏に「バグ」のような記憶を残すクリエイティブ・ラボ。</p>
         <div class="cta-row">
           <a class="cta" href="mailto:ungr.archive@gmail.com">Contact</a>
-          <a class="cta-ghost" href="#lab">Lab</a>
+          <a class="cta-ghost" href="#work">Work</a>
         </div>
       </div>
     </div>
@@ -462,9 +573,71 @@
       </div>
     </section>
 
+    <section id="work">
+      <div class="wrap">
+        <div class="work-head">
+          <div>
+            <p class="sec-label">02 Work</p>
+            <h2 class="sec-title">映像と写真。</h2>
+          </div>
+          <a class="work-all" href="https://studio-command-eye.framer.website/" target="_blank" rel="noopener">Full Portfolio</a>
+        </div>
+        <p class="sec-body">Media Kit掲載の実績。GALFY×ドン・キホーテ、PAT MARKETほか。続きはポートフォリオへ。</p>
+
+        <article class="piece">
+          <div class="piece-meta">
+            <span class="num">Case 01</span>
+            <h3>GALFY × ドン・キホーテ — PV</h3>
+            <p>アパレルブランドGALFYと大手百貨店ドン・キホーテのコラボ商品PV。ブランドPVの中で最も再生された本。</p>
+          </div>
+          <div class="media-frame">
+            <video
+              controls
+              playsinline
+              preload="metadata"
+              poster="assets/work/galfy-poster.jpg"
+              src="assets/work/galfy.mp4"
+            ></video>
+          </div>
+        </article>
+
+        <article class="piece">
+          <div class="piece-meta">
+            <span class="num">Case 02</span>
+            <h3>PAT MARKET — Event PV / 3DCG</h3>
+            <p>原宿の古着屋PAT MARKETのイベントPV。カルチャーの震源地として世界観をCGで造形。過去最高集客。</p>
+          </div>
+          <div class="media-frame">
+            <video
+              controls
+              playsinline
+              preload="metadata"
+              poster="assets/work/pat-poster.jpg"
+              src="assets/work/pat.mp4"
+            ></video>
+          </div>
+        </article>
+
+        <div class="strip" aria-label="制作スチル">
+          <figure>
+            <img src="assets/work/pv2.jpg" alt="縦型・横型PVスチル" loading="lazy">
+            <figcaption>PV / Still</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/work/pv1.jpg" alt="縦型ショートPVスチル" loading="lazy">
+            <figcaption>Vertical</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/work/photo2.jpg" alt="フォトワークス" loading="lazy">
+            <figcaption>Photo</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
     <section id="lab">
       <div class="wrap">
-        <p class="sec-label">02 Lab</p>
+        <p class="sec-label">03 Lab</p>
         <h2 class="sec-title">エンタメで終わらせない。</h2>
         <p class="sec-body">コンテンツは消費される玩具ではなく、物事を深く考えるための装置。作って終わりにせず、ターゲットへ直撃する導線まで設計する。</p>
         <div class="themes">
@@ -481,29 +654,19 @@
             <p>SNS運用、音響キュレーション、デジタルブランディング。タイムラインそのものを設計する。</p>
           </article>
         </div>
-        <ul class="work-list">
-          <li>
-            <strong>PV / MV</strong>
-            <span>縦型・横型。UA特有のダークさと、視覚を刺激する編集。</span>
-          </li>
-          <li>
-            <strong>Documentary</strong>
-            <span>アーティストのルーツや現場の熱量を、ディープな映像美で切り取る。</span>
-          </li>
-          <li>
-            <strong>SNS / Sound</strong>
-            <span>運用代行、店舗プレイリスト、一貫したビジュアル統括。</span>
-          </li>
-        </ul>
       </div>
     </section>
 
     <section id="watch">
       <div class="wrap">
-        <p class="sec-label">03 Connect</p>
+        <p class="sec-label">04 Connect</p>
         <h2 class="sec-title">世界をハックするパートナーを募集。</h2>
         <p class="sec-body">映像制作、SNS運用、インターネットとリアルを問わないアングラな企み。ご依頼・ご相談は下記まで。</p>
         <nav class="links" aria-label="外部リンク">
+          <a href="https://studio-command-eye.framer.website/" target="_blank" rel="noopener">
+            Portfolio
+            <span>Video / 3DCG / Photo</span>
+          </a>
           <a href="mailto:ungr.archive@gmail.com">
             Email
             <span>ungr.archive@gmail.com</span>
