@@ -8,19 +8,19 @@
   <title>UNGR ARCHIVE / アングラアーカイブ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Dela+Gothic+One&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #000;
       --bg-2: #0d0d0d;
       --ink: #f2f2f2;
-      --muted: #7a7a7a;
+      --muted: #8a8a8a;
       --red: #ff0000;
       --red-deep: #b00000;
       --line: #2a2a2a;
-      --font-display: "Archivo Black", "Dela Gothic One", sans-serif;
-      --font-jp: "Dela Gothic One", "Noto Sans JP", sans-serif;
-      --font-body: "Noto Sans JP", sans-serif;
+      --font-display: "Archivo Black", "IBM Plex Sans JP", sans-serif;
+      --font-jp: "IBM Plex Sans JP", sans-serif;
+      --font-body: "IBM Plex Sans JP", sans-serif;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,11 +29,12 @@
       font-family: var(--font-body);
       background: var(--bg);
       color: var(--ink);
-      line-height: 1.65;
+      line-height: 1.75;
       font-size: 15px;
       overflow-x: hidden;
-      font-weight: 500;
-      letter-spacing: 0.04em;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      font-feature-settings: "palt" 1;
     }
     a { color: inherit; }
     ::selection {
@@ -155,31 +156,32 @@
     .brand-ja {
       display: block;
       font-family: var(--font-jp);
-      font-weight: 400;
-      font-size: clamp(0.95rem, 2.5vw, 1.25rem);
-      letter-spacing: 0.35em;
+      font-weight: 600;
+      font-size: clamp(0.9rem, 2.2vw, 1.05rem);
+      letter-spacing: 0.18em;
       color: var(--red);
-      margin: 0.95rem 0 1.5rem;
+      margin: 0.85rem 0 1.45rem;
       opacity: 0;
       animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.14s;
     }
     .hero-line {
       max-width: 28rem;
       font-family: var(--font-jp);
-      font-size: clamp(1rem, 2.4vw, 1.3rem);
-      font-weight: 400;
-      line-height: 1.4;
-      letter-spacing: 0.08em;
-      margin-bottom: 0.7rem;
+      font-size: clamp(1.05rem, 2.5vw, 1.35rem);
+      font-weight: 600;
+      line-height: 1.55;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.75rem;
       opacity: 0;
       animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.24s;
     }
     .hero-sub {
       max-width: 32rem;
       color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 500;
-      letter-spacing: 0.06em;
+      font-size: 0.92rem;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      line-height: 1.8;
       margin-bottom: 1.7rem;
       opacity: 0;
       animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.34s;
@@ -246,10 +248,10 @@
     }
     .sec-title {
       font-family: var(--font-jp);
-      font-weight: 400;
-      font-size: clamp(1.35rem, 3.8vw, 2.05rem);
-      line-height: 1.35;
-      letter-spacing: 0.06em;
+      font-weight: 700;
+      font-size: clamp(1.35rem, 3.6vw, 1.95rem);
+      line-height: 1.45;
+      letter-spacing: 0.02em;
       max-width: 18em;
       margin-bottom: 1rem;
     }
@@ -257,21 +259,23 @@
       max-width: 38rem;
       color: var(--muted);
       font-size: 0.95rem;
-      font-weight: 500;
-      line-height: 1.85;
+      font-weight: 400;
+      line-height: 1.9;
+      letter-spacing: 0.02em;
     }
     .sec-body + .sec-body { margin-top: 1rem; }
     .sec-body strong {
       color: var(--ink);
-      font-weight: 900;
+      font-weight: 700;
     }
     .closing {
       margin-top: 1.75rem;
       font-family: var(--font-jp);
-      font-size: clamp(0.95rem, 2.2vw, 1.15rem);
-      letter-spacing: 0.06em;
+      font-weight: 600;
+      font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+      letter-spacing: 0.03em;
       color: var(--ink);
-      line-height: 1.5;
+      line-height: 1.65;
     }
     .closing span { color: var(--red); }
 
@@ -321,8 +325,9 @@
     .theme p {
       color: var(--muted);
       font-size: 0.88rem;
-      font-weight: 500;
-      letter-spacing: 0.04em;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      line-height: 1.75;
     }
 
     .work-list {
