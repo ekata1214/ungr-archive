@@ -2,444 +2,392 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#0a0a0a">
-  <title>UNGR ARCHIVE リポ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="UNGR ARCHIVE / アングラアーカイブ — マスでは語られにくい作品と文化をディグし、記録するメディア。">
+  <meta name="theme-color" content="#0c0d0a">
+  <title>UNGR ARCHIVE / アングラアーカイブ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0a0a;
-      --surface: #141414;
-      --border: #2a2a2a;
-      --text: #e8e8e8;
-      --muted: #888;
-      --accent: #c8f542;
-      --accent-dim: #8aab2e;
+      --bg: #0c0d0a;
+      --bg-2: #151710;
+      --ink: #f2f4e8;
+      --muted: #9aa08a;
+      --acid: #c8f542;
+      --acid-deep: #9bc21a;
+      --line: rgba(242, 244, 232, 0.14);
+      --font-display: "Syne", "Zen Kaku Gothic New", sans-serif;
+      --font-body: "Zen Kaku Gothic New", sans-serif;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { -webkit-text-size-adjust: 100%; }
+    html { scroll-behavior: smooth; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+      font-family: var(--font-body);
       background: var(--bg);
-      color: var(--text);
-      line-height: 1.65;
+      color: var(--ink);
+      line-height: 1.7;
       font-size: 16px;
-      padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
-      max-width: 640px;
-      margin: 0 auto;
+      overflow-x: hidden;
     }
-    header {
-      padding: 24px 0 20px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 8px;
+    a { color: inherit; }
+    img { max-width: 100%; display: block; }
+
+    .grain {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      opacity: 0.08;
+      mix-blend-mode: soft-light;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      animation: grain-shift 1.2s steps(2) infinite;
     }
-    header h1 {
-      font-size: 1.35rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
+    @keyframes grain-shift {
+      0% { transform: translate(0, 0); }
+      50% { transform: translate(-1.5%, 1%); }
+      100% { transform: translate(1%, -1%); }
     }
-    header .sub {
-      color: var(--muted);
-      font-size: 0.85rem;
-      margin-top: 6px;
+
+    .wrap {
+      width: min(1120px, calc(100% - 2.5rem));
+      margin-inline: auto;
     }
-    header .handle {
-      color: var(--accent);
-      font-size: 0.9rem;
-      margin-top: 10px;
+
+    /* —— HERO: one composition —— */
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      align-items: end;
+      padding: 1.25rem 0 2.5rem;
+      isolation: isolate;
     }
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: rgba(10,10,10,0.92);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      padding: 12px 0;
-      margin-bottom: 8px;
-      border-bottom: 1px solid var(--border);
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      white-space: nowrap;
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(ellipse 80% 55% at 70% 20%, rgba(200, 245, 66, 0.16), transparent 55%),
+        radial-gradient(ellipse 60% 50% at 10% 85%, rgba(80, 90, 40, 0.35), transparent 60%),
+        linear-gradient(160deg, #10120c 0%, #0c0d0a 45%, #171a10 100%);
     }
-    nav a {
-      display: inline-block;
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 0.8rem;
-      padding: 6px 12px;
-      margin-right: 4px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
+    .hero-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(
+          -12deg,
+          transparent 0 18px,
+          rgba(200, 245, 66, 0.025) 18px 19px
+        );
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent 75%);
     }
-    nav a:active { background: var(--surface); color: var(--accent); }
-    section { margin-bottom: 12px; }
-    details {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      margin-bottom: 10px;
-      overflow: hidden;
-    }
-    summary {
-      padding: 16px;
-      font-weight: 600;
-      font-size: 0.95rem;
-      cursor: pointer;
-      list-style: none;
+    .hero-top {
+      position: absolute;
+      top: 1.25rem;
+      left: 0;
+      right: 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      -webkit-tap-highlight-color: transparent;
-      min-height: 48px;
-    }
-    summary::-webkit-details-marker { display: none; }
-    summary::after {
-      content: "+";
-      color: var(--muted);
-      font-size: 1.2rem;
-      font-weight: 300;
-      flex-shrink: 0;
-      margin-left: 12px;
-    }
-    details[open] summary::after { content: "−"; }
-    .content {
-      padding: 0 16px 16px;
-      border-top: 1px solid var(--border);
-    }
-    .content > *:first-child { margin-top: 14px; }
-    h3 {
-      font-size: 0.8rem;
-      color: var(--accent);
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin: 16px 0 8px;
-    }
-    h3:first-child { margin-top: 0; }
-    p { margin-bottom: 10px; font-size: 0.92rem; }
-    ul, ol {
-      padding-left: 1.2em;
-      margin-bottom: 12px;
-    }
-    li {
-      margin-bottom: 8px;
-      font-size: 0.92rem;
-    }
-    .tag {
-      display: inline-block;
-      background: #1e1e1e;
-      border: 1px solid var(--border);
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
       color: var(--muted);
-      margin-right: 4px;
-      margin-bottom: 4px;
     }
-    .card {
-      background: #1a1a1a;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 10px;
+    .hero-top a {
+      text-decoration: none;
+      color: var(--ink);
+      border-bottom: 1px solid var(--acid);
+      padding-bottom: 2px;
+      transition: color 0.25s ease;
     }
-    .card strong { display: block; margin-bottom: 4px; font-size: 0.9rem; }
-    .card span { color: var(--muted); font-size: 0.82rem; }
-    .step {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 12px;
-      align-items: flex-start;
+    .hero-top a:hover { color: var(--acid); }
+
+    .hero-main { padding-top: 5rem; }
+    .brand {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(3.4rem, 14vw, 8.5rem);
+      line-height: 0.88;
+      letter-spacing: -0.04em;
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+      opacity: 0;
+      animation: rise 0.9s ease forwards 0.1s;
     }
-    .step-num {
-      flex-shrink: 0;
-      width: 28px;
-      height: 28px;
-      background: var(--accent);
-      color: #000;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8rem;
+    .brand-ja {
+      display: block;
+      font-family: var(--font-body);
       font-weight: 700;
+      font-size: clamp(1rem, 2.6vw, 1.35rem);
+      letter-spacing: 0.28em;
+      color: var(--acid);
+      margin: 0.75rem 0 1.75rem;
+      opacity: 0;
+      animation: rise 0.9s ease forwards 0.25s;
     }
-    .step-body { flex: 1; font-size: 0.9rem; }
-    .warn {
-      background: #1a1510;
-      border-left: 3px solid #e8a838;
-      padding: 10px 12px;
-      font-size: 0.85rem;
-      margin: 12px 0;
-      border-radius: 0 8px 8px 0;
+    .hero-line {
+      max-width: 28rem;
+      font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+      font-weight: 500;
+      line-height: 1.55;
+      margin-bottom: 0.85rem;
+      opacity: 0;
+      animation: rise 0.9s ease forwards 0.4s;
     }
-    .todo {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .todo:last-child { border-bottom: none; }
-    .prio-high { color: #ff6b6b; font-size: 0.7rem; font-weight: 700; }
-    .prio-mid { color: #e8a838; font-size: 0.7rem; font-weight: 700; }
-    .prio-low { color: var(--muted); font-size: 0.7rem; font-weight: 700; }
-    footer {
-      text-align: center;
+    .hero-sub {
+      max-width: 32rem;
       color: var(--muted);
-      font-size: 0.75rem;
-      padding: 32px 0 24px;
+      font-size: 0.98rem;
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: rise 0.9s ease forwards 0.55s;
     }
-    a { color: var(--accent-dim); }
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem 1.25rem;
+      align-items: center;
+      opacity: 0;
+      animation: rise 0.9s ease forwards 0.7s;
+    }
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      text-decoration: none;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      background: var(--acid);
+      color: #10120c;
+      padding: 0.95rem 1.35rem;
+      transition: transform 0.25s ease, background 0.25s ease;
+    }
+    .cta:hover {
+      background: #d8ff5a;
+      transform: translateY(-2px);
+    }
+    .cta-ghost {
+      text-decoration: none;
+      color: var(--ink);
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 3px;
+      transition: border-color 0.25s ease, color 0.25s ease;
+    }
+    .cta-ghost:hover {
+      color: var(--acid);
+      border-color: var(--acid);
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* —— sections: one job each —— */
+    section {
+      padding: 5.5rem 0;
+      border-top: 1px solid var(--line);
+    }
+    .sec-label {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--acid);
+      margin-bottom: 1rem;
+    }
+    .sec-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.8rem, 4.5vw, 2.75rem);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      max-width: 16ch;
+      margin-bottom: 1.25rem;
+    }
+    .sec-body {
+      max-width: 38rem;
+      color: var(--muted);
+      font-size: 1.02rem;
+    }
+    .sec-body strong { color: var(--ink); font-weight: 500; }
+
+    .themes {
+      display: grid;
+      gap: 1.5rem;
+      margin-top: 2.5rem;
+    }
+    @media (min-width: 760px) {
+      .themes { grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+    }
+    .theme h3 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.55rem;
+      padding-bottom: 0.55rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .theme p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .links {
+      display: grid;
+      gap: 0;
+      margin-top: 2rem;
+      border-top: 1px solid var(--line);
+    }
+    .links a {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 1.25rem 0;
+      text-decoration: none;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.2rem, 3vw, 1.65rem);
+      transition: color 0.25s ease, padding-left 0.25s ease;
+    }
+    .links a span {
+      font-family: var(--font-body);
+      font-weight: 400;
+      font-size: 0.85rem;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+    .links a:hover {
+      color: var(--acid);
+      padding-left: 0.5rem;
+    }
+
+    footer {
+      padding: 2.5rem 0 3rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.82rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.5rem;
+      justify-content: space-between;
+    }
+    footer .mark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: 0.06em;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .grain { animation: none; }
+      .brand, .brand-ja, .hero-line, .hero-sub, .cta-row {
+        opacity: 1;
+        animation: none;
+      }
+    }
   </style>
 </head>
 <body>
+  <div class="grain" aria-hidden="true"></div>
 
-<header>
-  <h1>UNGR ARCHIVE リポ</h1>
-  <p class="sub">2026年7月時点 · 企画・時事ネタ・運用メモ</p>
-  <p class="handle">@ungr.archive（IG / TikTok）</p>
-</header>
-
-<nav>
-  <a href="#overview">概要</a>
-  <a href="#theme">テーマ軸</a>
-  <a href="#strategy">戦略</a>
-  <a href="#july">7月</a>
-  <a href="#aug">8月</a>
-  <a href="#sep">9月</a>
-  <a href="#follower">フォロワー</a>
-  <a href="#todo">TODO</a>
-</nav>
-
-<!-- 概要 -->
-<section id="overview">
-  <details open>
-    <summary>アカウント概要</summary>
-    <div class="content">
-      <p><strong>UNGR ARCHIVE / アングラアーカイブ</strong><br>運用約半年・調子良好。横尺YouTube中心。</p>
-      <div>
-        <span class="tag">@ungr.archive</span>
-        <span class="tag">Instagram</span>
-        <span class="tag">TikTok</span>
-        <span class="tag">YouTube横尺</span>
+  <header class="hero">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="wrap">
+      <div class="hero-top">
+        <span>Archive media</span>
+        <a href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">YouTube</a>
       </div>
-      <h3>関連</h3>
-      <p>un-grn.com（月刊アングラ・作家ブログ）— 別軸のウェブマガジン。「記憶の保管庫」世界観。</p>
-      <h3>コンテンツの芯</h3>
-      <p>人間が勝手に作った価値観・物語の<strong>矛盾</strong>と、人間が意味を作る生き物であることへの<strong>批評</strong>。</p>
+      <div class="hero-main">
+        <h1 class="brand">UNGR<br>ARCHIVE</h1>
+        <span class="brand-ja">アングラアーカイブ</span>
+        <p class="hero-line">マスでは語られにくい作品を、掘って、残す。</p>
+        <p class="hero-sub">カルチャーの裏側で誰かの人生を変えた記録を、批評と一緒にアーカイブするメディアです。</p>
+        <div class="cta-row">
+          <a class="cta" href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">Watch on YouTube →</a>
+          <a class="cta-ghost" href="#about">このメディアについて</a>
+        </div>
+      </div>
     </div>
-  </details>
-</section>
+  </header>
 
-<!-- テーマ軸 -->
-<section id="theme">
-  <details>
-    <summary>既存ネタの傾向（共通テーマ）</summary>
-    <div class="content">
-      <div class="card"><strong>物語・意味付けの矛盾</strong><span>オマージュvs個性、考察動画、神格化、バズると悲しむ</span></div>
-      <div class="card"><strong>カルチャー批評</strong><span>ヒップホップ、宗教、違法DL、グロとニュースの二重基準</span></div>
-      <div class="card"><strong>芸術と倫理</strong><span>罪人の作品、性と芸術、人体改造、早逝の神格化</span></div>
-      <div class="card"><strong>メディア批評</strong><span>語彙力、本編より解説を見る、エモいという言葉</span></div>
-      <p style="color:var(--muted);font-size:0.85rem;">参考ネタ：フールナイト、クラウドラップ史、死役所、マトリックス、東京グランギニョル、BURST、ビョーク…</p>
+  <main>
+    <section id="about">
+      <div class="wrap">
+        <p class="sec-label">About</p>
+        <h2 class="sec-title">綺麗な歴史だけだと、歪みの出所が消える。</h2>
+        <p class="sec-body">
+          アングラアーカイブは、<strong>推奨ではなく記述</strong>で文化を残します。
+          映画、音楽、ネット文化、グレーな流通まで含めて、
+          「なぜこの感性が刺さるのか」を地図化するメディアです。
+          議論が起きているときが華。好き／嫌いを、ここで考えます。
+        </p>
+      </div>
+    </section>
+
+    <section id="axis">
+      <div class="wrap">
+        <p class="sec-label">Axis</p>
+        <h2 class="sec-title">見ているテーマ</h2>
+        <p class="sec-body">一本の作品紹介で終わらず、構造と感情の両方を拾います。</p>
+        <div class="themes">
+          <article class="theme">
+            <h3>アーカイブ</h3>
+            <p>埋もれた映画、MV、ネット文化の残像。出典と体感を分けて残す。</p>
+          </article>
+          <article class="theme">
+            <h3>批評</h3>
+            <p>意味づけの矛盾、弱者性の消費、戦争と音楽、違法流通と美学の癒着。</p>
+          </article>
+          <article class="theme">
+            <h3>記録</h3>
+            <p>個人の経験も、未確認なら未確認のまま。美化でも糾弾でもなく地図にする。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="watch">
+      <div class="wrap">
+        <p class="sec-label">Connect</p>
+        <h2 class="sec-title">見る / つながる</h2>
+        <nav class="links" aria-label="外部リンク">
+          <a href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">
+            YouTube
+            <span>@ungr.archive</span>
+          </a>
+          <a href="https://www.instagram.com/ungr.archive/" target="_blank" rel="noopener">
+            Instagram
+            <span>短尺・断片</span>
+          </a>
+          <a href="mailto:ungr.archive@gmail.com">
+            Contact
+            <span>ungr.archive@gmail.com</span>
+          </a>
+        </nav>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap" style="display:flex;flex-wrap:wrap;gap:0.75rem 1.5rem;justify-content:space-between;width:100%">
+      <p class="mark">UNGR ARCHIVE</p>
+      <p>© <span id="y"></span> アングラアーカイブ</p>
     </div>
-  </details>
-</section>
-
-<!-- 戦略 -->
-<section id="strategy">
-  <details>
-    <summary>チャンネル戦略（3本柱）</summary>
-    <div class="content">
-      <div class="card">
-        <strong>柱A：アーカイブ解説</strong>
-        <span>15〜45秒 · 新規獲得・保存向け</span>
-      </div>
-      <div class="card">
-        <strong>柱B：現地・体験</strong>
-        <span>3〜8分 · 信頼・ファン化</span>
-      </div>
-      <div class="card">
-        <strong>柱C：作家/匿名インタビュー</strong>
-        <span>8〜20分 · コア層定着</span>
-      </div>
-      <h3>初速用シリーズ</h3>
-      <ul>
-        <li>「今日の保管庫」（毎日/隔日）</li>
-        <li>「3行で刺す引用」</li>
-        <li>「月刊アングラ：今月の5本」</li>
-        <li>「センシティブ注意の付け方講座」</li>
-      </ul>
-      <h3>時事の入れ方</h3>
-      <p>事件・裁判・災害・スポーツ・アニメ映画公開を<strong>フック</strong>にして、批評軸に接続する。</p>
-    </div>
-  </details>
-</section>
-
-<!-- 7月 -->
-<section id="july">
-  <details>
-    <summary>7月ネタ × 批評軸（10本）</summary>
-    <div class="content">
-      <ol>
-        <li>W杯「国」という物語の矛盾</li>
-        <li>W杯「努力は報われる」神話の崩れ</li>
-        <li>VARと正しさ中毒</li>
-        <li>裁判員裁判＝正義の共同制作</li>
-        <li>事件報道と「わかる」快楽</li>
-        <li>センシティブ注意の文化</li>
-        <li>夏アニメ開始＝現実逃避の季節</li>
-        <li>『キングダム』的ヒーロー史観</li>
-        <li>展「空海と真言の名宝」×信じる技術</li>
-        <li>FUJI ROCKの「自由」とスポンサー</li>
-      </ol>
-      <h3>スポーツ・イベント日程</h3>
-      <ul>
-        <li>W杯 決勝T：R16 7/4-7、QF 7/9-11、決勝 7/19</li>
-        <li>FUJI ROCK：7/24-26</li>
-        <li>映画：トイストーリー5(7/3)、キングダム(7/17)、ちいかわ(7/24)</li>
-        <li>夏アニメ：攻殻(7/7)、幼女戦記II(7/8)、無職転生III(7/4)ほか</li>
-      </ul>
-    </div>
-  </details>
-</section>
-
-<!-- 8月 -->
-<section id="aug">
-  <details>
-    <summary>8月ネタ × 批評軸（10本）</summary>
-    <div class="content">
-      <ol>
-        <li>甲子園＝青春の輸入</li>
-        <li>暑さ対策2部制と伝統の正体</li>
-        <li>戦争映画×感動の消費</li>
-        <li>フェス＝共同幻想の工場</li>
-        <li>盆踊り×ルーツの偽装</li>
-        <li>阿波おどり/よさこい＝地域アイデンティティの演出</li>
-        <li>初音ミクイベント＝人格の外注</li>
-        <li>『まどマギ』×救いの矛盾</li>
-        <li>『踊る大捜査線』×正義のチーム</li>
-        <li>国際大会×「世界」の錯覚</li>
-      </ol>
-      <h3>スポーツ・イベント日程</h3>
-      <ul>
-        <li>夏の甲子園：8/5開幕〜8/22決勝</li>
-        <li>LuckyFes：8/8-11</li>
-        <li>マジカルミライ東京：8/28-30</li>
-        <li>映画：まどマギ(8/28)、踊る大捜査線(8/21)</li>
-      </ul>
-    </div>
-  </details>
-</section>
-
-<!-- 9月 -->
-<section id="sep">
-  <details>
-    <summary>9月ネタ × 批評軸（10本）</summary>
-    <div class="content">
-      <ol>
-        <li>アジア大会＝「アジア」という箱</li>
-        <li>平和の祭典という建前</li>
-        <li>京まふ＝「好き」の正当化市場</li>
-        <li>声優が顔になる現象</li>
-        <li>Maker Faire＝創作民主化の矛盾</li>
-        <li>生成AI×完全犯罪映画</li>
-        <li>『八つ墓村』テンプレの代弁</li>
-        <li>治安不安と過剰な正義</li>
-        <li>フェス×解放の規格化</li>
-        <li>マラソン×苦しみの意味化</li>
-      </ol>
-      <h3>スポーツ・イベント日程</h3>
-      <ul>
-        <li>アジア競技大会：9/19-10/4（愛知・名古屋）</li>
-        <li>京まふ：9/19-20</li>
-        <li>ROCK IN JAPAN：9/12-21</li>
-        <li>映画：オデュッセイア(9/11)、踊る大捜査線(9/18)、白鳥とコウモリ(9/4)</li>
-      </ul>
-    </div>
-  </details>
-</section>
-
-<!-- フォロワー -->
-<section id="follower">
-  <details>
-    <summary>フォロワーリスト化のやり方</summary>
-    <div class="content">
-      <p>「フォロワー○万人以上」をリスト化する手順。</p>
-
-      <h3>Instagram（おすすめ）</h3>
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-body">PCのChromeで「IG Exporter」をインストール</div>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-body">instagram.com/ungr.archive を開いてログイン</div>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-body">「フォロワー」→ 拡張機能でCSVエクスポート</div>
-      </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <div class="step-body">スプレッドシートで「フォロワー数 ≥ 10000」などで絞る</div>
-      </div>
-
-      <h3>TikTok</h3>
-      <p>標準機能なし。有料のリスト抽出サービスが現実的。非公式スクレイピングはBANリスクあり。</p>
-
-      <h3>用途別の絞り方</h3>
-      <ul>
-        <li><strong>コラボ候補</strong>：1万+ & bioに映像/音楽/編集</li>
-        <li><strong>コアファン</strong>：フォロワー少なくてもエンゲージ高い人</li>
-        <li><strong>拡散力</strong>：フォロワー数 + 直近の再生/いいね率</li>
-      </ul>
-
-      <div class="warn">無断DM営業はアウト。1日に大量取得しない（BANリスク）。</div>
-    </div>
-  </details>
-</section>
-
-<!-- TODO -->
-<section id="todo">
-  <details open>
-    <summary>次のアクション</summary>
-    <div class="content">
-      <div class="todo">
-        <span class="prio-high">高</span>
-        <span>7月ネタ1本を企画書化（タイトル3案・導入・構成3章）</span>
-      </div>
-      <div class="todo">
-        <span class="prio-high">高</span>
-        <span>InstagramフォロワーCSVを試しエクスポート</span>
-      </div>
-      <div class="todo">
-        <span class="prio-mid">中</span>
-        <span>月3本の投稿カレンダー作成</span>
-      </div>
-      <div class="todo">
-        <span class="prio-mid">中</span>
-        <span>W杯決勝T（7/19）前後のネタを先に仕込む</span>
-      </div>
-      <div class="todo">
-        <span class="prio-low">低</span>
-        <span>TikTokフォロワーリスト（有料サービス検討）</span>
-      </div>
-
-      <h3>まだ聞けてないこと</h3>
-      <ul>
-        <li>YouTubeの現状（登録者・伸びた動画・投稿頻度）</li>
-        <li>週何本いけるか</li>
-        <li>フォロワーリストの目的</li>
-        <li>ジャンル比重（事件/スポーツ/アニメ）</li>
-      </ul>
-    </div>
-  </details>
-</section>
-
-<footer>
-  UNGR ARCHIVE · 最終更新 2026/7/7<br>
-  <a href="https://ekata1214.github.io/ungr-archive/">ekata1214.github.io/ungr-archive</a>
-</footer>
-
+  </footer>
+  <script>
+    document.getElementById("y").textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>

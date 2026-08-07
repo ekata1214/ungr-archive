@@ -1,15 +1,13 @@
-# UNGR ARCHIVE — 企画リポ
+# UNGR ARCHIVE / アングラアーカイブ
 
-@ungr.archive（Instagram / TikTok）の企画・時事ネタ・運用メモ。
+@ungr.archive — マスでは語られにくい作品と文化をディグし、記録するメディア。
 
-## モバイルから見る
+## サイト
 
-GitHub アプリまたはブラウザで以下を直接開けます。
-
-| 資料 | リンク |
+| ページ | リンク |
 |------|--------|
-| 企画・時事ネタリポ（HTML） | [リポを開く](https://ekata1214.github.io/ungr-archive/) |
-| リポ（GitHub上） | [`リポ.html`](リポ.html) |
+| 公開サイト（ランディング） | [開く](https://ekata1214.github.io/ungr-archive/) / [`index.html`](index.html) |
+| 企画・時事ネタリポ（内部） | [`リポ.html`](リポ.html) |
 
 ## Cursor Mobile / Cloud で使う
 
