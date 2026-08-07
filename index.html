@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="UNGR ARCHIVE / アングラアーカイブ — マスでは語られにくい作品と文化をディグし、記録するメディア。">
+  <meta name="description" content="マスではほとんど語られないけど、確実に誰かの人生を変えている作品達。僕達はそういう作品をずっとディグってきた。アングラアーカイブ。">
   <meta name="theme-color" content="#000000">
   <title>UNGR ARCHIVE / アングラアーカイブ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -235,15 +235,26 @@
       margin-bottom: 1rem;
     }
     .sec-body {
-      max-width: 34rem;
+      max-width: 38rem;
       color: var(--muted);
       font-size: 0.95rem;
-      font-weight: 700;
+      font-weight: 500;
+      line-height: 1.85;
     }
+    .sec-body + .sec-body { margin-top: 1rem; }
     .sec-body strong {
       color: var(--ink);
       font-weight: 900;
     }
+    .closing {
+      margin-top: 1.75rem;
+      font-family: var(--font-jp);
+      font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+      letter-spacing: 0.06em;
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    .closing span { color: var(--red); }
 
     .themes {
       display: grid;
@@ -370,8 +381,8 @@
       <div class="hero-main">
         <h1 class="brand">UNGR<br>ARCHIVE</h1>
         <span class="brand-ja">アングラアーカイブ</span>
-        <p class="hero-line">語られないものを、掘る。残す。</p>
-        <p class="hero-sub">美化された歴史は、歪みの出所を消す。推奨しない。記述する。</p>
+        <p class="hero-line">マスではほとんど語られないけど、確実に誰かの人生を変えている作品達。</p>
+        <p class="hero-sub">僕達はそういう作品をずっとディグってきた。そのアーカイブとして始めたのが、このメディア。</p>
         <div class="cta-row">
           <a class="cta" href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">Watch</a>
           <a class="cta-ghost" href="#about">About</a>
@@ -384,10 +395,14 @@
     <section id="about">
       <div class="wrap">
         <p class="sec-label">About</p>
-        <h2 class="sec-title">綺麗な歴史には、爪痕が残らない。</h2>
+        <h2 class="sec-title">綺麗に編集された歴史だけだと、歪みの出所が消える。</h2>
         <p class="sec-body">
-          アングラアーカイブは、<strong>推奨ではなく記述</strong>で文化を残す。
-          映画。音楽。ネット。グレーな流通。感性の由来を地図にする。
+          アングラアーカイブがやりたいのは、汚れた入口まで含めた<strong>文化の地図</strong>を残すこと。
+          映画、音楽、ネット、グレーな流通。影響を認めることと、行為を勧めることを分ける。
+        </p>
+        <p class="sec-body">
+          <strong>推奨ではなく、記述。美化ではなく、記録。</strong>
+          その姿勢だけは、このチャンネルの核だと思っています。
         </p>
       </div>
     </section>
@@ -395,22 +410,23 @@
     <section id="axis">
       <div class="wrap">
         <p class="sec-label">Axis</p>
-        <h2 class="sec-title">軸</h2>
-        <p class="sec-body">紹介で終わらない。構造と感情を両方拾う。</p>
+        <h2 class="sec-title">紹介で終わらない。</h2>
+        <p class="sec-body">自分で思考して、相手の思考をまずは受け取る。その積み重ねで、世界は少しずつ優しくなるんじゃないか。</p>
         <div class="themes">
           <article class="theme">
-            <h3>Archive</h3>
-            <p>埋もれた映画、MV、ネット文化。出典と体感を分けて残す。</p>
+            <h3>Dig</h3>
+            <p>マスで語られない作品を掘る。偶然の出会いも、ディグの入口として残す。</p>
           </article>
           <article class="theme">
             <h3>Critique</h3>
-            <p>意味づけの矛盾。弱者性の消費。戦争と音楽。流通と美学。</p>
+            <p>意味づけの矛盾。死の美化。戦争と音楽。流通と美学の癒着。</p>
           </article>
           <article class="theme">
-            <h3>Record</h3>
-            <p>未確認は未確認のまま。美化でも糾弾でもなく、記録として固定する。</p>
+            <h3>Archive</h3>
+            <p>未確認は未確認のまま。美化でも糾弾でもなく、影響の地図として固定する。</p>
           </article>
         </div>
+        <p class="closing">ところでみんな、<span>人生を変えたアングラって何？</span><br>アングラアーカイブ。</p>
       </div>
     </section>
 
@@ -418,6 +434,7 @@
       <div class="wrap">
         <p class="sec-label">Connect</p>
         <h2 class="sec-title">接続</h2>
+        <p class="sec-body">濃度の高いコメント、全部読んでます。感想も、体験も、匿名でどうぞ。</p>
         <nav class="links" aria-label="外部リンク">
           <a href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">
             YouTube
