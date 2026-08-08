@@ -110,7 +110,7 @@
       color: var(--red);
     }
 
-    /* HERO — one composition, brand first */
+    /* HERO */
     .hero {
       position: relative;
       min-height: 100svh;
@@ -123,9 +123,10 @@
       inset: 0;
       z-index: -1;
       background:
-        linear-gradient(90deg, #000 0%, rgba(0,0,0,0.88) 42%, rgba(0,0,0,0.35) 72%, rgba(0,0,0,0.55) 100%),
+        linear-gradient(90deg, #000 0%, rgba(0,0,0,0.9) 40%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.6) 100%),
         url("assets/brand/hero-figure.jpg") right center / cover no-repeat,
         #000;
+      animation: heroPulse 12s ease-in-out infinite alternate;
     }
     .hero-bg::after {
       content: "";
@@ -241,11 +242,92 @@
     .hero-mark img {
       width: min(280px, 100%);
       filter: drop-shadow(0 20px 40px rgba(255,0,0,0.18));
+      animation: floatMark 5.5s ease-in-out infinite;
     }
 
     @keyframes rise {
       from { opacity: 0; transform: translateY(14px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes heroPulse {
+      from { filter: contrast(1) saturate(1); }
+      to { filter: contrast(1.05) saturate(1.08); }
+    }
+    @keyframes floatMark {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    @keyframes scan {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 0.55; }
+    }
+
+    /* SIGNAL MARQUEE */
+    .signal {
+      border-top: 2px solid var(--red);
+      border-bottom: 2px solid var(--line);
+      background: #050505;
+      overflow: hidden;
+      padding: 0.9rem 0;
+    }
+    .signal-label {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--red);
+      padding: 0 0 0.7rem;
+      width: min(var(--max), calc(100% - 2.5rem));
+      margin-inline: auto;
+    }
+    .marquee {
+      display: flex;
+      width: max-content;
+      animation: marquee 38s linear infinite;
+    }
+    .marquee:hover { animation-play-state: paused; }
+    .marquee-track {
+      display: flex;
+      gap: 0.65rem;
+      padding-right: 0.65rem;
+    }
+    .marquee figure {
+      position: relative;
+      margin: 0;
+      width: clamp(140px, 22vw, 220px);
+      aspect-ratio: 3 / 4;
+      overflow: hidden;
+      border: 2px solid var(--line);
+      background: #111;
+      flex-shrink: 0;
+    }
+    .marquee figure:nth-child(3n) { aspect-ratio: 4 / 5; }
+    .marquee figure:nth-child(4n) { width: clamp(180px, 28vw, 280px); aspect-ratio: 16 / 10; }
+    .marquee img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease, filter 0.35s ease;
+      filter: saturate(1.05) contrast(1.05);
+    }
+    .marquee figure:hover img {
+      transform: scale(1.06);
+      filter: saturate(1.2) contrast(1.1);
+    }
+    .marquee figcaption {
+      position: absolute;
+      left: 0.55rem;
+      bottom: 0.45rem;
+      font-family: var(--font-display);
+      font-size: 0.58rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 1px 10px #000;
     }
 
     section {
@@ -277,37 +359,102 @@
     .sec-body + .sec-body { margin-top: 0.95rem; }
     .sec-body strong { color: var(--ink); font-weight: 700; }
 
+    /* ABOUT + VISUAL SPLIT */
+    .about-split {
+      display: grid;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    @media (min-width: 900px) {
+      .about-split {
+        grid-template-columns: 1.1fr 0.9fr;
+        align-items: stretch;
+        gap: 1.25rem;
+      }
+    }
+    .about-visual {
+      position: relative;
+      overflow: hidden;
+      border: 2px solid var(--line);
+      min-height: 280px;
+      background: #111;
+    }
+    .about-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      min-height: 280px;
+      transition: transform 0.8s ease;
+    }
+    .about-visual:hover img { transform: scale(1.04); }
+    .about-visual .tag {
+      position: absolute;
+      top: 0.8rem;
+      left: 0.8rem;
+      font-family: var(--font-display);
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #fff;
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,0,0,0.55);
+      padding: 0.35rem 0.55rem;
+    }
+
     .themes {
       display: grid;
-      margin-top: 2rem;
       border-top: 2px solid var(--line);
     }
     @media (min-width: 800px) {
       .themes { grid-template-columns: repeat(3, 1fr); }
     }
     .theme {
-      padding: 1.35rem 0;
+      position: relative;
+      overflow: hidden;
+      min-height: 200px;
       border-bottom: 2px solid var(--line);
     }
     @media (min-width: 800px) {
       .theme {
-        padding: 1.4rem 1.2rem 1.4rem 0;
         border-bottom: none;
         border-right: 2px solid var(--line);
+        min-height: 260px;
       }
-      .theme:nth-child(2) { padding-left: 1.2rem; }
-      .theme:last-child {
-        border-right: none;
-        padding-right: 0;
-        padding-left: 1.2rem;
-      }
+      .theme:last-child { border-right: none; }
+    }
+    .theme-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      filter: grayscale(0.15) contrast(1.05);
+      transition: transform 0.7s ease, filter 0.4s ease;
+    }
+    .theme:hover .theme-bg {
+      transform: scale(1.06);
+      filter: grayscale(0) contrast(1.1) saturate(1.15);
+    }
+    .theme-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.82) 100%);
+    }
+    .theme-copy {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 1.25rem 1.1rem;
     }
     .theme h3 {
       font-family: var(--font-display);
-      font-size: 1.1rem;
-      letter-spacing: 0.1em;
+      font-size: 1.15rem;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      margin-bottom: 0.45rem;
+      margin-bottom: 0.4rem;
     }
     .theme h3::before {
       content: "";
@@ -319,9 +466,60 @@
       vertical-align: 0.05em;
     }
     .theme p {
-      color: var(--muted);
+      color: #cfcfcf;
+      font-size: 0.86rem;
+      line-height: 1.7;
+    }
+
+    /* IMMERSION BAND */
+    .immersion {
+      position: relative;
+      min-height: clamp(280px, 48vw, 520px);
+      border-top: 2px solid var(--line);
+      overflow: hidden;
+      display: grid;
+      align-items: end;
+    }
+    .immersion-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.78) 100%),
+        url("assets/mood/cinema.jpg") center / cover no-repeat;
+      transform: scale(1.02);
+      animation: heroPulse 10s ease-in-out infinite alternate;
+    }
+    .immersion-bg::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent 0 4px, rgba(255,0,0,0.04) 4px 5px);
+      animation: scan 4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .immersion .wrap {
+      position: relative;
+      z-index: 1;
+      padding: 2.5rem 0 2.8rem;
+    }
+    .immersion p {
+      font-family: var(--font-display);
+      font-size: clamp(1.35rem, 4vw, 2.4rem);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.15;
+      max-width: 14em;
+      text-shadow: 0 4px 28px rgba(0,0,0,0.65);
+    }
+    .immersion span {
+      display: block;
+      margin-top: 0.7rem;
+      font-family: var(--font-body);
+      font-weight: 600;
       font-size: 0.88rem;
-      line-height: 1.75;
+      letter-spacing: 0.08em;
+      color: #ddd;
+      text-transform: none;
     }
 
     .work-head {
@@ -388,38 +586,43 @@
       display: block;
     }
 
-    .strip {
+    .mosaic {
       display: grid;
-      gap: 0.75rem;
+      gap: 0.7rem;
       margin-top: 1.75rem;
       border-top: 2px solid var(--line);
       padding-top: 1.2rem;
+      grid-template-columns: 1fr 1fr;
     }
-    @media (min-width: 800px) {
-      .strip { grid-template-columns: 1.15fr 0.85fr 1fr; gap: 0.9rem; }
+    @media (min-width: 900px) {
+      .mosaic {
+        grid-template-columns: 1.25fr 0.85fr 1fr 0.9fr;
+        grid-template-rows: 220px 220px;
+      }
+      .mosaic figure:nth-child(1) { grid-row: span 2; }
+      .mosaic figure:nth-child(4) { grid-column: span 2; }
     }
-    .strip figure {
+    .mosaic figure {
       margin: 0;
       position: relative;
       overflow: hidden;
       border: 2px solid var(--line);
       background: #111;
-      aspect-ratio: 4 / 5;
+      min-height: 160px;
     }
-    .strip figure:first-child { aspect-ratio: 16 / 10; }
-    .strip img {
+    .mosaic img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.45s ease;
+      transition: transform 0.5s ease;
     }
-    .strip figure:hover img { transform: scale(1.03); }
-    .strip figcaption {
+    .mosaic figure:hover img { transform: scale(1.05); }
+    .mosaic figcaption {
       position: absolute;
       left: 0.7rem;
-      bottom: 0.6rem;
+      bottom: 0.55rem;
       font-family: var(--font-display);
-      font-size: 0.65rem;
+      font-size: 0.62rem;
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: #fff;
@@ -428,14 +631,22 @@
 
     .band {
       border-top: 2px solid var(--line);
-      background:
-        linear-gradient(90deg, rgba(0,0,0,0.55), rgba(0,0,0,0.2)),
-        url("assets/brand/brain-red.jpg") center / cover no-repeat;
-      min-height: 220px;
+      position: relative;
+      min-height: 260px;
       display: grid;
       align-items: center;
+      overflow: hidden;
+    }
+    .band-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,0.72), rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.55)),
+        url("assets/mood/hands.jpg") center / cover no-repeat;
     }
     .band .wrap {
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-wrap: wrap;
       gap: 1rem 2rem;
@@ -450,20 +661,21 @@
       text-transform: uppercase;
       max-width: 14em;
       line-height: 1.15;
-      text-shadow: 0 2px 18px rgba(0,0,0,0.45);
+      text-shadow: 0 2px 18px rgba(0,0,0,0.55);
     }
     .band a {
       text-decoration: none;
       font-family: var(--font-display);
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      background: #000;
+      background: var(--red);
       color: #fff;
-      border: 2px solid #000;
+      border: 2px solid var(--red);
       padding: 0.85rem 1.15rem;
       font-size: 0.8rem;
+      transition: background 0.15s ease, color 0.15s ease;
     }
-    .band a:hover { background: transparent; color: #000; }
+    .band a:hover { background: transparent; color: var(--red); }
 
     .links {
       display: grid;
@@ -533,6 +745,9 @@
       .brand, .brand-ja, .hero-line, .hero-sub, .cta-row, .hero-mark {
         opacity: 1; animation: none;
       }
+      .marquee, .hero-bg, .immersion-bg, .hero-mark img, .immersion-bg::before {
+        animation: none !important;
+      }
     }
   </style>
 </head>
@@ -572,34 +787,88 @@
     </div>
   </header>
 
+  <div class="signal" aria-label="ビジュアルシグナル">
+    <p class="signal-label">Signal / Archive Frames</p>
+    <div class="marquee">
+      <div class="marquee-track">
+        <figure><img src="assets/mood/reach.jpg" alt="" loading="lazy"><figcaption>Reach</figcaption></figure>
+        <figure><img src="assets/mood/vertical.jpg" alt="" loading="lazy"><figcaption>Street</figcaption></figure>
+        <figure><img src="assets/mood/cinema.jpg" alt="" loading="lazy"><figcaption>Cinema</figcaption></figure>
+        <figure><img src="assets/mood/short.jpg" alt="" loading="lazy"><figcaption>Night</figcaption></figure>
+        <figure><img src="assets/mood/tech.jpg" alt="" loading="lazy"><figcaption>Model</figcaption></figure>
+        <figure><img src="assets/mood/hands.jpg" alt="" loading="lazy"><figcaption>Contact</figcaption></figure>
+        <figure><img src="assets/mood/case_a.jpg" alt="" loading="lazy"><figcaption>Case</figcaption></figure>
+        <figure><img src="assets/mood/case_b.jpg" alt="" loading="lazy"><figcaption>CG</figcaption></figure>
+        <figure><img src="assets/mood/identity.jpg" alt="" loading="lazy"><figcaption>Identity</figcaption></figure>
+        <figure><img src="assets/mood/sound.jpg" alt="" loading="lazy"><figcaption>Sound</figcaption></figure>
+      </div>
+      <div class="marquee-track" aria-hidden="true">
+        <figure><img src="assets/mood/reach.jpg" alt=""><figcaption>Reach</figcaption></figure>
+        <figure><img src="assets/mood/vertical.jpg" alt=""><figcaption>Street</figcaption></figure>
+        <figure><img src="assets/mood/cinema.jpg" alt=""><figcaption>Cinema</figcaption></figure>
+        <figure><img src="assets/mood/short.jpg" alt=""><figcaption>Night</figcaption></figure>
+        <figure><img src="assets/mood/tech.jpg" alt=""><figcaption>Model</figcaption></figure>
+        <figure><img src="assets/mood/hands.jpg" alt=""><figcaption>Contact</figcaption></figure>
+        <figure><img src="assets/mood/case_a.jpg" alt=""><figcaption>Case</figcaption></figure>
+        <figure><img src="assets/mood/case_b.jpg" alt=""><figcaption>CG</figcaption></figure>
+        <figure><img src="assets/mood/identity.jpg" alt=""><figcaption>Identity</figcaption></figure>
+        <figure><img src="assets/mood/sound.jpg" alt=""><figcaption>Sound</figcaption></figure>
+      </div>
+    </div>
+  </div>
+
   <main>
     <section id="about">
       <div class="wrap">
         <p class="sec-label">About</p>
         <h2 class="sec-title">綺麗に編集された歴史だけだと、歪みの出所が消える。</h2>
-        <p class="sec-body">
-          アングラアーカイブは、<strong>推奨ではなく、記述。美化ではなく、記録。</strong>
-          映画、音楽、ネット、グレーな流通。影響を認めることと、行為を勧めることを分ける。
-        </p>
-        <p class="sec-body">
-          自分で思考して、相手の思考をまずは受け取る。その積み重ねで、世界は少しずつ優しくなるんじゃないか。
-        </p>
+        <div class="about-split">
+          <div>
+            <p class="sec-body">
+              アングラアーカイブは、<strong>推奨ではなく、記述。美化ではなく、記録。</strong>
+              映画、音楽、ネット、グレーな流通。影響を認めることと、行為を勧めることを分ける。
+            </p>
+            <p class="sec-body">
+              自分で思考して、相手の思考をまずは受け取る。その積み重ねで、世界は少しずつ優しくなるんじゃないか。
+            </p>
+          </div>
+          <div class="about-visual">
+            <span class="tag">Dot Scan / Face</span>
+            <img src="assets/mood/reach.jpg" alt="赤いドットで描かれた顔のビジュアル" loading="lazy">
+          </div>
+        </div>
         <div class="themes">
           <article class="theme">
-            <h3>Dig</h3>
-            <p>マスで語られない作品を掘る。偶然の出会いも入口として残す。</p>
+            <div class="theme-bg" style="background-image:url('assets/mood/vertical.jpg')" aria-hidden="true"></div>
+            <div class="theme-copy">
+              <h3>Dig</h3>
+              <p>マスで語られない作品を掘る。偶然の出会いも入口として残す。</p>
+            </div>
           </article>
           <article class="theme">
-            <h3>Critique</h3>
-            <p>意味づけの矛盾。死の美化。戦争と音楽。流通と美学の癒着。</p>
+            <div class="theme-bg" style="background-image:url('assets/mood/short.jpg')" aria-hidden="true"></div>
+            <div class="theme-copy">
+              <h3>Critique</h3>
+              <p>意味づけの矛盾。死の美化。戦争と音楽。流通と美学の癒着。</p>
+            </div>
           </article>
           <article class="theme">
-            <h3>Archive</h3>
-            <p>未確認は未確認のまま。影響の地図として固定する。</p>
+            <div class="theme-bg" style="background-image:url('assets/mood/tech.jpg')" aria-hidden="true"></div>
+            <div class="theme-copy">
+              <h3>Archive</h3>
+              <p>未確認は未確認のまま。影響の地図として固定する。</p>
+            </div>
           </article>
         </div>
       </div>
     </section>
+
+    <div class="immersion" aria-label="イマージョン">
+      <div class="immersion-bg" aria-hidden="true"></div>
+      <div class="wrap">
+        <p>Dirty entrances included.<span>汚れた入口まで含めて、地図にする。</span></p>
+      </div>
+    </div>
 
     <section id="work">
       <div class="wrap">
@@ -634,14 +903,22 @@
           </div>
         </article>
 
-        <div class="strip" aria-label="制作スチル">
+        <div class="mosaic" aria-label="制作スチル">
+          <figure>
+            <img src="assets/mood/case_a.jpg" alt="ケーススタディスチル" loading="lazy">
+            <figcaption>Case / Wings</figcaption>
+          </figure>
           <figure>
             <img src="assets/work/pv2.jpg" alt="PVスチル" loading="lazy">
             <figcaption>PV / Still</figcaption>
           </figure>
           <figure>
-            <img src="assets/work/pv1.jpg" alt="縦型スチル" loading="lazy">
-            <figcaption>Vertical</figcaption>
+            <img src="assets/mood/case_b.jpg" alt="CGスチル" loading="lazy">
+            <figcaption>CG / Form</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/mood/vertical.jpg" alt="ストリートスチル" loading="lazy">
+            <figcaption>Street / Vertical</figcaption>
           </figure>
           <figure>
             <img src="assets/work/photo2.jpg" alt="フォト" loading="lazy">
@@ -652,6 +929,7 @@
     </section>
 
     <div class="band">
+      <div class="band-bg" aria-hidden="true"></div>
       <div class="wrap">
         <p>Hack the timeline. Plant a memory.</p>
         <a href="mailto:ungr.archive@gmail.com">Contact</a>
