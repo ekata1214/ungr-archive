@@ -1,0 +1,29 @@
+{
+  "name": "UNGR ARCHIVE",
+  "ansi": {
+    "black": "#0A0A0A",
+    "red": "#E10600",
+    "green": "#8AAB2E",
+    "yellow": "#E8A838",
+    "blue": "#6B8CAD",
+    "magenta": "#A05050",
+    "cyan": "#6A9A9A",
+    "white": "#E8E8E8",
+    "brightBlack": "#888888",
+    "brightRed": "#FF2A2A",
+    "brightGreen": "#C8F542",
+    "brightYellow": "#F0C060",
+    "brightBlue": "#8AABCD",
+    "brightMagenta": "#C07070",
+    "brightCyan": "#8ABABA",
+    "brightWhite": "#FFFFFF"
+  },
+  "background": "#0A0A0A",
+  "bold": "#FFFFFF",
+  "cursor": "#E10600",
+  "cursorText": "#0A0A0A",
+  "foreground": "#E8E8E8",
+  "selectionBackground": "#3A1010",
+  "selectionForeground": "#E8E8E8",
+  "badge": "#E10600"
+}

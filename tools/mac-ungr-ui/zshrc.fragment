@@ -1,0 +1,29 @@
+# UNGR ARCHIVE — shell fragment
+# Sourced by install.sh into ~/.zshrc (idempotent markers)
+
+# --- UNGR UI BEGIN ---
+export EDITOR="${EDITOR:-nvim}"
+export VISUAL="$EDITOR"
+export CLICOLOR=1
+export LSCOLORS=GxFxCxDxBxegedabagaced
+
+# quieter brew / tooling noise
+export HOMEBREW_NO_ENV_HINTS=1
+
+# Starship
+if command -v starship >/dev/null 2>&1; then
+  eval "$(starship init zsh)"
+fi
+
+# Ghostty shell integration (when running inside Ghostty)
+if [[ -n "${GHOSTTY_RESOURCES_DIR:-}" && -f "${GHOSTTY_RESOURCES_DIR}/shell-integration/zsh/ghostty-integration" ]]; then
+  source "${GHOSTTY_RESOURCES_DIR}/shell-integration/zsh/ghostty-integration"
+fi
+
+alias ls='ls -G'
+alias ll='ls -lah'
+alias g='git'
+alias ..='cd ..'
+alias c='clear'
+
+# --- UNGR UI END ---
