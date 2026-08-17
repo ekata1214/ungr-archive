@@ -8,6 +8,7 @@ GitHub アプリまたはブラウザで以下を直接開けます。
 
 | 資料 | リンク |
 |------|--------|
+| UAホームページ（仮・固定URL） | [https://ekata1214.github.io/ungr-archive/ua/](https://ekata1214.github.io/ungr-archive/ua/) |
 | 企画・時事ネタリポ（HTML） | [リポを開く](https://ekata1214.github.io/ungr-archive/) |
 | リポ（GitHub上） | [`リポ.html`](リポ.html) |
 
@@ -36,6 +37,7 @@ GitHub アプリまたはブラウザで以下を直接開けます。
 
 ```
 ungr-archive/
+├── ua/                    # UAホームページ（GitHub Pages 固定URL）
 ├── リポ.html              # 企画リポ本体（モバイル向け）
 ├── index.html             # GitHub Pages 用（内容同一）
 ├── README.md              # このファイル

@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="UNGR ARCHIVE / アングラアーカイブ — マスではほとんど語られないけど、確実に誰かの人生を変えている作品達。">
+  <meta name="theme-color" content="#000000">
+  <title>UNGR ARCHIVE / アングラアーカイブ</title>
+  <link rel="icon" href="assets/brand/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000;
+      --ink: #f2f2f2;
+      --muted: #8a8a8a;
+      --red: #ff0000;
+      --line: #2a2a2a;
+      --font-display: "Archivo Black", "IBM Plex Sans JP", sans-serif;
+      --font-body: "IBM Plex Sans JP", sans-serif;
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.75;
+      font-size: 15px;
+      overflow-x: hidden;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      font-feature-settings: "palt" 1;
+    }
+    a { color: inherit; }
+    img { display: block; max-width: 100%; }
+    ::selection { background: var(--red); color: #fff; }
+
+    .grain {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      opacity: 0.1;
+      mix-blend-mode: soft-light;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .wrap {
+      width: min(var(--max), calc(100% - 2.5rem));
+      margin-inline: auto;
+    }
+
+    /* NAV */
+    .nav {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.15rem 0;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      text-decoration: none;
+    }
+    .logo img {
+      width: 2rem;
+      height: 2rem;
+      object-fit: contain;
+    }
+    .logo-word {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+      line-height: 1;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.25rem;
+      align-items: center;
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--muted);
+      transition: color 0.15s ease;
+    }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-links .nav-cta {
+      color: #fff;
+      background: var(--red);
+      padding: 0.55rem 0.85rem;
+      border: 2px solid var(--red);
+    }
+    .nav-links .nav-cta:hover {
+      background: transparent;
+      color: var(--red);
+    }
+
+    /* HERO */
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      isolation: isolate;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(90deg, #000 0%, rgba(0,0,0,0.9) 40%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.6) 100%),
+        url("assets/brand/hero-figure.jpg") right center / cover no-repeat,
+        #000;
+      animation: heroPulse 12s ease-in-out infinite alternate;
+    }
+    .hero-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,0.22) 3px 4px);
+      opacity: 0.35;
+      pointer-events: none;
+    }
+    .hero-grid {
+      display: grid;
+      align-items: end;
+      min-height: 100svh;
+      padding: 5.5rem 0 2.5rem;
+      gap: 2rem;
+    }
+    @media (min-width: 960px) {
+      .hero-grid {
+        grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.7fr);
+        align-items: center;
+        padding: 6.5rem 0 3.5rem;
+        gap: 2.5rem;
+      }
+      .hero-bg {
+        background:
+          linear-gradient(105deg, #000 0%, #000 48%, rgba(0,0,0,0.2) 68%, rgba(0,0,0,0.55) 100%),
+          url("assets/brand/hero-figure.jpg") 78% center / auto 92% no-repeat,
+          #000;
+      }
+    }
+    .brand {
+      font-family: var(--font-display);
+      font-size: clamp(3.6rem, 12vw, 7.5rem);
+      line-height: 0.88;
+      letter-spacing: -0.015em;
+      text-transform: uppercase;
+      margin-bottom: 0.15rem;
+      opacity: 0;
+      animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.05s;
+    }
+    .brand-ja {
+      display: block;
+      font-weight: 600;
+      font-size: clamp(0.88rem, 1.8vw, 1rem);
+      letter-spacing: 0.2em;
+      color: var(--red);
+      margin: 0.85rem 0 1.35rem;
+      opacity: 0;
+      animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.15s;
+    }
+    .hero-line {
+      max-width: 28rem;
+      font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+      font-weight: 600;
+      line-height: 1.55;
+      letter-spacing: 0.03em;
+      margin-bottom: 0.7rem;
+      opacity: 0;
+      animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.25s;
+    }
+    .hero-sub {
+      max-width: 30rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.8;
+      margin-bottom: 1.6rem;
+      opacity: 0;
+      animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.35s;
+    }
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1rem;
+      align-items: center;
+      opacity: 0;
+      animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.45s;
+    }
+    .cta {
+      display: inline-flex;
+      text-decoration: none;
+      font-family: var(--font-display);
+      font-size: 0.92rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--red);
+      color: #fff;
+      padding: 0.9rem 1.3rem;
+      border: 2px solid var(--red);
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .cta:hover { background: transparent; color: var(--red); }
+    .cta-ghost {
+      text-decoration: none;
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 3px;
+    }
+    .cta-ghost:hover { color: var(--red); border-color: var(--red); }
+
+    .hero-mark {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s;
+    }
+    @media (min-width: 960px) {
+      .hero-mark { display: flex; }
+    }
+    .hero-mark img {
+      width: min(280px, 100%);
+      filter: drop-shadow(0 20px 40px rgba(255,0,0,0.18));
+      animation: floatMark 5.5s ease-in-out infinite;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes heroPulse {
+      from { filter: contrast(1) saturate(1); }
+      to { filter: contrast(1.05) saturate(1.08); }
+    }
+    @keyframes floatMark {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    @keyframes scan {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 0.55; }
+    }
+
+    /* SIGNAL MARQUEE */
+    .signal {
+      border-top: 2px solid var(--red);
+      border-bottom: 2px solid var(--line);
+      background: #050505;
+      overflow: hidden;
+      padding: 0.9rem 0;
+    }
+    .signal-label {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--red);
+      padding: 0 0 0.7rem;
+      width: min(var(--max), calc(100% - 2.5rem));
+      margin-inline: auto;
+    }
+    .marquee {
+      display: flex;
+      width: max-content;
+      animation: marquee 38s linear infinite;
+    }
+    .marquee:hover { animation-play-state: paused; }
+    .marquee-track {
+      display: flex;
+      gap: 0.65rem;
+      padding-right: 0.65rem;
+    }
+    .marquee figure {
+      position: relative;
+      margin: 0;
+      width: clamp(140px, 22vw, 220px);
+      aspect-ratio: 3 / 4;
+      overflow: hidden;
+      border: 2px solid var(--line);
+      background: #111;
+      flex-shrink: 0;
+    }
+    .marquee figure:nth-child(3n) { aspect-ratio: 4 / 5; }
+    .marquee figure:nth-child(4n) { width: clamp(180px, 28vw, 280px); aspect-ratio: 16 / 10; }
+    .marquee img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease, filter 0.35s ease;
+      filter: saturate(1.05) contrast(1.05);
+    }
+    .marquee figure:hover img {
+      transform: scale(1.06);
+      filter: saturate(1.2) contrast(1.1);
+    }
+    .marquee figcaption {
+      position: absolute;
+      left: 0.55rem;
+      bottom: 0.45rem;
+      font-family: var(--font-display);
+      font-size: 0.58rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 1px 10px #000;
+    }
+
+    section {
+      padding: 4.75rem 0;
+      border-top: 2px solid var(--line);
+    }
+    .sec-label {
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 0.7rem;
+    }
+    .sec-title {
+      font-weight: 700;
+      font-size: clamp(1.35rem, 3.2vw, 1.9rem);
+      line-height: 1.45;
+      letter-spacing: 0.02em;
+      max-width: 18em;
+      margin-bottom: 1rem;
+    }
+    .sec-body {
+      max-width: 38rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.9;
+    }
+    .sec-body + .sec-body { margin-top: 0.95rem; }
+    .sec-body strong { color: var(--ink); font-weight: 700; }
+
+    /* ABOUT + VISUAL SPLIT */
+    .about-split {
+      display: grid;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    @media (min-width: 900px) {
+      .about-split {
+        grid-template-columns: 1.1fr 0.9fr;
+        align-items: stretch;
+        gap: 1.25rem;
+      }
+    }
+    .about-visual {
+      position: relative;
+      overflow: hidden;
+      border: 2px solid var(--line);
+      min-height: 280px;
+      background: #111;
+    }
+    .about-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      min-height: 280px;
+      transition: transform 0.8s ease;
+    }
+    .about-visual:hover img { transform: scale(1.04); }
+    .about-visual .tag {
+      position: absolute;
+      top: 0.8rem;
+      left: 0.8rem;
+      font-family: var(--font-display);
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #fff;
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,0,0,0.55);
+      padding: 0.35rem 0.55rem;
+    }
+
+    .themes {
+      display: grid;
+      border-top: 2px solid var(--line);
+    }
+    @media (min-width: 800px) {
+      .themes { grid-template-columns: repeat(3, 1fr); }
+    }
+    .theme {
+      position: relative;
+      overflow: hidden;
+      min-height: 200px;
+      border-bottom: 2px solid var(--line);
+    }
+    @media (min-width: 800px) {
+      .theme {
+        border-bottom: none;
+        border-right: 2px solid var(--line);
+        min-height: 260px;
+      }
+      .theme:last-child { border-right: none; }
+    }
+    .theme-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      filter: grayscale(0.15) contrast(1.05);
+      transition: transform 0.7s ease, filter 0.4s ease;
+    }
+    .theme:hover .theme-bg {
+      transform: scale(1.06);
+      filter: grayscale(0) contrast(1.1) saturate(1.15);
+    }
+    .theme-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.82) 100%);
+    }
+    .theme-copy {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 1.25rem 1.1rem;
+    }
+    .theme h3 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .theme h3::before {
+      content: "";
+      display: inline-block;
+      width: 0.45rem;
+      height: 0.45rem;
+      background: var(--red);
+      margin-right: 0.45rem;
+      vertical-align: 0.05em;
+    }
+    .theme p {
+      color: #cfcfcf;
+      font-size: 0.86rem;
+      line-height: 1.7;
+    }
+
+    /* IMMERSION BAND */
+    .immersion {
+      position: relative;
+      min-height: clamp(280px, 48vw, 520px);
+      border-top: 2px solid var(--line);
+      overflow: hidden;
+      display: grid;
+      align-items: end;
+    }
+    .immersion-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.78) 100%),
+        url("assets/mood/cinema.jpg") center / cover no-repeat;
+      transform: scale(1.02);
+      animation: heroPulse 10s ease-in-out infinite alternate;
+    }
+    .immersion-bg::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent 0 4px, rgba(255,0,0,0.04) 4px 5px);
+      animation: scan 4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .immersion .wrap {
+      position: relative;
+      z-index: 1;
+      padding: 2.5rem 0 2.8rem;
+    }
+    .immersion p {
+      font-family: var(--font-display);
+      font-size: clamp(1.35rem, 4vw, 2.4rem);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.15;
+      max-width: 14em;
+      text-shadow: 0 4px 28px rgba(0,0,0,0.65);
+    }
+    .immersion span {
+      display: block;
+      margin-top: 0.7rem;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.88rem;
+      letter-spacing: 0.08em;
+      color: #ddd;
+      text-transform: none;
+    }
+
+    .work-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 1.5rem;
+      justify-content: space-between;
+      align-items: end;
+      margin-bottom: 1.4rem;
+    }
+    .work-head .sec-title { margin-bottom: 0; }
+    .work-all {
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border-bottom: 2px solid var(--red);
+      padding-bottom: 3px;
+    }
+    .work-all:hover { color: var(--red); }
+
+    .piece {
+      margin-top: 1.75rem;
+      border-top: 2px solid var(--line);
+      padding-top: 1.2rem;
+    }
+    .piece-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem 1.1rem;
+      align-items: baseline;
+      margin-bottom: 0.8rem;
+    }
+    .piece-meta .num {
+      font-family: var(--font-display);
+      color: var(--red);
+      letter-spacing: 0.14em;
+      font-size: 0.72rem;
+    }
+    .piece-meta h3 {
+      font-weight: 700;
+      font-size: 1.02rem;
+      letter-spacing: 0.03em;
+    }
+    .piece-meta p {
+      width: 100%;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.7;
+      max-width: 42rem;
+    }
+    .media-frame {
+      width: 100%;
+      background: #111;
+      border: 2px solid var(--line);
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+    }
+    .media-frame video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .mosaic {
+      display: grid;
+      gap: 0.7rem;
+      margin-top: 1.75rem;
+      border-top: 2px solid var(--line);
+      padding-top: 1.2rem;
+      grid-template-columns: 1fr 1fr;
+    }
+    @media (min-width: 900px) {
+      .mosaic {
+        grid-template-columns: 1.25fr 0.85fr 1fr 0.9fr;
+        grid-template-rows: 220px 220px;
+      }
+      .mosaic figure:nth-child(1) { grid-row: span 2; }
+      .mosaic figure:nth-child(4) { grid-column: span 2; }
+    }
+    .mosaic figure {
+      margin: 0;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid var(--line);
+      background: #111;
+      min-height: 160px;
+    }
+    .mosaic img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+    .mosaic figure:hover img { transform: scale(1.05); }
+    .mosaic figcaption {
+      position: absolute;
+      left: 0.7rem;
+      bottom: 0.55rem;
+      font-family: var(--font-display);
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 1px 8px #000;
+    }
+
+    .band {
+      border-top: 2px solid var(--line);
+      position: relative;
+      min-height: 260px;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+    }
+    .band-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,0.72), rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.55)),
+        url("assets/mood/hands.jpg") center / cover no-repeat;
+    }
+    .band .wrap {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 2rem;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2.5rem 0;
+    }
+    .band p {
+      font-family: var(--font-display);
+      font-size: clamp(1.2rem, 3vw, 1.8rem);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      max-width: 14em;
+      line-height: 1.15;
+      text-shadow: 0 2px 18px rgba(0,0,0,0.55);
+    }
+    .band a {
+      text-decoration: none;
+      font-family: var(--font-display);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: var(--red);
+      color: #fff;
+      border: 2px solid var(--red);
+      padding: 0.85rem 1.15rem;
+      font-size: 0.8rem;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .band a:hover { background: transparent; color: var(--red); }
+
+    .links {
+      display: grid;
+      margin-top: 1.5rem;
+      border-top: 2px solid var(--line);
+    }
+    .links a {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 1.05rem 0;
+      text-decoration: none;
+      border-bottom: 2px solid var(--line);
+      font-family: var(--font-display);
+      font-size: clamp(1.25rem, 3vw, 1.75rem);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      transition: color 0.15s ease, padding-left 0.15s ease;
+    }
+    .links a span {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: none;
+    }
+    .links a:hover { color: var(--red); padding-left: 0.3rem; }
+
+    .closing {
+      margin-top: 1.6rem;
+      font-weight: 600;
+      font-size: clamp(0.95rem, 2vw, 1.08rem);
+      line-height: 1.65;
+    }
+    .closing span { color: var(--red); }
+
+    footer {
+      padding: 1.4rem 0 2.1rem;
+      border-top: 2px solid var(--red);
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+    }
+    footer .inner {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem 1.4rem;
+      justify-content: space-between;
+      align-items: center;
+    }
+    footer .mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-family: var(--font-display);
+      color: var(--ink);
+      letter-spacing: 0.08em;
+      font-size: 0.95rem;
+      text-transform: lowercase;
+    }
+    footer .mark img { width: 1.35rem; height: 1.35rem; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .brand, .brand-ja, .hero-line, .hero-sub, .cta-row, .hero-mark {
+        opacity: 1; animation: none;
+      }
+      .marquee, .hero-bg, .immersion-bg, .hero-mark img, .immersion-bg::before {
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="hero">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="wrap">
+      <nav class="nav" aria-label="メイン">
+        <a class="logo" href="#top" id="top">
+          <img src="assets/brand/ua-mark.png" alt="">
+          <span class="logo-word">ua</span>
+        </a>
+        <div class="nav-links">
+          <a href="#work">Work</a>
+          <a href="#about">About</a>
+          <a class="nav-cta" href="mailto:ungr.archive@gmail.com">Contact</a>
+        </div>
+      </nav>
+
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <h1 class="brand">UNGR<br>ARCHIVE</h1>
+          <span class="brand-ja">アングラアーカイブ</span>
+          <p class="hero-line">マスではほとんど語られないけど、確実に誰かの人生を変えている作品達。</p>
+          <p class="hero-sub">僕達はそういう作品をずっとディグってきた。汚れた入口まで含めた文化の地図を、推奨ではなく記述で残す。</p>
+          <div class="cta-row">
+            <a class="cta" href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">Watch</a>
+            <a class="cta-ghost" href="#work">Work</a>
+          </div>
+        </div>
+        <div class="hero-mark" aria-hidden="true">
+          <img src="assets/brand/ua-mark.png" alt="">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="signal" aria-label="ビジュアルシグナル">
+    <p class="signal-label">Signal / Archive Frames</p>
+    <div class="marquee">
+      <div class="marquee-track">
+        <figure><img src="assets/mood/reach.jpg" alt="" loading="lazy"><figcaption>Reach</figcaption></figure>
+        <figure><img src="assets/mood/vertical.jpg" alt="" loading="lazy"><figcaption>Street</figcaption></figure>
+        <figure><img src="assets/mood/cinema.jpg" alt="" loading="lazy"><figcaption>Cinema</figcaption></figure>
+        <figure><img src="assets/mood/short.jpg" alt="" loading="lazy"><figcaption>Night</figcaption></figure>
+        <figure><img src="assets/mood/tech.jpg" alt="" loading="lazy"><figcaption>Model</figcaption></figure>
+        <figure><img src="assets/mood/hands.jpg" alt="" loading="lazy"><figcaption>Contact</figcaption></figure>
+        <figure><img src="assets/mood/case_a.jpg" alt="" loading="lazy"><figcaption>Case</figcaption></figure>
+        <figure><img src="assets/mood/case_b.jpg" alt="" loading="lazy"><figcaption>CG</figcaption></figure>
+        <figure><img src="assets/mood/identity.jpg" alt="" loading="lazy"><figcaption>Identity</figcaption></figure>
+        <figure><img src="assets/mood/sound.jpg" alt="" loading="lazy"><figcaption>Sound</figcaption></figure>
+      </div>
+      <div class="marquee-track" aria-hidden="true">
+        <figure><img src="assets/mood/reach.jpg" alt=""><figcaption>Reach</figcaption></figure>
+        <figure><img src="assets/mood/vertical.jpg" alt=""><figcaption>Street</figcaption></figure>
+        <figure><img src="assets/mood/cinema.jpg" alt=""><figcaption>Cinema</figcaption></figure>
+        <figure><img src="assets/mood/short.jpg" alt=""><figcaption>Night</figcaption></figure>
+        <figure><img src="assets/mood/tech.jpg" alt=""><figcaption>Model</figcaption></figure>
+        <figure><img src="assets/mood/hands.jpg" alt=""><figcaption>Contact</figcaption></figure>
+        <figure><img src="assets/mood/case_a.jpg" alt=""><figcaption>Case</figcaption></figure>
+        <figure><img src="assets/mood/case_b.jpg" alt=""><figcaption>CG</figcaption></figure>
+        <figure><img src="assets/mood/identity.jpg" alt=""><figcaption>Identity</figcaption></figure>
+        <figure><img src="assets/mood/sound.jpg" alt=""><figcaption>Sound</figcaption></figure>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section id="about">
+      <div class="wrap">
+        <p class="sec-label">About</p>
+        <h2 class="sec-title">綺麗に編集された歴史だけだと、歪みの出所が消える。</h2>
+        <div class="about-split">
+          <div>
+            <p class="sec-body">
+              アングラアーカイブは、<strong>推奨ではなく、記述。美化ではなく、記録。</strong>
+              映画、音楽、ネット、グレーな流通。影響を認めることと、行為を勧めることを分ける。
+            </p>
+            <p class="sec-body">
+              自分で思考して、相手の思考をまずは受け取る。その積み重ねで、世界は少しずつ優しくなるんじゃないか。
+            </p>
+          </div>
+          <div class="about-visual">
+            <span class="tag">Dot Scan / Face</span>
+            <img src="assets/mood/reach.jpg" alt="赤いドットで描かれた顔のビジュアル" loading="lazy">
+          </div>
+        </div>
+        <div class="themes">
+          <article class="theme">
+            <div class="theme-bg" style="background-image:url('assets/mood/vertical.jpg')" aria-hidden="true"></div>
+            <div class="theme-copy">
+              <h3>Dig</h3>
+              <p>マスで語られない作品を掘る。偶然の出会いも入口として残す。</p>
+            </div>
+          </article>
+          <article class="theme">
+            <div class="theme-bg" style="background-image:url('assets/mood/short.jpg')" aria-hidden="true"></div>
+            <div class="theme-copy">
+              <h3>Critique</h3>
+              <p>意味づけの矛盾。死の美化。戦争と音楽。流通と美学の癒着。</p>
+            </div>
+          </article>
+          <article class="theme">
+            <div class="theme-bg" style="background-image:url('assets/mood/tech.jpg')" aria-hidden="true"></div>
+            <div class="theme-copy">
+              <h3>Archive</h3>
+              <p>未確認は未確認のまま。影響の地図として固定する。</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <div class="immersion" aria-label="イマージョン">
+      <div class="immersion-bg" aria-hidden="true"></div>
+      <div class="wrap">
+        <p>Dirty entrances included.<span>汚れた入口まで含めて、地図にする。</span></p>
+      </div>
+    </div>
+
+    <section id="work">
+      <div class="wrap">
+        <div class="work-head">
+          <div>
+            <p class="sec-label">Work</p>
+            <h2 class="sec-title">映像と写真。</h2>
+          </div>
+          <a class="work-all" href="https://studio-command-eye.framer.website/" target="_blank" rel="noopener">Full Portfolio</a>
+        </div>
+        <p class="sec-body">GALFY × ドン・キホーテ、PAT MARKETほか。続きはポートフォリオへ。</p>
+
+        <article class="piece">
+          <div class="piece-meta">
+            <span class="num">01</span>
+            <h3>GALFY × ドン・キホーテ — PV</h3>
+            <p>アパレルブランドGALFYとドン・キホーテのコラボ商品PV。</p>
+          </div>
+          <div class="media-frame">
+            <video controls playsinline preload="metadata" poster="assets/work/galfy-poster.jpg" src="assets/work/galfy.mp4"></video>
+          </div>
+        </article>
+
+        <article class="piece">
+          <div class="piece-meta">
+            <span class="num">02</span>
+            <h3>PAT MARKET — Event PV / 3DCG</h3>
+            <p>原宿PAT MARKETのイベントPV。カルチャーの震源地として世界観をCGで造形。</p>
+          </div>
+          <div class="media-frame">
+            <video controls playsinline preload="metadata" poster="assets/work/pat-poster.jpg" src="assets/work/pat.mp4"></video>
+          </div>
+        </article>
+
+        <div class="mosaic" aria-label="制作スチル">
+          <figure>
+            <img src="assets/mood/case_a.jpg" alt="ケーススタディスチル" loading="lazy">
+            <figcaption>Case / Wings</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/work/pv2.jpg" alt="PVスチル" loading="lazy">
+            <figcaption>PV / Still</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/mood/case_b.jpg" alt="CGスチル" loading="lazy">
+            <figcaption>CG / Form</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/mood/vertical.jpg" alt="ストリートスチル" loading="lazy">
+            <figcaption>Street / Vertical</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/work/photo2.jpg" alt="フォト" loading="lazy">
+            <figcaption>Photo</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <div class="band">
+      <div class="band-bg" aria-hidden="true"></div>
+      <div class="wrap">
+        <p>Hack the timeline. Plant a memory.</p>
+        <a href="mailto:ungr.archive@gmail.com">Contact</a>
+      </div>
+    </div>
+
+    <section id="connect">
+      <div class="wrap">
+        <p class="sec-label">Connect</p>
+        <h2 class="sec-title">接続</h2>
+        <nav class="links" aria-label="外部リンク">
+          <a href="https://studio-command-eye.framer.website/" target="_blank" rel="noopener">
+            Portfolio
+            <span>Video / 3DCG / Photo</span>
+          </a>
+          <a href="https://www.youtube.com/@ungr.archive" target="_blank" rel="noopener">
+            YouTube
+            <span>@ungr.archive</span>
+          </a>
+          <a href="https://www.instagram.com/ungr.archive/" target="_blank" rel="noopener">
+            Instagram / TikTok
+            <span>@ungr.archive</span>
+          </a>
+          <a href="mailto:ungr.archive@gmail.com">
+            Email
+            <span>ungr.archive@gmail.com</span>
+          </a>
+        </nav>
+        <p class="closing">ところでみんな、<span>人生を変えたアングラって何？</span><br>アングラアーカイブ。</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap inner">
+      <p class="mark"><img src="assets/brand/ua-mark.png" alt=""> ua</p>
+      <p>© <span id="y"></span> UNGR ARCHIVE</p>
+    </div>
+  </footer>
+  <script>
+    document.getElementById("y").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
