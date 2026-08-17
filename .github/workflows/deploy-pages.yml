@@ -26,21 +26,23 @@ jobs:
 
       - name: Build unlisted HP-only site
         run: |
-          mkdir -p dist/ua
-          cp -a ua/. dist/ua/
+          set -euo pipefail
+          mkdir -p dist
+          cp -a ua/. dist/
           touch dist/.nojekyll
-          cat > dist/robots.txt <<'EOF'
-          User-agent: *
-          Disallow: /
-          EOF
-          cat > dist/index.html <<'EOF'
+          printf '%s\n' 'User-agent: *' 'Disallow: /' > dist/robots.txt
+          # Old /ua/ URL still works; do not duplicate large assets.
+          mkdir -p dist/ua
+          cat > dist/ua/index.html <<'EOF'
           <!DOCTYPE html>
           <html lang="ja">
           <head>
             <meta charset="UTF-8">
             <meta name="robots" content="noindex, nofollow, noarchive">
             <meta name="referrer" content="no-referrer">
+            <meta http-equiv="refresh" content="0; url=../">
             <title></title>
+            <script>location.replace("../");</script>
           </head>
           <body></body>
           </html>

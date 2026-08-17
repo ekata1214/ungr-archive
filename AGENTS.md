@@ -14,6 +14,7 @@
 
 - GitHub: https://github.com/ekata1214/ungr-archive
 - リポHTML: リポジトリの `リポ.html`（Pages には出さない）
+- HP: `ua/` を GitHub Pages に限定公開（noindex / robots Disallow。URLはREADMEに出さない）
 - Cursor Workspaces → `ungr-archive` を開いてエージェントに相談
 
 ## 参照順

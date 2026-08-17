@@ -35,7 +35,7 @@ GitHub アプリまたはブラウザで以下を直接開けます。
 
 ```
 ungr-archive/
-├── ua/                    # HP（Pagesはここだけ公開。READMEには出さない）
+├── ua/                    # HP（Pagesの中身。noindexの限定公開。URLはREADMEに出さない）
 ├── リポ.html              # 企画リポ本体
 ├── index.html             # リポ同期用
 ├── README.md              # このファイル
