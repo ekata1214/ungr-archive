@@ -122,11 +122,7 @@
       position: absolute;
       inset: 0;
       z-index: -1;
-      background:
-        linear-gradient(90deg, #000 0%, rgba(0,0,0,0.9) 40%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.6) 100%),
-        url("assets/brand/hero-figure.jpg") right center / cover no-repeat,
-        #000;
-      animation: heroPulse 12s ease-in-out infinite alternate;
+      background: #000;
     }
     .hero-bg::after {
       content: "";
@@ -151,10 +147,7 @@
         gap: 2.5rem;
       }
       .hero-bg {
-        background:
-          linear-gradient(105deg, #000 0%, #000 48%, rgba(0,0,0,0.2) 68%, rgba(0,0,0,0.55) 100%),
-          url("assets/brand/hero-figure.jpg") 78% center / auto 92% no-repeat,
-          #000;
+        background: #000;
       }
     }
     .brand {
@@ -230,17 +223,14 @@
     .cta-ghost:hover { color: var(--red); border-color: var(--red); }
 
     .hero-mark {
-      display: none;
+      display: flex;
       justify-content: center;
       align-items: center;
       opacity: 0;
       animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s;
     }
-    @media (min-width: 960px) {
-      .hero-mark { display: flex; }
-    }
     .hero-mark img {
-      width: min(280px, 100%);
+      width: min(420px, 78%);
       filter: drop-shadow(0 20px 40px rgba(255,0,0,0.18));
       animation: floatMark 5.5s ease-in-out infinite;
     }
@@ -413,12 +403,15 @@
       overflow: hidden;
       min-height: 200px;
       border-bottom: 2px solid var(--line);
+      color: inherit;
+      text-decoration: none;
+      display: block;
     }
     @media (min-width: 800px) {
       .theme {
         border-bottom: none;
         border-right: 2px solid var(--line);
-        min-height: 260px;
+        min-height: 320px;
       }
       .theme:last-child { border-right: none; }
     }
@@ -758,9 +751,8 @@
     <div class="hero-bg" aria-hidden="true"></div>
     <div class="wrap">
       <nav class="nav" aria-label="メイン">
-        <a class="logo" href="#top" id="top">
-          <img src="assets/brand/ua-mark.png" alt="">
-          <span class="logo-word">ua</span>
+        <a class="logo" href="#top" id="top" aria-label="UNGR ARCHIVE">
+          <img src="assets/brand/ua-mark.png" alt="UNGR ARCHIVE">
         </a>
         <div class="nav-links">
           <a href="#work">Work</a>
@@ -833,32 +825,32 @@
             </p>
           </div>
           <div class="about-visual">
-            <span class="tag">Dot Scan / Face</span>
-            <img src="assets/mood/reach.jpg" alt="赤いドットで描かれた顔のビジュアル" loading="lazy">
+            <span class="tag">Muu / Front</span>
+            <img src="assets/mood/identity.jpg" alt="ムー君 正面" loading="lazy">
           </div>
         </div>
-        <div class="themes">
-          <article class="theme">
-            <div class="theme-bg" style="background-image:url('assets/mood/vertical.jpg')" aria-hidden="true"></div>
+        <div class="themes" aria-label="UAサムネ">
+          <a class="theme" href="https://www.youtube.com/watch?v=k8aqakMSiLQ" target="_blank" rel="noopener">
+            <div class="theme-bg" style="background-image:url('assets/work/ua-thumb-illegal.jpg')" aria-hidden="true"></div>
             <div class="theme-copy">
-              <h3>Dig</h3>
-              <p>マスで語られない作品を掘る。偶然の出会いも入口として残す。</p>
+              <h3>Illegal DL</h3>
+              <p>違法ダウンロードがカルチャーに与えた影響</p>
             </div>
-          </article>
-          <article class="theme">
-            <div class="theme-bg" style="background-image:url('assets/mood/short.jpg')" aria-hidden="true"></div>
+          </a>
+          <a class="theme" href="https://www.youtube.com/watch?v=RD0NDc-MDkQ" target="_blank" rel="noopener">
+            <div class="theme-bg" style="background-image:url('assets/work/ua-thumb-burst.jpg')" aria-hidden="true"></div>
             <div class="theme-copy">
-              <h3>Critique</h3>
-              <p>意味づけの矛盾。死の美化。戦争と音楽。流通と美学の癒着。</p>
+              <h3>Grotesque</h3>
+              <p>僕達はなぜグロいモノを見るのに現実のニュースで悲しむのか</p>
             </div>
-          </article>
-          <article class="theme">
-            <div class="theme-bg" style="background-image:url('assets/mood/tech.jpg')" aria-hidden="true"></div>
+          </a>
+          <a class="theme" href="https://www.youtube.com/watch?v=wAZsvl483OI" target="_blank" rel="noopener">
+            <div class="theme-bg" style="background-image:url('assets/work/ua-thumb-cloud.jpg')" aria-hidden="true"></div>
             <div class="theme-copy">
-              <h3>Archive</h3>
-              <p>未確認は未確認のまま。影響の地図として固定する。</p>
+              <h3>Cloud Rap</h3>
+              <p>受け継がれる「雲」のDNA</p>
             </div>
-          </article>
+          </a>
         </div>
       </div>
     </section>
@@ -958,14 +950,14 @@
             <span>ungr.archive@gmail.com</span>
           </a>
         </nav>
-        <p class="closing">ところでみんな、<span>人生を変えたアングラって何？</span><br>アングラアーカイブ。</p>
+        <p class="closing">ところでみんな、<span>人生の中で一番大切にしている価値観って何？</span><br>アングラアーカイブ。</p>
       </div>
     </section>
   </main>
 
   <footer>
     <div class="wrap inner">
-      <p class="mark"><img src="assets/brand/ua-mark.png" alt=""> ua</p>
+      <p class="mark"><img src="assets/brand/ua-mark.png" alt="UNGR ARCHIVE"></p>
       <p>© <span id="y"></span> UNGR ARCHIVE</p>
     </div>
   </footer>
