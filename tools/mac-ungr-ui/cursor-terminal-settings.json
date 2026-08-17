@@ -1,0 +1,30 @@
+{
+  "workbench.colorCustomizations": {
+    "terminal.background": "#0A0A0A",
+    "terminal.foreground": "#E8E8E8",
+    "terminalCursor.foreground": "#E10600",
+    "terminalCursor.background": "#0A0A0A",
+    "terminal.selectionBackground": "#3A1010",
+    "terminal.ansiBlack": "#0A0A0A",
+    "terminal.ansiRed": "#E10600",
+    "terminal.ansiGreen": "#8AAB2E",
+    "terminal.ansiYellow": "#E8A838",
+    "terminal.ansiBlue": "#6B8CAD",
+    "terminal.ansiMagenta": "#A05050",
+    "terminal.ansiCyan": "#6A9A9A",
+    "terminal.ansiWhite": "#E8E8E8",
+    "terminal.ansiBrightBlack": "#888888",
+    "terminal.ansiBrightRed": "#FF2A2A",
+    "terminal.ansiBrightGreen": "#C8F542",
+    "terminal.ansiBrightYellow": "#F0C060",
+    "terminal.ansiBrightBlue": "#8AABCD",
+    "terminal.ansiBrightMagenta": "#C07070",
+    "terminal.ansiBrightCyan": "#8ABABA",
+    "terminal.ansiBrightWhite": "#FFFFFF"
+  },
+  "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font, JetBrains Mono, IBM Plex Mono, Menlo",
+  "terminal.integrated.fontSize": 13,
+  "terminal.integrated.cursorStyle": "block",
+  "terminal.integrated.cursorBlinking": false,
+  "terminal.integrated.lineHeight": 1.15
+}

@@ -1,0 +1,11 @@
+{
+  "name": "UNGR quick window",
+  "description": "Rectangle-like sizing via Raycast Window Management (enable extension first)",
+  "notes": [
+    "Install Raycast from https://www.raycast.com",
+    "Enable Window Management extension",
+    "Bind: Left Half / Right Half / Maximize — enough for edit bay",
+    "Optional: Ice (menu bar cleaner) from https://github.com/jordanbaird/Ice",
+    "Optional: Rectangle if not using Raycast windows — https://rectangleapp.com"
+  ]
+}

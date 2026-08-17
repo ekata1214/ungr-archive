@@ -1,0 +1,66 @@
+# UNGR ARCHIVE — Starship
+# https://starship.rs/config/
+# Copy to: ~/.config/starship.toml
+
+"$schema" = 'https://starship.rs/config-schema.json'
+
+add_newline = false
+command_timeout = 800
+
+format = """
+$directory$git_branch$git_status$character"""
+
+[character]
+success_symbol = "[❯](bold #E8E8E8)"
+error_symbol = "[❯](bold #E10600)"
+vimcmd_symbol = "[❮](bold #8AAB2E)"
+
+[directory]
+style = "bold #E8E8E8"
+truncation_length = 3
+truncate_to_repo = true
+read_only = " ro"
+read_only_style = "#E10600"
+
+[git_branch]
+symbol = " "
+style = "#888888"
+format = "[$symbol$branch]($style) "
+
+[git_status]
+style = "#E10600"
+format = '([\[$all_status$ahead_behind\]]($style) )'
+conflicted = "!"
+ahead = "↑"
+behind = "↓"
+diverged = "↕"
+untracked = "?"
+stashed = ""
+modified = "*"
+staged = "+"
+renamed = "»"
+deleted = "×"
+
+[cmd_duration]
+disabled = true
+
+[package]
+disabled = true
+
+[nodejs]
+disabled = true
+
+[python]
+disabled = true
+
+[rust]
+disabled = true
+
+[golang]
+disabled = true
+
+[battery]
+disabled = true
+
+[time]
+disabled = true

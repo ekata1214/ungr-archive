@@ -1,0 +1,63 @@
+# UNGR ARCHIVE — Ghostty
+# https://ghostty.org/docs/config
+# Copy to: ~/.config/ghostty/config
+
+font-family = JetBrainsMono Nerd Font
+font-family-bold = JetBrainsMono Nerd Font
+font-family-italic = JetBrainsMono Nerd Font
+font-family-bold-italic = JetBrainsMono Nerd Font
+font-size = 13
+font-thicken = true
+
+adjust-cell-height = 15%
+
+window-padding-x = 14
+window-padding-y = 12
+window-padding-balance = true
+window-decoration = true
+window-theme = dark
+macos-titlebar-style = hidden
+macos-option-as-alt = true
+
+cursor-style = block
+cursor-style-blink = false
+cursor-color = #E10600
+cursor-text = #0A0A0A
+shell-integration-features = no-cursor
+
+background = #0A0A0A
+foreground = #E8E8E8
+selection-background = #3A1010
+selection-foreground = #E8E8E8
+
+# subtle; keep archive-room, not glass
+background-opacity = 0.98
+background-blur-radius = 0
+
+# palette 0-15 (normal + bright)
+palette = 0=#0A0A0A
+palette = 1=#E10600
+palette = 2=#8AAB2E
+palette = 3=#E8A838
+palette = 4=#6B8CAD
+palette = 5=#A05050
+palette = 6=#6A9A9A
+palette = 7=#E8E8E8
+palette = 8=#888888
+palette = 9=#FF2A2A
+palette = 10=#C8F542
+palette = 11=#F0C060
+palette = 12=#8AABCD
+palette = 13=#C07070
+palette = 14=#8ABABA
+palette = 15=#FFFFFF
+
+bold-is-bright = false
+minimum-contrast = 1.1
+
+clipboard-read = ask
+clipboard-write = allow
+copy-on-select = false
+
+confirm-close-surface = false
+quit-after-last-window-closed = true
