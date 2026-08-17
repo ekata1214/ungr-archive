@@ -10,16 +10,19 @@ permissions:
   pages: write
   id-token: write
 
+# Do not cancel an in-progress production deploy. A Pages API 503 needs
+# the retry window below, and a newer push should wait rather than kill it.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy4.outputs.page_url || steps.deploy3.outputs.page_url || steps.deploy2.outputs.page_url || steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,6 +54,39 @@ jobs:
         with:
           path: dist
 
+      # actions/deploy-pages talks to the Pages API. During GitHub incidents
+      # that call returns 503 ("No server is currently available") and the
+      # live site stays on the previous commit — as with abdc731 (logo align).
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+
+      - name: Wait before Pages retry
+        if: steps.deployment.outcome != 'success'
+        run: sleep 30
+
+      - name: Retry deploy to GitHub Pages
+        id: deploy2
+        if: steps.deployment.outcome != 'success'
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+
+      - name: Wait before Pages retry (2)
+        if: steps.deployment.outcome != 'success' && steps.deploy2.outcome != 'success'
+        run: sleep 60
+
+      - name: Retry deploy to GitHub Pages (2)
+        id: deploy3
+        if: steps.deployment.outcome != 'success' && steps.deploy2.outcome != 'success'
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+
+      - name: Wait before Pages retry (final)
+        if: steps.deployment.outcome != 'success' && steps.deploy2.outcome != 'success' && steps.deploy3.outcome != 'success'
+        run: sleep 120
+
+      - name: Retry deploy to GitHub Pages (final)
+        id: deploy4
+        if: steps.deployment.outcome != 'success' && steps.deploy2.outcome != 'success' && steps.deploy3.outcome != 'success'
+        uses: actions/deploy-pages@v5
