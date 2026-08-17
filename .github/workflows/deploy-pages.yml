@@ -24,10 +24,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Build unlisted HP-only site
+        run: |
+          mkdir -p dist/ua
+          cp -a ua/. dist/ua/
+          touch dist/.nojekyll
+          cat > dist/robots.txt <<'EOF'
+          User-agent: *
+          Disallow: /
+          EOF
+          cat > dist/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="ja">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="robots" content="noindex, nofollow, noarchive">
+            <meta name="referrer" content="no-referrer">
+            <title></title>
+          </head>
+          <body></body>
+          </html>
+          EOF
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist
 
       - name: Deploy to GitHub Pages
         id: deployment

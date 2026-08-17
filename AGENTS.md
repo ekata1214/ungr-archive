@@ -13,7 +13,7 @@
 ## クラウド / モバイル
 
 - GitHub: https://github.com/ekata1214/ungr-archive
-- リポHTML: https://ekata1214.github.io/ungr-archive/
+- リポHTML: リポジトリの `リポ.html`（Pages には出さない）
 - Cursor Workspaces → `ungr-archive` を開いてエージェントに相談
 
 ## 参照順

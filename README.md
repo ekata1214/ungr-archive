@@ -8,9 +8,7 @@ GitHub アプリまたはブラウザで以下を直接開けます。
 
 | 資料 | リンク |
 |------|--------|
-| UAホームページ（仮・固定URL） | [https://ekata1214.github.io/ungr-archive/ua/](https://ekata1214.github.io/ungr-archive/ua/) |
-| 企画・時事ネタリポ（HTML） | [リポを開く](https://ekata1214.github.io/ungr-archive/) |
-| リポ（GitHub上） | [`リポ.html`](リポ.html) |
+| 企画・時事ネタリポ | [`リポ.html`](リポ.html) |
 
 ## Cursor Mobile / Cloud で使う
 
@@ -37,16 +35,16 @@ GitHub アプリまたはブラウザで以下を直接開けます。
 
 ```
 ungr-archive/
-├── ua/                    # UAホームページ（GitHub Pages 固定URL）
-├── リポ.html              # 企画リポ本体（モバイル向け）
-├── index.html             # GitHub Pages 用（内容同一）
+├── ua/                    # HP（Pagesはここだけ公開。READMEには出さない）
+├── リポ.html              # 企画リポ本体
+├── index.html             # リポ同期用
 ├── README.md              # このファイル
-└── .github/workflows/     # push で Pages 自動更新
+└── .github/workflows/     # Pages は HP のみデプロイ
 ```
 
 ## リポの更新
 
-`リポ.html` を編集 → `index.html` も同期 → `main` に push で Pages 更新。
+`リポ.html` を編集 → `index.html` も同期。リポは Pages に出さない。
 
 ```bash
 cp リポ.html index.html
