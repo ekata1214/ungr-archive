@@ -3,4 +3,5 @@ _learn_*/
 *.wav
 *.mp4
 *.mov
+!ua/assets/work/*.mp4
 .DS_Store
