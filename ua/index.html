@@ -613,6 +613,14 @@
       transition: transform 0.5s ease;
     }
     .mosaic figure:hover img { transform: scale(1.05); }
+    .mosaic figure.wings img {
+      object-position: left center;
+      transform: translateX(26%) scale(1.55);
+      transform-origin: center center;
+    }
+    .mosaic figure.wings:hover img {
+      transform: translateX(26%) scale(1.62);
+    }
     .mosaic figcaption {
       position: absolute;
       left: 0.7rem;
@@ -899,7 +907,7 @@
         </article>
 
         <div class="mosaic" aria-label="制作スチル">
-          <figure>
+          <figure class="wings">
             <img src="assets/mood/case_a.jpg" alt="ケーススタディスチル" loading="lazy">
             <figcaption>Case / Wings</figcaption>
           </figure>
