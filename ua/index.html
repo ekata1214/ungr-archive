@@ -356,32 +356,35 @@
     .about-split {
       display: grid;
       gap: 1.5rem;
-      margin-top: 2rem;
+      margin-top: 0;
     }
     @media (min-width: 900px) {
       .about-split {
-        grid-template-columns: 1.1fr 0.9fr;
+        grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
         align-items: start;
-        gap: 1.25rem;
-      }
-      .about-split > div:first-child {
-        padding-top: clamp(2rem, 5vw, 4rem);
+        gap: 1.75rem;
       }
     }
     .about-visual {
       position: relative;
       overflow: hidden;
       border: 2px solid var(--line);
-      min-height: 320px;
-      aspect-ratio: 4 / 5;
+      width: 100%;
+      aspect-ratio: 16 / 9;
       background: #111;
+    }
+    @media (min-width: 900px) {
+      .about-visual {
+        max-width: 380px;
+        justify-self: end;
+      }
     }
     .about-visual img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 12%;
-      min-height: 0;
+      object-position: center center;
+      display: block;
       transition: transform 0.8s ease;
     }
     .about-visual:hover img { transform: scale(1.04); }
@@ -402,32 +405,35 @@
     .story-split {
       display: grid;
       gap: 1.5rem;
-      margin-top: 2rem;
+      margin-top: 0;
     }
     @media (min-width: 900px) {
       .story-split {
-        grid-template-columns: 1.05fr 0.95fr;
+        grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
         align-items: start;
-        gap: 1.25rem;
-      }
-      .story-split > div:first-child {
-        padding-top: clamp(2rem, 5vw, 4rem);
+        gap: 1.75rem;
       }
     }
     .story-visual {
       position: relative;
       overflow: hidden;
       border: 2px solid var(--line);
-      min-height: 320px;
-      aspect-ratio: 4 / 5;
+      width: 100%;
+      aspect-ratio: 16 / 9;
       background: #111;
+    }
+    @media (min-width: 900px) {
+      .story-visual {
+        max-width: 380px;
+        justify-self: end;
+      }
     }
     .story-visual img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: 58% center;
-      min-height: 0;
+      object-position: center center;
+      display: block;
       transition: transform 0.8s ease;
       filter: saturate(0.92) contrast(1.08);
     }
@@ -449,6 +455,7 @@
     .themes {
       display: grid;
       border-top: 2px solid var(--line);
+      margin-top: 2.25rem;
     }
     @media (min-width: 800px) {
       .themes { grid-template-columns: repeat(3, 1fr); }
@@ -876,10 +883,10 @@
   <main>
     <section id="about">
       <div class="wrap">
-        <p class="sec-label">About</p>
-        <h2 class="sec-title">答えのない問いを、記録として残す。</h2>
         <div class="about-split">
           <div>
+            <p class="sec-label">About</p>
+            <h2 class="sec-title">答えのない問いを、記録として残す。</h2>
             <p class="sec-body">
               UNGR ARCHIVE / アングラアーカイブは、芸術とカルチャーを横断し、終わらない議論を設計・公開するメディアです。映画・音楽・ネット・流通のグレーゾーンを横断し、文化の形成と波及を<strong>批評と映像で記録</strong>します。
             </p>
@@ -921,9 +928,9 @@
 
     <section id="story">
       <div class="wrap">
-        <p class="sec-label">Story</p>
         <div class="story-split">
           <div>
+            <p class="sec-label">Story</p>
             <h2 class="sec-title">制作の経験から、議論の場へ。</h2>
             <p class="sec-body">
               UNGR ARCHIVE を始める前から、私たちは映像制作を手がけてきました。今も、その仕事は続いています。PV、イベント、3DCG——現場で積み重ねた経験と、そこから得た大量のリファレンスが、私たちの土台です。
