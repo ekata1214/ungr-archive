@@ -22,7 +22,6 @@
       --font-display: "Archivo Black", "IBM Plex Sans JP", sans-serif;
       --font-body: "IBM Plex Sans JP", sans-serif;
       --max: 1180px;
-      --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,10 +40,6 @@
     a { color: inherit; }
     img { display: block; max-width: 100%; }
     ::selection { background: var(--red); color: #fff; }
-    :focus-visible {
-      outline: 2px solid var(--red);
-      outline-offset: 3px;
-    }
 
     .grain {
       pointer-events: none;
@@ -356,30 +351,6 @@
     }
     .sec-body + .sec-body { margin-top: 0.95rem; }
     .sec-body strong { color: var(--ink); font-weight: 700; }
-
-    .scope {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.45rem;
-      margin: 1.35rem 0 0;
-      padding: 0;
-      list-style: none;
-    }
-    .scope li {
-      font-family: var(--font-display);
-      font-size: 0.62rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--ink);
-      border: 1px solid var(--line);
-      padding: 0.42rem 0.65rem;
-      transition: border-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease);
-    }
-    .scope li:hover {
-      border-color: var(--red);
-      color: var(--red);
-      transform: translateY(-1px);
-    }
 
     /* ABOUT + VISUAL SPLIT
        Photo top = white title; photo bottom = last body paragraph. */
@@ -922,20 +893,13 @@
         <p class="sec-label">About</p>
         <div class="about-split">
           <div>
-            <h2 class="sec-title">答えのない問いを、<br>記録として残す。</h2>
+            <h2 class="sec-title">答えのない問いを、記録として残す。</h2>
             <p class="sec-body">
               UNGR ARCHIVE / アングラアーカイブは、芸術とカルチャーを横断し、終わらない議論を設計・公開するメディアです。映画・音楽・ネット・流通のグレーゾーンを横断し、文化の形成と波及を<strong>批評と映像で記録</strong>します。
             </p>
             <p class="sec-body">
               ここで提示する考察は、正解の配布ではなく、対話の起点です。表に出にくい入口まで含めた文化の輪郭を可視化し、持続的な思考の土台を提供します。映像制作も、この記録と同じ思想で行います。
             </p>
-            <ul class="scope" aria-label="領域">
-              <li>批評</li>
-              <li>映像</li>
-              <li>3DCG</li>
-              <li>写真</li>
-              <li>SNS</li>
-            </ul>
           </div>
           <div class="about-visual">
             <span class="tag">Nois Mou</span>
@@ -974,7 +938,7 @@
         <p class="sec-label">Story</p>
         <div class="story-split">
           <div>
-            <h2 class="sec-title">制作の経験から、<br>議論の場へ。</h2>
+            <h2 class="sec-title">制作の経験から、議論の場へ。</h2>
             <p class="sec-body">
               UNGR ARCHIVE を始める前から、私たちは映像制作を手がけてきました。今も、その仕事は続いています。PV、イベント、3DCG——現場で積み重ねた経験と、そこから得た大量のリファレンスが、私たちの土台です。
             </p>
@@ -1002,7 +966,7 @@
         <div class="work-head">
           <div>
             <p class="sec-label">Work</p>
-            <h2 class="sec-title">映像と写真と<br>3DCGとSNS。</h2>
+            <h2 class="sec-title">映像と写真と3DCGとSNS。</h2>
           </div>
           <a class="work-all" href="https://studio-command-eye.framer.website/" target="_blank" rel="noopener">Full Portfolio</a>
         </div>
@@ -1067,10 +1031,6 @@
       <div class="wrap">
         <p class="sec-label">Connect</p>
         <nav class="links" aria-label="外部リンク">
-          <a href="mailto:ungr.archive@gmail.com">
-            Email
-            <span>ungr.archive@gmail.com</span>
-          </a>
           <a href="https://studio-command-eye.framer.website/" target="_blank" rel="noopener">
             Portfolio
             <span>Video / 3DCG / Photo</span>
@@ -1086,6 +1046,10 @@
           <a href="https://www.tiktok.com/@ungr.archive" target="_blank" rel="noopener">
             TikTok
             <span>@ungr.archive</span>
+          </a>
+          <a href="mailto:ungr.archive@gmail.com">
+            Email
+            <span>ungr.archive@gmail.com</span>
           </a>
         </nav>
         <p class="closing">ところでみんな、<span>人生の中で一番大切にしている価値観って何？</span><br>アングラアーカイブ。</p>
